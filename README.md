@@ -1,6 +1,6 @@
-# Site Blocker
+# Circuit Breaker
 
-**An AI-mediated site blocker for macOS.** Designed for use with terminal-based AI agents like [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex CLI](https://github.com/openai/codex).
+**An AI-mediated circuit breaker for macOS.** Designed for use with terminal-based AI agents like [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Codex CLI](https://github.com/openai/codex).
 
 Instead of just blocking sites, this tool gives your AI assistant instructions to offer **gentle pushback** when you ask to unblock — suggesting alternatives before complying.
 
@@ -50,8 +50,8 @@ npm install -g pnpm
 ### 1. Clone and build
 
 ```bash
-git clone https://github.com/yourusername/site-blocker.git ~/Dev/site-blocker
-cd ~/Dev/site-blocker
+git clone https://github.com/mr-ryan-james/circuit-breaker.git ~/Dev/circuit-breaker
+cd ~/Dev/circuit-breaker
 pnpm install
 pnpm build
 ```
@@ -63,7 +63,7 @@ The blocker edits `/etc/hosts`, which requires sudo. For your AI agent to run co
 ```bash
 # Create sudoers entry (replace YOUR_USERNAME with your actual username)
 sudo tee /etc/sudoers.d/site-toggle << 'EOF'
-YOUR_USERNAME ALL=(ALL) NOPASSWD: /Users/YOUR_USERNAME/Dev/site-blocker/site-toggle
+YOUR_USERNAME ALL=(ALL) NOPASSWD: /Users/YOUR_USERNAME/Dev/circuit-breaker/site-toggle
 EOF
 
 # Fix permissions
@@ -72,7 +72,7 @@ sudo chmod 440 /etc/sudoers.d/site-toggle
 
 **Verify it works:**
 ```bash
-sudo ~/Dev/site-blocker/site-toggle doctor
+sudo ~/Dev/circuit-breaker/site-toggle doctor
 ```
 
 You should NOT be prompted for a password.
@@ -87,19 +87,19 @@ When you visit a blocked site, you'll see a friendly block page instead of an er
 
 ```bash
 # Replace __REPO_PATH__ with your actual repo path
-sed 's|__REPO_PATH__|/Users/YOUR_USERNAME/Dev/site-blocker|g' \
-  ~/Dev/site-blocker/com.siteblocker.plist.template \
-  > ~/Dev/site-blocker/com.siteblocker.plist
+sed 's|__REPO_PATH__|/Users/YOUR_USERNAME/Dev/circuit-breaker|g' \
+  ~/Dev/circuit-breaker/com.circuitbreaker.plist.template \
+  > ~/Dev/circuit-breaker/com.circuitbreaker.plist
 ```
 
 **Then install and load it:**
 
 ```bash
 # Copy to LaunchDaemons
-sudo cp ~/Dev/site-blocker/com.siteblocker.plist /Library/LaunchDaemons/
+sudo cp ~/Dev/circuit-breaker/com.circuitbreaker.plist /Library/LaunchDaemons/
 
 # Load it
-sudo launchctl load /Library/LaunchDaemons/com.siteblocker.plist
+sudo launchctl load /Library/LaunchDaemons/com.circuitbreaker.plist
 
 # Verify it's running
 curl http://127.0.0.1
@@ -112,7 +112,7 @@ You should see the block page HTML.
 This loads the Break Cards and site definitions:
 
 ```bash
-~/Dev/site-blocker/site-toggle seed
+~/Dev/circuit-breaker/site-toggle seed
 ```
 
 ### 5. Set your context
@@ -121,16 +121,16 @@ Tell the system where you are (affects which Break Cards are suggested):
 
 ```bash
 # If you're at home
-~/Dev/site-blocker/site-toggle context set home
+~/Dev/circuit-breaker/site-toggle context set home
 
 # If you're at a coworking space
-~/Dev/site-blocker/site-toggle context set coworking
+~/Dev/circuit-breaker/site-toggle context set coworking
 ```
 
 ### 6. Block the sites!
 
 ```bash
-sudo ~/Dev/site-blocker/site-toggle off
+sudo ~/Dev/circuit-breaker/site-toggle off
 ```
 
 Done! Twitter, Reddit, and 20+ news sites are now blocked.
@@ -169,26 +169,26 @@ You can also use the CLI directly without an AI agent:
 
 ```bash
 # Check what's blocked
-sudo ~/Dev/site-blocker/site-toggle status
+sudo ~/Dev/circuit-breaker/site-toggle status
 
 # Unblock a specific site for 10 minutes
-sudo ~/Dev/site-blocker/site-toggle on twitter 10
+sudo ~/Dev/circuit-breaker/site-toggle on twitter 10
 
 # Unblock all sites for 15 minutes
-sudo ~/Dev/site-blocker/site-toggle on "" 15
+sudo ~/Dev/circuit-breaker/site-toggle on "" 15
 
 # Block everything again
-sudo ~/Dev/site-blocker/site-toggle off
+sudo ~/Dev/circuit-breaker/site-toggle off
 
 # Get 2 random Break Card suggestions
-~/Dev/site-blocker/site-toggle suggest 2
+~/Dev/circuit-breaker/site-toggle suggest 2
 
 # See usage stats
-~/Dev/site-blocker/site-toggle stats
+~/Dev/circuit-breaker/site-toggle stats
 
 # Rate a card (affects future suggestions)
-~/Dev/site-blocker/site-toggle rate 42 love   # show more often
-~/Dev/site-blocker/site-toggle rate 42 ban    # never show again
+~/Dev/circuit-breaker/site-toggle rate 42 love   # show more often
+~/Dev/circuit-breaker/site-toggle rate 42 ban    # never show again
 ```
 
 ## Practice Modules (Optional)
@@ -201,19 +201,19 @@ Modules track:
 
 ```bash
 # List installed modules
-~/Dev/site-blocker/site-toggle modules
+~/Dev/circuit-breaker/site-toggle modules
 
 # Show last week of Spanish module activity (sessions + served suggestions)
-~/Dev/site-blocker/site-toggle module spanish history --days 7 --limit 10
+~/Dev/circuit-breaker/site-toggle module spanish history --days 7 --limit 10
 
 # Continue the most recent open session (does not create a new session)
-~/Dev/site-blocker/site-toggle module spanish resume
+~/Dev/circuit-breaker/site-toggle module spanish resume
 
 # Redo the most recent practice as a new attempt
-~/Dev/site-blocker/site-toggle module spanish last
+~/Dev/circuit-breaker/site-toggle module spanish last
 
 # Mark the most recent open session as completed
-~/Dev/site-blocker/site-toggle module spanish complete --status completed
+~/Dev/circuit-breaker/site-toggle module spanish complete --status completed
 ```
 
 ## Blocked Sites
@@ -265,20 +265,20 @@ Create a JSON file in `data/cards/`:
 ]
 ```
 
-Then run `~/Dev/site-blocker/site-toggle seed` to load it.
+Then run `~/Dev/circuit-breaker/site-toggle seed` to load it.
 
 ### Add a new context/location
 
 ```bash
 # Add a new location
-~/Dev/site-blocker/site-toggle locations add coffee_shop "Coffee Shop"
+~/Dev/circuit-breaker/site-toggle locations add coffee_shop "Coffee Shop"
 
 # Add a new context
-~/Dev/site-blocker/site-toggle contexts add cafe "Café"
+~/Dev/circuit-breaker/site-toggle contexts add cafe "Café"
 
 # Link locations to the context
-~/Dev/site-blocker/site-toggle contexts link cafe any
-~/Dev/site-blocker/site-toggle contexts link cafe indoor
+~/Dev/circuit-breaker/site-toggle contexts link cafe any
+~/Dev/circuit-breaker/site-toggle contexts link cafe indoor
 ```
 
 ### Add a new site to block
@@ -287,7 +287,7 @@ Edit `packages/core/src/seed/sites.ts`, add your site definition, then:
 
 ```bash
 pnpm build
-sudo ~/Dev/site-blocker/site-toggle off
+sudo ~/Dev/circuit-breaker/site-toggle off
 ```
 
 ## Technical Details
@@ -303,7 +303,7 @@ sudo ~/Dev/site-blocker/site-toggle off
 By default, auto-reblock timers don't survive system restarts. To make them durable:
 
 ```bash
-sudo ~/Dev/site-blocker/site-toggle daemon install
+sudo ~/Dev/circuit-breaker/site-toggle daemon install
 ```
 
 This installs a LaunchDaemon that checks the database every 60 seconds and enforces any pending re-blocks.
@@ -312,25 +312,25 @@ This installs a LaunchDaemon that checks the database every 60 seconds and enfor
 
 ```bash
 # 1. Stop and remove LaunchDaemons
-sudo launchctl unload /Library/LaunchDaemons/com.siteblocker.plist
-sudo rm /Library/LaunchDaemons/com.siteblocker.plist
-sudo launchctl unload /Library/LaunchDaemons/com.siteblocker.timers.plist 2>/dev/null
-sudo rm /Library/LaunchDaemons/com.siteblocker.timers.plist 2>/dev/null
+sudo launchctl unload /Library/LaunchDaemons/com.circuitbreaker.plist
+sudo rm /Library/LaunchDaemons/com.circuitbreaker.plist
+sudo launchctl unload /Library/LaunchDaemons/com.circuitbreaker.timers.plist 2>/dev/null
+sudo rm /Library/LaunchDaemons/com.circuitbreaker.timers.plist 2>/dev/null
 
 # 2. Remove sudoers entry
 sudo rm /etc/sudoers.d/site-toggle
 
 # 3. Unblock all sites (cleans /etc/hosts)
-sudo ~/Dev/site-blocker/site-toggle on
+sudo ~/Dev/circuit-breaker/site-toggle on
 
 # 4. Flush DNS
 sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
 
 # 5. Remove the database
-rm -rf ~/Library/Application\ Support/Site\ Blocker/
+rm -rf ~/Library/Application\ Support/Circuit\ Breaker/
 
 # 6. Delete the repo
-rm -rf ~/Dev/site-blocker
+rm -rf ~/Dev/circuit-breaker
 ```
 
 ## Troubleshooting
@@ -344,7 +344,7 @@ Also try incognito mode or clearing browser cache.
 **Block page not showing?**
 ```bash
 curl http://127.0.0.1  # Should show HTML
-cat ~/Dev/site-blocker/server.log  # Check for errors
+cat ~/Dev/circuit-breaker/server.log  # Check for errors
 ```
 
 **Passwordless sudo not working?**
@@ -355,7 +355,7 @@ cat /etc/sudoers.d/site-toggle  # Verify your username is correct
 
 **Doctor command shows issues?**
 ```bash
-~/Dev/site-blocker/site-toggle doctor
+~/Dev/circuit-breaker/site-toggle doctor
 ```
 This checks Node version, database, sudo access, and more.
 
@@ -370,7 +370,7 @@ This checks Node version, database, sudo access, and more.
 | `packages/core/` | Database, selection engine, hosts manipulation |
 | `data/cards/*.json` | Break Card definitions |
 | `index.html` | Block page shown when visiting blocked sites |
-| `com.siteblocker.plist.template` | LaunchDaemon template (edit paths before use) |
+| `com.circuitbreaker.plist.template` | LaunchDaemon template (edit paths before use) |
 
 ## License
 

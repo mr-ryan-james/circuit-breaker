@@ -1,5 +1,5 @@
 {
-  "name": "@site-blocker/core",
+  "name": "@circuit-breaker/core",
   "private": true,
   "version": "0.0.0",
   "type": "module",

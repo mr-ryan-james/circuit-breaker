@@ -68,7 +68,7 @@ export function openDb(): DbOpenResult {
     db.prepare("SELECT prompt FROM cards LIMIT 0").all();
   } catch {
     throw new Error(
-      `Site Blocker DB schema is out of date.\n` +
+      `Circuit Breaker DB schema is out of date.\n` +
         `Delete and recreate it:\n` +
         `  rm -f ${dbPath}\n` +
         `  site-toggle seed`,

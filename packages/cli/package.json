@@ -1,5 +1,5 @@
 {
-  "name": "@site-blocker/cli",
+  "name": "@circuit-breaker/cli",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,7 @@
     ".": "./dist/index.js"
   },
   "dependencies": {
-    "@site-blocker/core": "workspace:*"
+    "@circuit-breaker/core": "workspace:*"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

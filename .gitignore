@@ -29,10 +29,10 @@ usage.log
 *.pid
 
 # Generated plist (user-specific paths)
-com.siteblocker.plist
+com.circuitbreaker.plist
 
 # Legacy plist (if present)
-com.ryanpfister.siteblocker.plist
+com.ryanpfister.circuitbreaker.plist
 
 # Claude local settings
 .claude/

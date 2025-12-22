@@ -1,17 +1,17 @@
-# Site Blocker - Claude Instructions
+# Circuit Breaker - Claude Instructions
 
-This folder contains Ryan's site blocker system for managing distracting websites on macOS.
+This folder contains Ryan's circuit breaker system for managing distracting websites on macOS.
 
 ## Quick Start (Agents / CLI)
 
 If you’re an agent (Claude/Codex) and you need to operate the blocker, this is the fastest reliable path:
 
-All commands below assume your working directory is `~/Dev/site-blocker`. If not, replace `./site-toggle` with `~/Dev/site-blocker/site-toggle`.
+All commands below assume your working directory is `~/Dev/circuit-breaker`. If not, replace `./site-toggle` with `~/Dev/circuit-breaker/site-toggle`.
 
 1. **Sanity check:** `./site-toggle doctor`
 2. **Set current context (important for Break Cards):**
    - `./site-toggle context set home` **or** `./site-toggle context set coworking`
-   - Or set env var: `SITE_BLOCKER_CONTEXT=home` / `SITE_BLOCKER_CONTEXT=coworking`
+   - Or set env var: `CIRCUIT_BREAKER_CONTEXT=home` / `CIRCUIT_BREAKER_CONTEXT=coworking`
 3. **Ensure a deck exists (optional if already seeded):**
    - `./site-toggle seed` (loads all `data/cards/*.json|*.csv|*.tsv` into SQLite)
    - Or `./site-toggle import cards /path/to/cards.csv`
@@ -121,7 +121,7 @@ If Ryan picks 4 (feed), run: `sudo -n ./site-toggle on "" 10`
 
 ### Adaptive Friction (optional, use judgment)
 
-Run `sudo ~/Dev/site-blocker/site-toggle stats` to check usage patterns. The stats command always calculates based on **current time** (safe for long-running sessions).
+Run `sudo ~/Dev/circuit-breaker/site-toggle stats` to check usage patterns. The stats command always calculates based on **current time** (safe for long-running sessions).
 
 **When to check stats:** Optionally before responding to an unblock request, especially if it feels like a high-frequency day.
 
@@ -281,7 +281,7 @@ This is the final reinforcement step — don't skip it. If Ryan declines, procee
 - `es-MX-DaliaNeural` — Mexico, female
 
 **Caching:**
-Audio files are cached in `/tmp/site-blocker-audio-<uid>/` — same text+voice combo won't regenerate.
+Audio files are cached in `/tmp/circuit-breaker-audio-<uid>/` — same text+voice combo won't regenerate.
 Use `--refresh` to force regeneration if needed.
 
 **Notes:**
@@ -585,11 +585,11 @@ Pick from different categories. Rotate to stay fresh.
 ## How It Works
 
 1. **`/etc/hosts`** maps blocked domains to `127.0.0.1`
-2. **SQLite DB** stores sites/domains, Break Cards, context/location mappings, and an events log (path: `~/Library/Application Support/Site Blocker/siteblocker.db`)
-3. **LaunchDaemon (HTTP)** runs a Python HTTP server on port 80 serving `index.html` (label: `com.siteblocker`)
+2. **SQLite DB** stores sites/domains, Break Cards, context/location mappings, and an events log (path: `~/Library/Application Support/Circuit Breaker/circuitbreaker.db`)
+3. **LaunchDaemon (HTTP)** runs a Python HTTP server on port 80 serving `index.html` (label: `com.circuitbreaker`)
 4. **Auto-reblock timers**
    - default: a per-unblock background timer process re-blocks after N minutes
-   - optional: a LaunchDaemon can enforce re-blocking from DB expiries (label: `com.siteblocker.timers` via `site-toggle daemon install`)
+   - optional: a LaunchDaemon can enforce re-blocking from DB expiries (label: `com.circuitbreaker.timers` via `site-toggle daemon install`)
 5. **macOS notifications** alert when sites are re-blocked and when re-entry prompts fire
 
 ## Available Sites
@@ -615,7 +615,7 @@ Edit `packages/core/src/seed/sites.ts`:
 |------|---------|
 | `site-toggle` | Main script - manages blocking/unblocking |
 | `index.html` | Block page shown when visiting blocked sites |
-| `com.siteblocker.plist.template` | LaunchDaemon template (generate your plist from this) |
+| `com.circuitbreaker.plist.template` | LaunchDaemon template (generate your plist from this) |
 | `server.log` | HTTP server logs |
 | `usage.log` | Unblock history for adaptive friction (TSV: timestamp, site, minutes) |
 | `README.md` | User documentation |
@@ -624,9 +624,9 @@ Edit `packages/core/src/seed/sites.ts`:
 
 ## System Components
 
-- **DB:** `~/Library/Application Support/Site Blocker/siteblocker.db`
-- **LaunchDaemon (HTTP):** `/Library/LaunchDaemons/com.siteblocker.plist`
-- **LaunchDaemon (timers, optional):** `/Library/LaunchDaemons/com.siteblocker.timers.plist` (installed via `site-toggle daemon install`)
+- **DB:** `~/Library/Application Support/Circuit Breaker/circuitbreaker.db`
+- **LaunchDaemon (HTTP):** `/Library/LaunchDaemons/com.circuitbreaker.plist`
+- **LaunchDaemon (timers, optional):** `/Library/LaunchDaemons/com.circuitbreaker.timers.plist` (installed via `site-toggle daemon install`)
 - **Sudoers entry:** `/etc/sudoers.d/site-toggle` (passwordless sudo for `site-toggle`)
 - **Hosts file:** `/etc/hosts` (contains blocked domain mappings)
 - **Timer PIDs:** `/tmp/site-toggle-timers/` (default per-unblock timer processes)
@@ -645,8 +645,8 @@ curl http://127.0.0.1
 
 **Restart HTTP server:**
 ```bash
-sudo launchctl unload /Library/LaunchDaemons/com.siteblocker.plist
-sudo launchctl load /Library/LaunchDaemons/com.siteblocker.plist
+sudo launchctl unload /Library/LaunchDaemons/com.circuitbreaker.plist
+sudo launchctl load /Library/LaunchDaemons/com.circuitbreaker.plist
 ```
 
 ## Important Notes

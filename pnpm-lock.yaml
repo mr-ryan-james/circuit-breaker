@@ -17,7 +17,7 @@ importers:
 
   packages/cli:
     dependencies:
-      '@site-blocker/core':
+      '@circuit-breaker/core':
         specifier: workspace:*
         version: link:../core
 

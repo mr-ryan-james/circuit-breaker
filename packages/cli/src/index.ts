@@ -48,9 +48,9 @@ import {
   unlinkContextLocation,
   unblockDomains,
   writeHostsFile,
-} from "@site-blocker/core";
+} from "@circuit-breaker/core";
 
-import type { ModuleDefinition } from "@site-blocker/core";
+import type { ModuleDefinition } from "@circuit-breaker/core";
 
 class CliError extends Error {
   public readonly code: string;
@@ -175,7 +175,7 @@ async function resolveContextOrThrow(db: any, opts: { location?: string; context
   const fromArgs = opts.context?.trim();
   if (fromArgs) return fromArgs;
 
-  const fromEnv = (process.env["SITE_BLOCKER_CONTEXT"] ?? "").trim();
+  const fromEnv = (process.env["CIRCUIT_BREAKER_CONTEXT"] ?? "").trim();
   if (fromEnv) return fromEnv;
 
   const fromSetting = (getSetting(db, "current_context") ?? "").trim();
@@ -184,7 +184,7 @@ async function resolveContextOrThrow(db: any, opts: { location?: string; context
   if (opts.json) {
     throw new CliError(
       "CONTEXT_REQUIRED",
-      "Context required. Use --context <slug>, set SITE_BLOCKER_CONTEXT, or run `site-toggle context set <slug>`.",
+      "Context required. Use --context <slug>, set CIRCUIT_BREAKER_CONTEXT, or run `site-toggle context set <slug>`.",
     );
   }
 
@@ -463,7 +463,7 @@ function cmdTimer(args: string[], json: boolean): void {
         // ignore
       }
 
-      notify("Site Blocker", `${siteSlug} has been re-blocked`);
+      notify("Circuit Breaker", `${siteSlug} has been re-blocked`);
     } catch {
       // ignore
     }
@@ -1843,7 +1843,7 @@ function cmdDaemonTick(json: boolean): void {
   else console.log(`Re-blocked ${results.length} site(s) from DB timers.`);
 }
 
-const DAEMON_LABEL = "com.ryanpfister.siteblocker.timers";
+const DAEMON_LABEL = "com.ryanpfister.circuitbreaker.timers";
 const DAEMON_PLIST_PATH = `/Library/LaunchDaemons/${DAEMON_LABEL}.plist`;
 
 function daemonPlistXml(): string {
@@ -1857,7 +1857,7 @@ function daemonPlistXml(): string {
   <string>${DAEMON_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/ryanpfister/Dev/site-blocker/site-toggle</string>
+    <string>/Users/ryanpfister/Dev/circuit-breaker/site-toggle</string>
     <string>daemon</string>
     <string>tick</string>
     <string>--json</string>
@@ -1867,9 +1867,9 @@ function daemonPlistXml(): string {
   <key>StartInterval</key>
   <integer>60</integer>
   <key>StandardOutPath</key>
-  <string>/tmp/siteblocker-daemon.out.log</string>
+  <string>/tmp/circuitbreaker-daemon.out.log</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/siteblocker-daemon.err.log</string>
+  <string>/tmp/circuitbreaker-daemon.err.log</string>
 </dict>
 </plist>
 `;
@@ -2007,7 +2007,7 @@ const DEFAULT_EDGE_TTS_TIMEOUT_MS = 15_000;
 function speakCacheDir(): string {
   // Per-UID cache avoids permission issues if speak is ever run under sudo
   const uid = typeof process.getuid === "function" ? process.getuid() : null;
-  return uid === null ? "/tmp/site-blocker-audio" : `/tmp/site-blocker-audio-${uid}`;
+  return uid === null ? "/tmp/circuit-breaker-audio" : `/tmp/circuit-breaker-audio-${uid}`;
 }
 
 function normalizeSpeakText(input: string): string {

@@ -1,5 +1,5 @@
 {
-  "name": "site-blocker",
+  "name": "circuit-breaker",
   "private": true,
   "type": "module",
   "engines": {
