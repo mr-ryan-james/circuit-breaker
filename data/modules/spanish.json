@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "slug": "spanish",
+  "name": "Spanish",
+  "match": {
+    "tags_any": ["spanish"]
+  },
+  "completion": {
+    "parts_suggestions": ["presente", "indefinido", "imperfecto", "review18"]
+  }
+}
+

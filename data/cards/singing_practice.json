@@ -1,0 +1,222 @@
+[
+  {
+    "key": "creative.singing.trills.lip_trill_warmup.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Lip trill warmup: Start on a comfortable low note, bubble your lips while sliding up to your highest comfortable note, then back down. Repeat 5 times.",
+    "done_condition": "when you've done 5 full slides up and down",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "trills", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.trills.lip_trill_scales.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Lip trill scales: Do lip trills on a 5-note scale (do-re-mi-fa-sol-fa-mi-re-do), moving up by half steps until it gets hard. Focus on keeping the trill consistent.",
+    "done_condition": "when you've done scales up to your break point and back down",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "trills", "scales", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.trills.lip_trill_sustained.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Sustained lip trills: Pick 3 different pitches (low, mid, high). Hold a lip trill on each for as long as you can. Notice where you lose the trill.",
+    "done_condition": "when you've sustained trills on 3 pitches",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "warmup", "trills", "breath_control", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.trills.tongue_trill_warmup.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Tongue trill (rolled R) warmup: If you can do tongue trills, slide from low to high and back 5 times. If not, practice getting the trill started on a single pitch.",
+    "done_condition": "when you've done 5 slides or practiced for 3 minutes",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "warmup", "trills", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.trills.alternating_trills.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Alternating trills: Do a 5-note scale on lip trill, then the same scale on tongue trill (or hum if tongue trill is hard). Repeat 3 times, moving up by half steps.",
+    "done_condition": "when you've done 3 rounds of alternating scales",
+    "location": "home",
+    "rarity": "rare",
+    "tags": ["singing", "warmup", "trills", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.warmup.sirens.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Siren warmup: On 'wee' or 'ooh', slide smoothly from your lowest note to your highest and back down. Do 5 full sirens, focusing on smooth transitions.",
+    "done_condition": "when you've done 5 full sirens",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "range", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.warmup.humming_scales.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Humming warmup: Hum a 5-note scale up and down, feeling the vibration in your face (mask resonance). Move up by half steps for 2 minutes.",
+    "done_condition": "when you've hummed scales for 2+ minutes",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "resonance", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.warmup.vowel_sequence.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Vowel warmup: On one pitch, sing through all vowels (ah-eh-ee-oh-oo) keeping jaw relaxed and soft palate lifted. Move up by half steps. Do for 3 minutes.",
+    "done_condition": "when you've done vowel sequences for 3 minutes",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "vowels", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.warmup.staccato_ha.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Staccato 'ha' exercise: On a 5-note scale, sing short staccato 'ha' sounds (engage your core). This builds breath support. Do 5 rounds moving up.",
+    "done_condition": "when you've done 5 rounds of staccato scales",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "warmup", "breath_support", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.breath.diaphragm_breathing.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Diaphragmatic breathing: Lie down or sit tall. Hand on belly. Inhale for 4 counts (belly rises), exhale on 'ssss' for 8 counts (belly falls). Do 5 cycles.",
+    "done_condition": "when you've done 5 breath cycles",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "breath_control", "technique", "relaxation"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.breath.sustained_exhale.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Sustained exhale: Inhale fully, then exhale on a steady 'ssss' or 'shhhh' for as long as possible. Time yourself. Do 5 reps, trying to extend each time.",
+    "done_condition": "when you've done 5 sustained exhales",
+    "location": "any",
+    "rarity": "common",
+    "tags": ["singing", "breath_control", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.breath.panting_to_slow.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Panting exercise: Pant like a dog for 10 seconds (feel your diaphragm), then immediately slow to a long 'sss' exhale. Repeat 3 times. Connects fast breath to slow release.",
+    "done_condition": "when you've done 3 pant-to-slow cycles",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "breath_control", "diaphragm", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.assignment.one_phrase.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Pick the hardest phrase from your current singing assignment. Sing it 10 times slowly, focusing on the specific thing your teacher mentioned.",
+    "done_condition": "when you've sung the phrase 10 times",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "practice", "assignment", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.assignment.melody_only.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Sing through your current piece on 'la' or a lip trill—no lyrics. Focus purely on pitch accuracy and breath phrasing.",
+    "done_condition": "when you've sung through the piece once on 'la'",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "practice", "assignment", "melody"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.assignment.lyrics_only.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Speak through your current piece's lyrics in rhythm—no melody. Exaggerate consonants. Notice where you rush or stumble.",
+    "done_condition": "when you've spoken through the lyrics twice",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "practice", "assignment", "diction"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.assignment.full_runthrough.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sing through your current assignment piece from start to finish. Don't stop for mistakes—perform it like it's a take. Note what needs work after.",
+    "done_condition": "when you've done one complete run-through",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "practice", "assignment", "performance"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.assignment.difficult_passage.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Identify the passage you're avoiding in your current piece. Slow it down by 50%. Sing it 5 times at half speed, then 3 times at normal speed.",
+    "done_condition": "when you've done 5 slow + 3 normal reps",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "practice", "assignment", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.technique.jaw_relaxation.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Jaw release: Massage your jaw joints in circles. Then let your jaw hang loose and sigh 'ah' 5 times. Your jaw should feel floppy, not locked.",
+    "done_condition": "when you've massaged and done 5 loose 'ah' sighs",
+    "location": "home",
+    "rarity": "common",
+    "tags": ["singing", "warmup", "relaxation", "technique"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.technique.soft_palate_lift.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Soft palate exercise: Say 'hung-ah' 10 times, feeling the soft palate lift on 'ah'. Then sustain an 'ah' with that lifted feeling for 10 seconds. Repeat 3 times.",
+    "done_condition": "when you've done the hung-ah sequence 3 times",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "technique", "resonance"],
+    "active": true
+  },
+  {
+    "key": "creative.singing.technique.ng_slide.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "'NG' slide exercise: Hum on 'ng' (like end of 'sing'), slide up and down your range. This finds your head voice. Do 5 full slides.",
+    "done_condition": "when you've done 5 full NG slides",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": ["singing", "technique", "head_voice", "resonance"],
+    "active": true
+  }
+]

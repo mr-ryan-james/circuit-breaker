@@ -1,0 +1,7316 @@
+[
+  {
+    "key": "physical.ruzafa.mercado_rusafa.buy_fruit.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Mercado de Ruzafa and buy one piece of fruit (no phone).",
+    "done_condition": "when you're back home with the fruit",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "errand",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.plaza_doctor_landete.notice5.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "Sit in Plaza del Doctor Landete and notice 5 new things.",
+    "done_condition": "when you've noticed 5 things",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "sensory",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.ruzafa.literato_azorin.street_art3.v1",
+    "category": "creative",
+    "minutes": 9,
+    "activity": "Walk Calle Literato Azorín and find 3 pieces of street art you've never noticed.",
+    "done_condition": "when you've found 3 new pieces",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "aesthetic",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.bluebell_coffee.3_sips.v1",
+    "category": "restorative",
+    "minutes": 10,
+    "activity": "Walk to Bluebell Coffee Co (C/ Buenos Aires 3), order a coffee to go, and take the first 3 sips outside slowly.",
+    "done_condition": "after the 3rd slow sip",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "sensory",
+      "reset",
+      "coffee"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.blackbird.shoulder_rolls10.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Blackbird (Carrer de la Reina Na Maria 7), stand outside, and do 10 slow shoulder rolls.",
+    "done_condition": "after shoulder roll 10",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.dulce_de_leche.mindful_pastry.v1",
+    "category": "restorative",
+    "minutes": 10,
+    "activity": "Pop into Dulce de Leche Boutique (Pintor Gisbert 2) and pick ONE pastry-then eat it mindfully outside.",
+    "done_condition": "when the pastry is finished",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "sensory",
+      "reset",
+      "tea"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.horno_valencia.buy_bread.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Horno Valencia on Calle Cuba and buy a small loaf or roll.",
+    "done_condition": "when you're back with the bread",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "errand",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.ruzafa.calle_cuba.balcony_photos3.v1",
+    "category": "creative",
+    "minutes": 8,
+    "activity": "Walk down Calle Cuba and take 3 photos of interesting balconies/plant pots.",
+    "done_condition": "when you've taken 3 photos",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "aesthetic",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.mercado_rusafa.colors5.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "At Mercado de Ruzafa, pick one stall and name 5 colors you can see.",
+    "done_condition": "when you've named 5 colors",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "sensory",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.calle_sueca.count100_steps.v1",
+    "category": "physical",
+    "minutes": 9,
+    "activity": "Walk to the nearest corner of Calle Sueca, then walk back counting 100 steps (no phone).",
+    "done_condition": "when you hit 100 counted steps and arrive back",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.ruzafa.mercado_rusafa.spanish_one_sentence.v1",
+    "category": "social",
+    "minutes": 8,
+    "activity": "Buy something small at Mercado de Ruzafa and practice a 1-sentence friendly interaction in Spanish.",
+    "done_condition": "when you've completed the purchase and said thanks",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "connection",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.plaza_doctor_landete.physio_sigh3.v1",
+    "category": "restorative",
+    "minutes": 9,
+    "activity": "Walk to Plaza del Doctor Landete and do 3 rounds of physiological sighs on a bench.",
+    "done_condition": "after round 3 is done",
+    "location": "ruzafa",
+    "rarity": "rare",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.estacion_norte.tile_details3.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "Walk to Estación del Norte and find 3 tile details (animal, fruit, or flower).",
+    "done_condition": "when you've found 3 details",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "aesthetic",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.estacion_norte.coherent_breath_2min.v1",
+    "category": "restorative",
+    "minutes": 10,
+    "activity": "At Estación del Norte entrance, do coherent breathing (5 in / 5 out) for 2 minutes.",
+    "done_condition": "when 2 minutes are up",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.plaza_ayuntamiento.bench2_return.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Plaza del Ayuntamiento, sit for 2 minutes, then walk back.",
+    "done_condition": "when you're back at your start point",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_ayuntamiento.sounds5.v1",
+    "category": "restorative",
+    "minutes": 10,
+    "activity": "At Plaza del Ayuntamiento, notice 5 distinct sounds without naming their source.",
+    "done_condition": "when you've noticed 5 sounds",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.mercado_central.buy_small_item.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Mercado Central and buy one small item (nuts/fruit/spice).",
+    "done_condition": "when you've bought the item",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "errand",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.mercado_central.smell_3_adjectives.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "At Mercado Central entrance, pick one smell and describe it with 3 adjectives.",
+    "done_condition": "when you have 3 adjectives",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "sensory",
+      "creative",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_virgen.fountain60s.v1",
+    "category": "restorative",
+    "minutes": 10,
+    "activity": "Walk to Plaza de la Virgen and watch the fountain for 60 seconds (no phone).",
+    "done_condition": "when 60 seconds are up",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.calle_de_la_paz.choose1_object.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "Window-shop Calle de la Paz and choose one object you'd actually buy (mentally).",
+    "done_condition": "when you've chosen 1 item",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "aesthetic",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.san_agustin.10_breaths.v1",
+    "category": "restorative",
+    "minutes": 9,
+    "activity": "Step into Iglesia de San Agustín, sit quietly, and take 10 slow breaths.",
+    "done_condition": "after the 10th breath",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "anxious",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.calle_colon.out_and_back_5min.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk Calle Colón for 5 minutes, turn around immediately, return.",
+    "done_condition": "when the return walk ends",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.calle_colon.shoe_styles3.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "On Calle Colón, spot 3 different shoe styles and name them.",
+    "done_condition": "when you've named 3 styles",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "aesthetic",
+      "sensory",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.valencia.micro_spanish.ask_question.v1",
+    "category": "social",
+    "minutes": 10,
+    "activity": "Buy one small thing in Valencia city and ask a simple question (e.g., '¿Tienes...?').",
+    "done_condition": "when the question is asked and answered",
+    "location": "valencia",
+    "rarity": "rare",
+    "tags": [
+      "connection",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core_circuit.deadbug_birddog_bridge.v1",
+    "category": "physical",
+    "minutes": 9,
+    "activity": "Do a 6-minute back-friendly core circuit: dead bug, bird-dog, glute bridge (2 rounds).",
+    "done_condition": "when round 2 is finished",
+    "location": "home",
+    "rarity": "rare",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.hip_flexor.25s.alt2.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Hip flexor stretch: 25s per side (gentle, no pain).",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.hamstring.30s.alt2.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Hamstring stretch (supine with towel): 30s per side.",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.thoracic_rotation.4reps.v1",
+    "category": "physical",
+    "minutes": 7,
+    "activity": "Open-book thoracic rotations: 4 reps per side.",
+    "done_condition": "when both sides hit 4",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.mcgill_curl_up.5reps.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "McGill curl-ups: 5 reps with a 10-second hold each.",
+    "done_condition": "when the final hold ends",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.dead_bug.6reps.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Do dead bugs: 6 slow reps per side (exhale on extension).",
+    "done_condition": "when you finish the last rep",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.bird_dog.8reps.v1",
+    "category": "physical",
+    "minutes": 7,
+    "activity": "Do bird-dogs: 8 controlled reps per side (pause 2 seconds).",
+    "done_condition": "when both sides are complete",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.glute_bridge.10reps.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Do glute bridges: 10 reps with a 2-second squeeze at the top.",
+    "done_condition": "when rep 10 is done",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "energy",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.side_plank.35s.alt3.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Hold a side plank: 35s per side (knees down if needed).",
+    "done_condition": "when both timers end",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.mobility.cat_cow.6cycles.alt2.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Cat-cow for 6 slow cycles (match breath to movement).",
+    "done_condition": "after cycle 6",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.child_pose.4min.alt2.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Child's pose with long exhales for 4 minutes.",
+    "done_condition": "when the timer ends",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "low_energy",
+      "reset",
+      "back_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.hip_flexor.25s.alt3.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Hip flexor stretch: 25s per side (gentle, no pain).",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.stretch.hamstring.30s.alt3.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Hamstring stretch (supine with towel): 30s per side.",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.thoracic_rotation.10reps.v1",
+    "category": "physical",
+    "minutes": 7,
+    "activity": "Open-book thoracic rotations: 10 reps per side.",
+    "done_condition": "when both sides hit 10",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.core.mcgill_curl_up.12reps.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "McGill curl-ups: 12 reps with a 10-second hold each.",
+    "done_condition": "when the final hold ends",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.black_tea.slow.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a strong black tea, add milk or lemon, and drink it without screens.",
+    "done_condition": "when the mug is empty",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.mint_tea.timer5.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Brew mint tea and inhale the steam for 3 breaths before sipping. Set a 5-minute timer.",
+    "done_condition": "when the timer ends",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.chamomile.smells3.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "Make chamomile tea and do 4-7-8 breathing while it steeps. Notice 3 smells.",
+    "done_condition": "when you've noticed 3 smells",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.rooibos.slow.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "Brew rooibos and write one sentence: 'Right now I feel...'.",
+    "done_condition": "when the sentence is written",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.espresso.timer5.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Pull an espresso (or moka pot) and drink it standing by a window. Set a 5-minute timer.",
+    "done_condition": "when the timer ends",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.drink.dolce_gusto.smells3.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Make a Dolce Gusto coffee and take 10 slow sips, counting them. Notice 3 smells.",
+    "done_condition": "when you've noticed 3 smells",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "focus",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.fruit_bowl.phone_away.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Wash one piece of fruit and eat it slowly (one bite per breath). Put your phone in another room first.",
+    "done_condition": "when the fruit is finished",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.nuts.mindful.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Put a small handful of nuts in a bowl and eat them one-by-one, slowly.",
+    "done_condition": "when the bowl is empty",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.toast.phone_away.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "Make one slice of toast and eat it without any screens. Put your phone in another room first.",
+    "done_condition": "when the plate is empty",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.water.mindful.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water, add a pinch of salt or lemon, and drink 12 sips.",
+    "done_condition": "after sip 12",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "low_energy",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.fruit_bowl.phone_away.alt2.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Wash one piece of fruit and eat it slowly (one bite per breath). Put your phone in another room first.",
+    "done_condition": "when the fruit is finished",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.home.kitchen.nuts.mindful.alt2.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Put a small handful of nuts in a bowl and eat them one-by-one, slowly.",
+    "done_condition": "when the bowl is empty",
+    "location": "home",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.neck_reset.timer.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "At your desk: chin tucks x10 + slow neck side stretch 20s/side. Set a timer.",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.wrist_care.v2.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Wrist care: prayer stretch 20s + reverse prayer 20s + shake hands 10s.",
+    "done_condition": "when the final shake ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.thoracic_extension.v3.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Stand and do a thoracic extension over the back of a chair (10 slow reps).",
+    "done_condition": "after rep 10",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.standing_chest_opener.v1.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Doorway chest opener: 30s each side, breathe slowly.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.seated_twist.v2.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Seated spinal twist: 30s each side, gentle only.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "back_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.ankle_pumps.timer.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Do ankle pumps under your desk: 40 reps total. Set a timer.",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.hip_hinge.v1.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Stand up and do 15 slow hip hinges (hands on hips).",
+    "done_condition": "after rep 15",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "restless",
+      "energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.wall_pushups.v2.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Wall push-ups: 20 slow reps (full range).",
+    "done_condition": "when you complete rep 20",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.calf_raises.v3.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Calf raises: 30 reps, pause 1 second at the top.",
+    "done_condition": "when rep 30 is done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.eye_break.v1.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Stand up, look 20 feet away, and blink slowly 20 times.",
+    "done_condition": "after blink 20",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "eyes",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.neck_reset.timer.alt2.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "At your desk: chin tucks x10 + slow neck side stretch 20s/side. Set a timer.",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.wrist_care.v3.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Wrist care: prayer stretch 20s + reverse prayer 20s + shake hands 10s.",
+    "done_condition": "when the final shake ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.thoracic_extension.v1.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Stand and do a thoracic extension over the back of a chair (10 slow reps).",
+    "done_condition": "after rep 10",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.standing_chest_opener.v2.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Doorway chest opener: 30s each side, breathe slowly.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.seated_twist.v3.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Seated spinal twist: 30s each side, gentle only.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "back_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.ankle_pumps.timer.alt2.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Do ankle pumps under your desk: 40 reps total. Set a timer.",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.hip_hinge.v2.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Stand up and do 15 slow hip hinges (hands on hips).",
+    "done_condition": "after rep 15",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "restless",
+      "energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.wall_pushups.v3.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Wall push-ups: 20 slow reps (full range).",
+    "done_condition": "when you complete rep 20",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.calf_raises.v1.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Calf raises: 30 reps, pause 1 second at the top.",
+    "done_condition": "when rep 30 is done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.eye_break.v2.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Stand up, look 20 feet away, and blink slowly 20 times.",
+    "done_condition": "after blink 20",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "eyes",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.neck_reset.timer.alt3.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "At your desk: chin tucks x10 + slow neck side stretch 20s/side. Set a timer.",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.wrist_care.v1.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Wrist care: prayer stretch 20s + reverse prayer 20s + shake hands 10s.",
+    "done_condition": "when the final shake ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.thoracic_extension.v2.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Stand and do a thoracic extension over the back of a chair (10 slow reps).",
+    "done_condition": "after rep 10",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.standing_chest_opener.v3.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Doorway chest opener: 30s each side, breathe slowly.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.indoor.desk.seated_twist.v1.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Seated spinal twist: 30s each side, gentle only.",
+    "done_condition": "when both sides are done",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "back_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.color_walk.var1.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Go outside and walk for 6 minutes. Notice 10 things that are the same color.",
+    "done_condition": "when you've noticed 10 same-color things",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.no_phone_loop.var2.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk a short loop outside with your phone in your pocket the whole time.",
+    "done_condition": "when you're back at your start point",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.sunlight.var3.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Stand outside and feel sunlight (or daylight) on your face for 3 minutes.",
+    "done_condition": "when 3 minutes are up",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs.var4.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk up and down one flight of stairs 3 times at an easy pace.",
+    "done_condition": "after the 3rd round trip",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.breathing_walk.var1.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk outside and match your breath to steps: 4 steps in, 6 steps out.",
+    "done_condition": "when 5 minutes are done",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.color_walk.var2.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Go outside and walk for 6 minutes. Notice 10 things that are the same color.",
+    "done_condition": "when you've noticed 10 same-color things",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.no_phone_loop.var3.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk a short loop outside with your phone in your pocket the whole time.",
+    "done_condition": "when you're back at your start point",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.sunlight.3min.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Stand outside and feel sunlight (or daylight) on your face for 3 minutes.",
+    "done_condition": "when 3 minutes are up",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs.var1.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk up and down one flight of stairs 3 times at an easy pace.",
+    "done_condition": "after the 3rd round trip",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.breathing_walk.6min.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Walk outside and match your breath to steps: 4 steps in, 6 steps out.",
+    "done_condition": "when 6 minutes are done",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.color_walk.var3.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Go outside and walk for 6 minutes. Notice 10 things that are the same color.",
+    "done_condition": "when you've noticed 10 same-color things",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.no_phone_loop.var4.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk a short loop outside with your phone in your pocket the whole time.",
+    "done_condition": "when you're back at your start point",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.sunlight.var1.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Stand outside and feel sunlight (or daylight) on your face for 3 minutes.",
+    "done_condition": "when 3 minutes are up",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs.var2.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk up and down one flight of stairs 3 times at an easy pace.",
+    "done_condition": "after the 3rd round trip",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.breathing_walk.var3.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk outside and match your breath to steps: 4 steps in, 6 steps out.",
+    "done_condition": "when 5 minutes are done",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.color_walk.var4.v1",
+    "category": "physical",
+    "minutes": 6,
+    "activity": "Go outside and walk for 6 minutes. Notice 10 things that are the same color.",
+    "done_condition": "when you've noticed 10 same-color things",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.no_phone_loop.var1.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk a short loop outside with your phone in your pocket the whole time.",
+    "done_condition": "when you're back at your start point",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.sunlight.4min.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Stand outside and feel sunlight (or daylight) on your face for 4 minutes.",
+    "done_condition": "when 4 minutes are up",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs.var3.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Walk up and down one flight of stairs 3 times at an easy pace.",
+    "done_condition": "after the 3rd round trip",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "energy",
+      "momentum",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.breathing_walk.4min.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Walk outside and match your breath to steps: 4 steps in, 6 steps out.",
+    "done_condition": "when 4 minutes are done",
+    "location": "outdoor",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.photo_texture.u5.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Take a photo of an interesting texture (wall, tile, wood).",
+    "done_condition": "when the photo is saved",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "creative"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.ugly_sentences.u1.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write 7 ugly sentences about your current task (bad is fine).",
+    "done_condition": "when you have 7 sentences",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.any.creative.3_boxes.u2.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sketch your problem as 3 labeled boxes with arrows.",
+    "done_condition": "when the 3 boxes are labeled",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.haiku.u3.alt2.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Write a haiku about what you're avoiding.",
+    "done_condition": "when the haiku is written",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "creative",
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.postit_plan.u4.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "On a sticky note, write the next 3 steps only (not the whole plan).",
+    "done_condition": "when you have 3 steps",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.any.creative.photo_texture.u5.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Take a photo of an interesting texture (wall, tile, wood).",
+    "done_condition": "when the photo is saved",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "creative"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.ugly_sentences.u1.alt2.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write 7 ugly sentences about your current task (bad is fine).",
+    "done_condition": "when you have 7 sentences",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.3_boxes.u2.alt2.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sketch your problem as 3 labeled boxes with arrows.",
+    "done_condition": "when the 3 boxes are labeled",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.any.creative.haiku.u3.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Write a haiku about what you're avoiding.",
+    "done_condition": "when the haiku is written",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "creative",
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.postit_plan.u4.alt2.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "On a sticky note, write the next 3 steps only (not the whole plan).",
+    "done_condition": "when you have 3 steps",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.indoor.creative.photo_texture.u5.alt2.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Take a photo of an interesting texture (wall, tile, wood).",
+    "done_condition": "when the photo is saved",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "creative"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.close_one_loop.u1.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Close one tiny loop: rename a variable, fix a typo, or add a missing import.",
+    "done_condition": "when the change is saved",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "momentum",
+      "closure",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.write_failing_test.u2.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Write one failing test that captures the bug (no fix yet).",
+    "done_condition": "when the test fails for the right reason",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.smallest_next_action.u3.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.one_comment.u4.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Add one clarifying comment where future-you will trip.",
+    "done_condition": "when the comment is written",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.git_status_cleanup.u5.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Run `git status` and make the working tree cleaner by 1 file.",
+    "done_condition": "when 1 file is staged, reverted, or deleted",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.close_one_loop.u6.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Close one tiny loop: rename a variable, fix a typo, or add a missing import.",
+    "done_condition": "when the change is saved",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "momentum",
+      "closure",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.write_failing_test.u7.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Write one failing test that captures the bug (no fix yet).",
+    "done_condition": "when the test fails for the right reason",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.smallest_next_action.u8.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.one_comment.u9.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Add one clarifying comment where future-you will trip.",
+    "done_condition": "when the comment is written",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "clarity",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.micro.git_status_cleanup.u10.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Run `git status` and make the working tree cleaner by 1 file.",
+    "done_condition": "when 1 file is staged, reverted, or deleted",
+    "location": "indoor",
+    "rarity": "uncommon",
+    "tags": [
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice_note.uncommon.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a 60-second voice note: one win + one stuck point.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.check_in.uncommon.v1",
+    "category": "social",
+    "minutes": 2,
+    "activity": "Text one person: 'How's your day going? No need to reply now.'",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.uncommon.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Write a 3-line gratitude note to someone (don't send yet).",
+    "done_condition": "when you have 3 lines",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.12sips.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Refill your water and drink 12 slow sips (count them).",
+    "done_condition": "after sip 12",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.13sips.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water and drink 13 slow sips (count them).",
+    "done_condition": "after sip 13",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.14sips.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water and drink 14 slow sips (count them).",
+    "done_condition": "after sip 14",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.15sips.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water and drink 15 slow sips (count them).",
+    "done_condition": "after sip 15",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.16sips.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water and drink 16 slow sips (count them).",
+    "done_condition": "after sip 16",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.water.17sips.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Refill your water and drink 17 slow sips (count them).",
+    "done_condition": "after sip 17",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.physio_sigh.fog_mirror.c3.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Physiological sigh: double inhale through nose, long exhale through mouth. Exhale like you're fogging a mirror.",
+    "done_condition": "after 10 sighs",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.coherent_5_5.shoulders_down.c4.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Coherent breathing: 5 seconds in, 5 seconds out. Shoulders down.",
+    "done_condition": "when 5 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.extended_exhale.standard.c5.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Extended exhale breathing: 4 in, 6 out.",
+    "done_condition": "when 4 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.humming_exhale.hand_belly.c6.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Breathe in through nose, hum on the exhale (softly). One hand on belly.",
+    "done_condition": "after 8 hum-exhales",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.triangle_3_3_6.eyes_closed.c7.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Triangle breathing: 3 in, 3 hold, 6 out. Eyes closed if safe.",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.box_4_4_4_4.fog_mirror.c8.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Box breathing: 4 in, hold 4, out 4, hold 4. Exhale like you're fogging a mirror.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.shoulders_down.c9.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "4-7-8 breathing: 4 in, hold 7, out 8. Shoulders down.",
+    "done_condition": "after 4 cycles",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.physio_sigh.standard.c10.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Physiological sigh: double inhale through nose, long exhale through mouth.",
+    "done_condition": "after 10 sighs",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.coherent_5_5.hand_belly.c11.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Coherent breathing: 5 seconds in, 5 seconds out. One hand on belly.",
+    "done_condition": "when 5 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.extended_exhale.eyes_closed.c12.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Extended exhale breathing: 4 in, 6 out. Eyes closed if safe.",
+    "done_condition": "when 4 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.humming_exhale.fog_mirror.c13.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Breathe in through nose, hum on the exhale (softly). Exhale like you're fogging a mirror.",
+    "done_condition": "after 8 hum-exhales",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.triangle_3_3_6.shoulders_down.c14.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Triangle breathing: 3 in, 3 hold, 6 out. Shoulders down.",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.box_4_4_4_4.standard.c15.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Box breathing: 4 in, hold 4, out 4, hold 4.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.hand_belly.c16.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "4-7-8 breathing: 4 in, hold 7, out 8. One hand on belly.",
+    "done_condition": "after 4 cycles",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.physio_sigh.eyes_closed.c17.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Physiological sigh: double inhale through nose, long exhale through mouth. Eyes closed if safe.",
+    "done_condition": "after 10 sighs",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.coherent_5_5.fog_mirror.c18.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Coherent breathing: 5 seconds in, 5 seconds out. Exhale like you're fogging a mirror.",
+    "done_condition": "when 5 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.extended_exhale.shoulders_down.c19.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Extended exhale breathing: 4 in, 6 out. Shoulders down.",
+    "done_condition": "when 4 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.humming_exhale.standard.c20.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Breathe in through nose, hum on the exhale (softly).",
+    "done_condition": "after 8 hum-exhales",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.triangle_3_3_6.hand_belly.c21.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Triangle breathing: 3 in, 3 hold, 6 out. One hand on belly.",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.box_4_4_4_4.eyes_closed.c22.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Box breathing: 4 in, hold 4, out 4, hold 4. Eyes closed if safe.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.fog_mirror.c23.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "4-7-8 breathing: 4 in, hold 7, out 8. Exhale like you're fogging a mirror.",
+    "done_condition": "after 4 cycles",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.physio_sigh.shoulders_down.c24.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Physiological sigh: double inhale through nose, long exhale through mouth. Shoulders down.",
+    "done_condition": "after 10 sighs",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.coherent_5_5.standard.c25.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Coherent breathing: 5 seconds in, 5 seconds out.",
+    "done_condition": "when 5 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.look_far.1.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand up and look at something far away (out a window if possible).",
+    "done_condition": "when 2 minutes are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.blink20.2.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Look away from screens and blink slowly 20 times.",
+    "done_condition": "after blink 20",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.palming.3.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Rub your hands warm and gently cover your eyes (no pressure) for 60 seconds.",
+    "done_condition": "when 60 seconds are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.eye_circles.4.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Move your eyes: up/down/left/right/circles (slowly, no strain).",
+    "done_condition": "when you've done 3 slow circles each way",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.look_far.5.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand up and look at something far away (out a window if possible).",
+    "done_condition": "when 2 minutes are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.blink20.6.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Look away from screens and blink slowly 20 times.",
+    "done_condition": "after blink 20",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.palming.7.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Rub your hands warm and gently cover your eyes (no pressure) for 60 seconds.",
+    "done_condition": "when 60 seconds are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.eye_circles.8.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Move your eyes: up/down/left/right/circles (slowly, no strain).",
+    "done_condition": "when you've done 3 slow circles each way",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.look_far.9.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand up and look at something far away (out a window if possible).",
+    "done_condition": "when 2 minutes are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.eyes.blink20.10.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Look away from screens and blink slowly 20 times.",
+    "done_condition": "after blink 20",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "eyes",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.jaw.4min.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Do a mini body-scan: relax your jaw on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.shoulders.3min.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your shoulders on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.hands.3min.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your hands on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.belly.4min.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Do a mini body-scan: relax your belly on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.feet.3min.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your feet on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.lower_back.3min.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your lower back on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.jaw.4min.alt2.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Do a mini body-scan: relax your jaw on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.shoulders.3min.alt2.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your shoulders on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.hands.3min.alt2.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Do a mini body-scan: relax your hands on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.restorative.bodyscan.belly.4min.alt2.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Do a mini body-scan: relax your belly on each exhale.",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.tea.standing.1.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a cup of tea and drink it slowly. Drink it standing up.",
+    "done_condition": "when the mug is empty",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.coffee.3breaths.2.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a coffee and drink it without scrolling. Take 3 slow breaths before the first sip.",
+    "done_condition": "when the cup is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.sparkling_water.temp_notice.3.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Pour a glass of sparkling water and drink it slowly. Notice the temperature changing as it cools.",
+    "done_condition": "when the glass is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.tea.standing.4.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a cup of tea and drink it slowly. Drink it standing up.",
+    "done_condition": "when the mug is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.coffee.3breaths.5.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a coffee and drink it without scrolling. Take 3 slow breaths before the first sip.",
+    "done_condition": "when the cup is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.sparkling_water.temp_notice.6.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Pour a glass of sparkling water and drink it slowly. Notice the temperature changing as it cools.",
+    "done_condition": "when the glass is empty",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.tea.standing.7.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a cup of tea and drink it slowly. Drink it standing up.",
+    "done_condition": "when the mug is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.coffee.3breaths.8.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a coffee and drink it without scrolling. Take 3 slow breaths before the first sip.",
+    "done_condition": "when the cup is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.sparkling_water.temp_notice.9.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Pour a glass of sparkling water and drink it slowly. Notice the temperature changing as it cools.",
+    "done_condition": "when the glass is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.tea.standing.10.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a cup of tea and drink it slowly. Drink it standing up.",
+    "done_condition": "when the mug is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.coffee.3breaths.11.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a coffee and drink it without scrolling. Take 3 slow breaths before the first sip.",
+    "done_condition": "when the cup is empty",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.sparkling_water.temp_notice.12.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Pour a glass of sparkling water and drink it slowly. Notice the temperature changing as it cools.",
+    "done_condition": "when the glass is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.tea.standing.13.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a cup of tea and drink it slowly. Drink it standing up.",
+    "done_condition": "when the mug is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.coffee.3breaths.14.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Make a coffee and drink it without scrolling. Take 3 slow breaths before the first sip.",
+    "done_condition": "when the cup is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.drink.sparkling_water.temp_notice.15.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Pour a glass of sparkling water and drink it slowly. Notice the temperature changing as it cools.",
+    "done_condition": "when the glass is empty",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.cold_water_face.1.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Splash cold water on your face for 20 seconds.",
+    "done_condition": "when 20 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.smell_spice.2.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Smell one spice/tea/coffee jar for 3 slow breaths.",
+    "done_condition": "after the 3rd breath",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.hand_massage.3.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Massage your hands: 60 seconds each hand.",
+    "done_condition": "when the second minute ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.barefoot_ground.4.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand barefoot on the floor and shift weight slowly for 90 seconds.",
+    "done_condition": "when 90 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.music_one_song.5.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Play one song and listen without multitasking.",
+    "done_condition": "when the song ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.cold_water_face.6.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Splash cold water on your face for 20 seconds.",
+    "done_condition": "when 20 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.smell_spice.7.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Smell one spice/tea/coffee jar for 3 slow breaths.",
+    "done_condition": "after the 3rd breath",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.hand_massage.8.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Massage your hands: 60 seconds each hand.",
+    "done_condition": "when the second minute ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.barefoot_ground.9.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand barefoot on the floor and shift weight slowly for 90 seconds.",
+    "done_condition": "when 90 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.music_one_song.10.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Play one song and listen without multitasking.",
+    "done_condition": "when the song ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.cold_water_face.11.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Splash cold water on your face for 20 seconds.",
+    "done_condition": "when 20 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.smell_spice.12.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Smell one spice/tea/coffee jar for 3 slow breaths.",
+    "done_condition": "after the 3rd breath",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.hand_massage.13.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Massage your hands: 60 seconds each hand.",
+    "done_condition": "when the second minute ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.barefoot_ground.14.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Stand barefoot on the floor and shift weight slowly for 90 seconds.",
+    "done_condition": "when 90 seconds are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.sensory.music_one_song.15.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Play one song and listen without multitasking.",
+    "done_condition": "when the song ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.open_window.1.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Open a window and take 10 slow breaths of fresh air.",
+    "done_condition": "after breath 10",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.tidy5.2.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Tidy 5 items on your desk (only 5).",
+    "done_condition": "when item 5 is put away",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.trash.3.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Throw away one piece of trash and wipe one surface quickly.",
+    "done_condition": "when the surface is wiped",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.wash_dish.4.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Wash one dish or cup immediately (just one).",
+    "done_condition": "when it's washed and put to dry",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.change_posture.5.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Change posture: stand up, shake out arms, sit back down with feet flat.",
+    "done_condition": "when you're seated again",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.phone_face_down.6.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Put your phone face down and out of reach for 5 minutes.",
+    "done_condition": "when 5 minutes are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.open_window.7.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Open a window and take 10 slow breaths of fresh air.",
+    "done_condition": "after breath 10",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.tidy5.8.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Tidy 5 items on your desk (only 5).",
+    "done_condition": "when item 5 is put away",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.trash.9.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Throw away one piece of trash and wipe one surface quickly.",
+    "done_condition": "when the surface is wiped",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.wash_dish.10.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Wash one dish or cup immediately (just one).",
+    "done_condition": "when it's washed and put to dry",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.change_posture.11.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Change posture: stand up, shake out arms, sit back down with feet flat.",
+    "done_condition": "when you're seated again",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.phone_face_down.12.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Put your phone face down and out of reach for 5 minutes.",
+    "done_condition": "when 5 minutes are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.open_window.13.v1",
+    "category": "restorative",
+    "minutes": 2,
+    "activity": "Open a window and take 10 slow breaths of fresh air.",
+    "done_condition": "after breath 10",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.tidy5.14.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Tidy 5 items on your desk (only 5).",
+    "done_condition": "when item 5 is put away",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.trash.15.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Throw away one piece of trash and wipe one surface quickly.",
+    "done_condition": "when the surface is wiped",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.reset.wash_dish.16.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Wash one dish or cup immediately (just one).",
+    "done_condition": "when it's washed and put to dry",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.shoulder_circles.7.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Do 20 slow shoulder circles (10 forward, 10 back).",
+    "done_condition": "after the last circle",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "restless",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.neck_yes_no.8.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Neck mobility: 10 slow 'yes' nods + 10 slow 'no' turns.",
+    "done_condition": "when you finish rep 10 of each",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.standing_twist.9.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Standing torso twists: 30 gentle twists total.",
+    "done_condition": "when twist 30 is done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "energy",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.wall_angels.10.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Wall angels: 10 slow reps (keep ribs down).",
+    "done_condition": "after rep 10",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.glute_squeeze.11.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Seated or standing: squeeze glutes for 10 seconds x 6.",
+    "done_condition": "after hold 6",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.hamstring_fold.12.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Standing hamstring hinge: fold halfway, 20 seconds, then stand tall.",
+    "done_condition": "when you're standing tall again",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.shoulder_circles.13.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Do 20 slow shoulder circles (10 forward, 10 back).",
+    "done_condition": "after the last circle",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "restless",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.neck_yes_no.14.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Neck mobility: 10 slow 'yes' nods + 10 slow 'no' turns.",
+    "done_condition": "when you finish rep 10 of each",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.mobility.standing_twist.15.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Standing torso twists: 30 gentle twists total.",
+    "done_condition": "when twist 30 is done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "energy",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.block_loop.1.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk one block loop and return (no phone).",
+    "done_condition": "when you're back where you started",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "restless",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.5min_out_and_back.2.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk outside for 5 minutes, turn around, walk back.",
+    "done_condition": "when you arrive back",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs_easy.3.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Find a safe staircase and walk up/down for 3 minutes (easy pace).",
+    "done_condition": "when 3 minutes are up",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "energy",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.block_loop.4.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk one block loop and return (no phone).",
+    "done_condition": "when you're back where you started",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "restless",
+      "reset",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.5min_out_and_back.5.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk outside for 5 minutes, turn around, walk back.",
+    "done_condition": "when you arrive back",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "outdoor"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.outdoor.walk.stairs_easy.6.v1",
+    "category": "physical",
+    "minutes": 3,
+    "activity": "Find a safe staircase and walk up/down for 3 minutes (easy pace).",
+    "done_condition": "when 3 minutes are up",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "energy",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.cat_cow.1.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Cat-cow: 8 slow cycles (move with breath).",
+    "done_condition": "after cycle 8",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.dead_bug.2.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Dead bug: 6 slow reps per side (exhale as leg extends).",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.glute_bridge.3.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Glute bridges: 12 reps with a 2-second squeeze at the top.",
+    "done_condition": "when rep 12 is done",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "energy",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.child_pose.4.v1",
+    "category": "physical",
+    "minutes": 2,
+    "activity": "Child's pose: 2 minutes of long exhales.",
+    "done_condition": "when 2 minutes are up",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "back_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.cat_cow.5.v1",
+    "category": "physical",
+    "minutes": 4,
+    "activity": "Cat-cow: 8 slow cycles (move with breath).",
+    "done_condition": "after cycle 8",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.home.floor.dead_bug.6.v1",
+    "category": "physical",
+    "minutes": 5,
+    "activity": "Dead bug: 6 slow reps per side (exhale as leg extends).",
+    "done_condition": "when both sides are done",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "back_friendly",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.ugly_sentences_5.v1.1.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Write 5 ugly sentences about what you're working on (bad is fine).",
+    "done_condition": "when you have 5 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "momentum",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_paragraph.v2.2.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write one paragraph describing the problem as if to a smart friend.",
+    "done_condition": "when the paragraph is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.title_it.v3.3.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Give your current task a silly title (like a movie).",
+    "done_condition": "when the title is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_question.v1.4.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Write one question you wish someone would answer for you right now.",
+    "done_condition": "when the question is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.brain_dump.v2.5.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Do a 4-minute brain dump: write anything in your head (no editing).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.ugly_sentences_5.6sent.6.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Write 6 ugly sentences about what you're working on (bad is fine).",
+    "done_condition": "when you have 6 sentences",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "momentum",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_paragraph.v1.7.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write one paragraph describing the problem as if to a smart friend.",
+    "done_condition": "when the paragraph is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.title_it.v2.8.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Give your current task a silly title (like a movie).",
+    "done_condition": "when the title is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_question.v3.9.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Write one question you wish someone would answer for you right now.",
+    "done_condition": "when the question is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.brain_dump.v1.10.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Do a 4-minute brain dump: write anything in your head (no editing).",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.ugly_sentences_5.4sent.11.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Write 4 ugly sentences about what you're working on (bad is fine).",
+    "done_condition": "when you have 4 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "momentum",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_paragraph.v3.12.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write one paragraph describing the problem as if to a smart friend.",
+    "done_condition": "when the paragraph is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.title_it.v1.13.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Give your current task a silly title (like a movie).",
+    "done_condition": "when the title is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_question.v2.14.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Write one question you wish someone would answer for you right now.",
+    "done_condition": "when the question is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.brain_dump.v3.15.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Do a 4-minute brain dump: write anything in your head (no editing).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.ugly_sentences_5.v1.16.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Write 5 ugly sentences about what you're working on (bad is fine).",
+    "done_condition": "when you have 5 sentences",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "avoidance",
+      "momentum",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_paragraph.v2.17.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Write one paragraph describing the problem as if to a smart friend.",
+    "done_condition": "when the paragraph is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.title_it.v3.18.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Give your current task a silly title (like a movie).",
+    "done_condition": "when the title is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.one_question.v1.19.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Write one question you wish someone would answer for you right now.",
+    "done_condition": "when the question is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.write.brain_dump.v2.20.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Do a 4-minute brain dump: write anything in your head (no editing).",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.3_boxes.1.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sketch the system as 3 boxes with arrows.",
+    "done_condition": "when all 3 boxes are labeled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.mindmap.2.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Make a tiny mindmap: center = problem, add 6 branches.",
+    "done_condition": "when you have 6 branches",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.timeline.3.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a 5-step timeline of how this feature should work.",
+    "done_condition": "when you have 5 steps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.before_after.4.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Draw two columns: BEFORE vs AFTER. Fill 3 bullets each.",
+    "done_condition": "when both columns have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.tiny_flow.5.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a tiny flowchart with 5 nodes max.",
+    "done_condition": "when the 5th node is drawn (or you hit 5)",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.3_boxes.6.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sketch the system as 3 boxes with arrows.",
+    "done_condition": "when all 3 boxes are labeled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.mindmap.7.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Make a tiny mindmap: center = problem, add 6 branches.",
+    "done_condition": "when you have 6 branches",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.timeline.8.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a 5-step timeline of how this feature should work.",
+    "done_condition": "when you have 5 steps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.before_after.9.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Draw two columns: BEFORE vs AFTER. Fill 3 bullets each.",
+    "done_condition": "when both columns have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.tiny_flow.10.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a tiny flowchart with 5 nodes max.",
+    "done_condition": "when the 5th node is drawn (or you hit 5)",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.3_boxes.11.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "Sketch the system as 3 boxes with arrows.",
+    "done_condition": "when all 3 boxes are labeled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.mindmap.12.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Make a tiny mindmap: center = problem, add 6 branches.",
+    "done_condition": "when you have 6 branches",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.timeline.13.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a 5-step timeline of how this feature should work.",
+    "done_condition": "when you have 5 steps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.before_after.14.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Draw two columns: BEFORE vs AFTER. Fill 3 bullets each.",
+    "done_condition": "when both columns have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.sketch.tiny_flow.15.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a tiny flowchart with 5 nodes max.",
+    "done_condition": "when the 5th node is drawn (or you hit 5)",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.notice_shapes.1.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Look around and find 10 different shapes (circle, square, triangle...).",
+    "done_condition": "when you've found 10 shapes",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.color_palette.2.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Pick one color you can see and find 7 different shades of it.",
+    "done_condition": "when you've found 7 shades",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.micro_photo.3.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Take one photo of something that looks 'designed' (sign, tile, poster).",
+    "done_condition": "when the photo is saved",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.soundscape.4.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Close your eyes and map the soundscape: write 5 sound sources you hear.",
+    "done_condition": "when you have 5 sounds written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.people_story.5.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Invent a 2-sentence story about a stranger you see (kind version).",
+    "done_condition": "when you have 2 sentences",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "creative",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.notice_shapes.6.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Look around and find 10 different shapes (circle, square, triangle...).",
+    "done_condition": "when you've found 10 shapes",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.color_palette.7.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Pick one color you can see and find 7 different shades of it.",
+    "done_condition": "when you've found 7 shades",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.micro_photo.8.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Take one photo of something that looks 'designed' (sign, tile, poster).",
+    "done_condition": "when the photo is saved",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.soundscape.9.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Close your eyes and map the soundscape: write 5 sound sources you hear.",
+    "done_condition": "when you have 5 sounds written",
+    "location": "outdoor",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.observe.people_story.10.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Invent a 2-sentence story about a stranger you see (kind version).",
+    "done_condition": "when you have 2 sentences",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "creative",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.voice_memo.1.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Record a 90-second voice memo: what's stuck + one next step.",
+    "done_condition": "when the memo is saved",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.hum_one_min.2.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Hum softly for 60 seconds (vibration reset).",
+    "done_condition": "when 60 seconds are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.one_song_doodle.3.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Play one song and doodle while it plays.",
+    "done_condition": "when the song ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.voice_memo.4.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Record a 90-second voice memo: what's stuck + one next step.",
+    "done_condition": "when the memo is saved",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.hum_one_min.5.v1",
+    "category": "creative",
+    "minutes": 2,
+    "activity": "Hum softly for 60 seconds (vibration reset).",
+    "done_condition": "when 60 seconds are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.one_song_doodle.6.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Play one song and doodle while it plays.",
+    "done_condition": "when the song ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.audio.voice_memo.7.v1",
+    "category": "creative",
+    "minutes": 3,
+    "activity": "Record a 90-second voice memo: what's stuck + one next step.",
+    "done_condition": "when the memo is saved",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.play.origami_fold.3.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Fold a single piece of paper into any simple shape (no perfection).",
+    "done_condition": "when you've made one folded shape",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.play.sticker_label.4.v1",
+    "category": "creative",
+    "minutes": 5,
+    "activity": "Label 3 objects around you with silly names on a sticky note.",
+    "done_condition": "when you have 3 labels",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.play.doodle_grid.5.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Draw a 3x3 doodle grid: fill each square with a tiny doodle.",
+    "done_condition": "when all 9 squares have something",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.play.handwriting.6.v1",
+    "category": "creative",
+    "minutes": 4,
+    "activity": "Write your name in 5 different styles (fast, slow, cursive, block...).",
+    "done_condition": "when you have 5 styles",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.play.origami_fold.7.v1",
+    "category": "creative",
+    "minutes": 6,
+    "activity": "Fold a single piece of paper into any simple shape (no perfection).",
+    "done_condition": "when you've made one folded shape",
+    "location": "home",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.one_page_book.1.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Read one page of a book you've been meaning to read.",
+    "done_condition": "after you finish 1 page",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.two_pages_book.2.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read two pages of a book (slowly).",
+    "done_condition": "after page 2 is finished",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_poem.3.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one poem (or one short article) out loud.",
+    "done_condition": "when you reach the end",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_notes.4.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read your last saved notes for 3 minutes (no changes).",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.one_page_book.5.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Read one page of a book you've been meaning to read.",
+    "done_condition": "after you finish 1 page",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.two_pages_book.6.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read two pages of a book (slowly).",
+    "done_condition": "after page 2 is finished",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_poem.7.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one poem (or one short article) out loud.",
+    "done_condition": "when you reach the end",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_notes.8.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read your last saved notes for 3 minutes (no changes).",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.one_page_book.9.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Read one page of a book you've been meaning to read.",
+    "done_condition": "after you finish 1 page",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.two_pages_book.10.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read two pages of a book (slowly).",
+    "done_condition": "after page 2 is finished",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_poem.11.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one poem (or one short article) out loud.",
+    "done_condition": "when you reach the end",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_notes.12.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read your last saved notes for 3 minutes (no changes).",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.one_page_book.13.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Read one page of a book you've been meaning to read.",
+    "done_condition": "after you finish 1 page",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.two_pages_book.14.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read two pages of a book (slowly).",
+    "done_condition": "after page 2 is finished",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_poem.15.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one poem (or one short article) out loud.",
+    "done_condition": "when you reach the end",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_notes.16.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read your last saved notes for 3 minutes (no changes).",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.one_page_book.17.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Read one page of a book you've been meaning to read.",
+    "done_condition": "after you finish 1 page",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.two_pages_book.18.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read two pages of a book (slowly).",
+    "done_condition": "after page 2 is finished",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "low_energy",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_poem.19.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one poem (or one short article) out loud.",
+    "done_condition": "when you reach the end",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.read.read_notes.20.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read your last saved notes for 3 minutes (no changes).",
+    "done_condition": "when 3 minutes are up",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.believe_need_next.1.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Write 3 bullets: what I believe / what I need to know / what's next.",
+    "done_condition": "when you have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.one_goal.2.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Write ONE goal for the next 30 minutes.",
+    "done_condition": "when the goal is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.name_the_blocker.3.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Name the blocker in one sentence (start with 'I'm stuck because...').",
+    "done_condition": "when the sentence is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.decision_log.4.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Write a mini decision log: choice + why + what could change my mind.",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.priority_triangle.5.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Write 3 items: must-do / nice-to-do / not-today.",
+    "done_condition": "when all 3 are filled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.believe_need_next.6.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Write 3 bullets: what I believe / what I need to know / what's next.",
+    "done_condition": "when you have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.one_goal.7.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Write ONE goal for the next 30 minutes.",
+    "done_condition": "when the goal is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.name_the_blocker.8.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Name the blocker in one sentence (start with 'I'm stuck because...').",
+    "done_condition": "when the sentence is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.decision_log.9.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Write a mini decision log: choice + why + what could change my mind.",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.priority_triangle.10.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Write 3 items: must-do / nice-to-do / not-today.",
+    "done_condition": "when all 3 are filled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.believe_need_next.11.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Write 3 bullets: what I believe / what I need to know / what's next.",
+    "done_condition": "when you have 3 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.one_goal.12.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Write ONE goal for the next 30 minutes.",
+    "done_condition": "when the goal is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.name_the_blocker.13.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Name the blocker in one sentence (start with 'I'm stuck because...').",
+    "done_condition": "when the sentence is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.decision_log.14.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Write a mini decision log: choice + why + what could change my mind.",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.plan.priority_triangle.15.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Write 3 items: must-do / nice-to-do / not-today.",
+    "done_condition": "when all 3 are filled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.spanish_words.1.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Learn 5 Spanish words and use each in a simple sentence.",
+    "done_condition": "when you have 5 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.keyboard_shortcut.2.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Learn one new keyboard shortcut and use it 5 times.",
+    "done_condition": "after you've used it 5 times",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.regex_minute.3.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Pick one regex/operator you forget and write 3 examples.",
+    "done_condition": "when you have 3 examples",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.math_puzzle.4.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Do one tiny puzzle: write a 5-line proof or solve a quick brain teaser.",
+    "done_condition": "when you finish one puzzle",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.teach_back.5.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Teach-back: explain today's work in 4 sentences (as if onboarding).",
+    "done_condition": "when you have 4 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.spanish_words.6.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Learn 5 Spanish words and use each in a simple sentence.",
+    "done_condition": "when you have 5 sentences",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.keyboard_shortcut.7.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Learn one new keyboard shortcut and use it 5 times.",
+    "done_condition": "after you've used it 5 times",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.regex_minute.8.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Pick one regex/operator you forget and write 3 examples.",
+    "done_condition": "when you have 3 examples",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.math_puzzle.9.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Do one tiny puzzle: write a 5-line proof or solve a quick brain teaser.",
+    "done_condition": "when you finish one puzzle",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.teach_back.10.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Teach-back: explain today's work in 4 sentences (as if onboarding).",
+    "done_condition": "when you have 4 sentences",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.spanish_words.11.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Learn 5 Spanish words and use each in a simple sentence.",
+    "done_condition": "when you have 5 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.keyboard_shortcut.12.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Learn one new keyboard shortcut and use it 5 times.",
+    "done_condition": "after you've used it 5 times",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.regex_minute.13.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Pick one regex/operator you forget and write 3 examples.",
+    "done_condition": "when you have 3 examples",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.math_puzzle.14.v1",
+    "category": "intellectual",
+    "minutes": 7,
+    "activity": "Do one tiny puzzle: write a 5-line proof or solve a quick brain teaser.",
+    "done_condition": "when you finish one puzzle",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.learn.teach_back.15.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Teach-back: explain today's work in 4 sentences (as if onboarding).",
+    "done_condition": "when you have 4 sentences",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.review_pr.1.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one PR/issue thread for 5 minutes with a single question in mind.",
+    "done_condition": "when 5 minutes are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.read_doc_section.2.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read one section of documentation relevant to your task.",
+    "done_condition": "when you finish the section",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.scan_calendar.3.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Scan your calendar for tomorrow and write 1 preparation note.",
+    "done_condition": "when the note is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.check_lists.4.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Review your TODO list and delete/merge 2 items.",
+    "done_condition": "when you've changed 2 items",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.read_error_message.5.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read the error message slowly and paraphrase it in one sentence.",
+    "done_condition": "when the sentence is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.review_pr.6.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Read one PR/issue thread for 5 minutes with a single question in mind.",
+    "done_condition": "when 5 minutes are up",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "focus",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.read_doc_section.7.v1",
+    "category": "intellectual",
+    "minutes": 8,
+    "activity": "Read one section of documentation relevant to your task.",
+    "done_condition": "when you finish the section",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.scan_calendar.8.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Scan your calendar for tomorrow and write 1 preparation note.",
+    "done_condition": "when the note is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.check_lists.9.v1",
+    "category": "intellectual",
+    "minutes": 5,
+    "activity": "Review your TODO list and delete/merge 2 items.",
+    "done_condition": "when you've changed 2 items",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.review.read_error_message.10.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Re-read the error message slowly and paraphrase it in one sentence.",
+    "done_condition": "when the sentence is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.curiosity_list.1.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Write 5 curiosities about today's problem (things you'd google later).",
+    "done_condition": "when you have 5 curiosities",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.five_whys.2.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Do a quick 5 Whys on what's blocking you.",
+    "done_condition": "when you reach why #5",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.analogy.3.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Make one analogy for your problem (e.g., 'It's like a...').",
+    "done_condition": "when the analogy is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.one_definition.4.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Write one crisp definition of a term you keep using.",
+    "done_condition": "when the definition is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.micro_research.5.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Pick one unknown and write 3 hypotheses (no googling).",
+    "done_condition": "when you have 3 hypotheses",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.curiosity_list.6.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Write 5 curiosities about today's problem (things you'd google later).",
+    "done_condition": "when you have 5 curiosities",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.five_whys.7.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Do a quick 5 Whys on what's blocking you.",
+    "done_condition": "when you reach why #5",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.analogy.8.v1",
+    "category": "intellectual",
+    "minutes": 3,
+    "activity": "Make one analogy for your problem (e.g., 'It's like a...').",
+    "done_condition": "when the analogy is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.one_definition.9.v1",
+    "category": "intellectual",
+    "minutes": 4,
+    "activity": "Write one crisp definition of a term you keep using.",
+    "done_condition": "when the definition is written",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "intellectual.think.micro_research.10.v1",
+    "category": "intellectual",
+    "minutes": 6,
+    "activity": "Pick one unknown and write 3 hypotheses (no googling).",
+    "done_condition": "when you have 3 hypotheses",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.share_one_win.3.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Text a friend one small win from today.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.ask_one_q.4.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Message someone a single question you care about (keep it short).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.checkin_text.5.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a quick check-in text to a friend: 'Thinking of you-how are you?'",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.emoji_ping.6.v1",
+    "category": "social",
+    "minutes": 2,
+    "activity": "Send someone a single emoji + 'no need to reply' (keep it light).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.share_one_win.7.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Text a friend one small win from today.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.ask_one_q.8.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Message someone a single question you care about (keep it short).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.checkin_text.9.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a quick check-in text to a friend: 'Thinking of you-how are you?'",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.emoji_ping.10.v1",
+    "category": "social",
+    "minutes": 2,
+    "activity": "Send someone a single emoji + 'no need to reply' (keep it light).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.share_one_win.11.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Text a friend one small win from today.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.ask_one_q.12.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Message someone a single question you care about (keep it short).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.checkin_text.13.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a quick check-in text to a friend: 'Thinking of you-how are you?'",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.emoji_ping.14.v1",
+    "category": "social",
+    "minutes": 2,
+    "activity": "Send someone a single emoji + 'no need to reply' (keep it light).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.text.share_one_win.15.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Text a friend one small win from today.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.gratitude_note.1.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Write 3 lines of gratitude (for anything).",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.compliment.2.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a sincere compliment to someone (1-2 sentences).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.future_thanks.3.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Write a 'thank you' draft to send later (don't overthink).",
+    "done_condition": "when the draft is saved",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.gratitude_note.4.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Write 3 lines of gratitude (for anything).",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.compliment.5.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a sincere compliment to someone (1-2 sentences).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.future_thanks.6.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Write a 'thank you' draft to send later (don't overthink).",
+    "done_condition": "when the draft is saved",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.gratitude_note.7.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Write 3 lines of gratitude (for anything).",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.compliment.8.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a sincere compliment to someone (1-2 sentences).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.future_thanks.9.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Write a 'thank you' draft to send later (don't overthink).",
+    "done_condition": "when the draft is saved",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.gratitude.gratitude_note.10.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Write 3 lines of gratitude (for anything).",
+    "done_condition": "when you have 3 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "reset",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.voice_msg_60.1.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a 60-second voice message to someone you like.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.voice_msg_120.2.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a 2-minute voice message: what you're doing + one question.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.quick_call.3.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Call someone for 5 minutes (set a timer first).",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.reply_one.4.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Reply to ONE message you've been avoiding (keep it short).",
+    "done_condition": "when the reply is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.voice_msg_60.5.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a 60-second voice message to someone you like.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.voice_msg_120.6.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a 2-minute voice message: what you're doing + one question.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.quick_call.7.v1",
+    "category": "social",
+    "minutes": 5,
+    "activity": "Call someone for 5 minutes (set a timer first).",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.voice.reply_one.8.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Reply to ONE message you've been avoiding (keep it short).",
+    "done_condition": "when the reply is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.plan.plan_walk.1.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Propose a short walk/coffee to someone (one message).",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.plan.calendar_ping.2.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a 'when are you free?' message to schedule something small.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.plan.share_photo.3.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send someone a photo you took today with one sentence.",
+    "done_condition": "when it's sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.plan.invite_cowork.4.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Invite someone to co-work for 25 minutes sometime this week.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.social.plan.family_check.5.v1",
+    "category": "social",
+    "minutes": 3,
+    "activity": "Send a quick 'thinking of you' message to a family member.",
+    "done_condition": "when the message is sent",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.5min.1.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Do the smallest next action for 5 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.6min.2.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.7min.3.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Do the smallest next action for 7 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.5min.4.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Do the smallest next action for 5 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.6min.5.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.7min.6.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Do the smallest next action for 7 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.5min.7.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Do the smallest next action for 5 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.6min.8.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.7min.9.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Do the smallest next action for 7 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.5min.10.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Do the smallest next action for 5 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.6min.11.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.7min.12.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Do the smallest next action for 7 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.5min.13.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Do the smallest next action for 5 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.6min.14.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Do the smallest next action for 6 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.next_action.7min.15.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Do the smallest next action for 7 minutes (timer on).",
+    "done_condition": "when the timer ends",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.close_tabs.1.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Close 10 browser tabs you don't need.",
+    "done_condition": "when tab #10 is closed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.inbox_3.2.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Process 3 items in your inbox: delete, archive, or reply.",
+    "done_condition": "when item 3 is processed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.desktop_10.3.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Clear 10 items from your desktop (move or delete).",
+    "done_condition": "when item 10 is handled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.notes_cleanup.4.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Rename and refile 3 messy notes (titles only).",
+    "done_condition": "when note 3 is renamed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.git_branches.5.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Delete or mark 1 stale local branch (or write a note to do it).",
+    "done_condition": "when the branch is handled or noted",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.close_tabs.6.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Close 10 browser tabs you don't need.",
+    "done_condition": "when tab #10 is closed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.inbox_3.7.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Process 3 items in your inbox: delete, archive, or reply.",
+    "done_condition": "when item 3 is processed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.desktop_10.8.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Clear 10 items from your desktop (move or delete).",
+    "done_condition": "when item 10 is handled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.notes_cleanup.9.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Rename and refile 3 messy notes (titles only).",
+    "done_condition": "when note 3 is renamed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.git_branches.10.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Delete or mark 1 stale local branch (or write a note to do it).",
+    "done_condition": "when the branch is handled or noted",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.close_tabs.11.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Close 10 browser tabs you don't need.",
+    "done_condition": "when tab #10 is closed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.inbox_3.12.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Process 3 items in your inbox: delete, archive, or reply.",
+    "done_condition": "when item 3 is processed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.desktop_10.13.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Clear 10 items from your desktop (move or delete).",
+    "done_condition": "when item 10 is handled",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.notes_cleanup.14.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Rename and refile 3 messy notes (titles only).",
+    "done_condition": "when note 3 is renamed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.cleanup.git_branches.15.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Delete or mark 1 stale local branch (or write a note to do it).",
+    "done_condition": "when the branch is handled or noted",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.write_commit_message.1.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Draft a commit message before you code (subject + 2 bullets).",
+    "done_condition": "when you have 1 subject + 2 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.update_readme.2.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Update one sentence in your README/notes so future-you won't suffer.",
+    "done_condition": "when the sentence is updated",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.todo_3.3.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Write 3 tiny TODOs for your current task (no more).",
+    "done_condition": "when you have 3 TODOs",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.rubber_duck.4.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Write a rubber-duck explanation of the bug in 6 lines.",
+    "done_condition": "when you have 6 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.one_question_doc.5.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Write one question you need answered, then write what you'll try next anyway.",
+    "done_condition": "when both lines are written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.write_commit_message.6.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Draft a commit message before you code (subject + 2 bullets).",
+    "done_condition": "when you have 1 subject + 2 bullets",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.update_readme.7.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Update one sentence in your README/notes so future-you won't suffer.",
+    "done_condition": "when the sentence is updated",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.todo_3.8.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Write 3 tiny TODOs for your current task (no more).",
+    "done_condition": "when you have 3 TODOs",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.rubber_duck.9.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Write a rubber-duck explanation of the bug in 6 lines.",
+    "done_condition": "when you have 6 lines",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "avoidance",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.write.one_question_doc.10.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Write one question you need answered, then write what you'll try next anyway.",
+    "done_condition": "when both lines are written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.run_tests.1.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Run the test suite and fix ONE failing test (or write the next action).",
+    "done_condition": "when 1 test is fixed or the next action is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.lint_one.2.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Run a linter and fix ONE issue.",
+    "done_condition": "when the issue is fixed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.refactor_1.3.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Refactor one small function: rename for clarity + remove one duplication.",
+    "done_condition": "when the refactor is committed or saved",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.debug_log.4.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Add one debug log/print, run once, then remove it.",
+    "done_condition": "when the log is removed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.reduce_scope.5.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Reduce scope: pick the smallest version of the feature and write it down.",
+    "done_condition": "when the smaller scope is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.run_tests.6.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Run the test suite and fix ONE failing test (or write the next action).",
+    "done_condition": "when 1 test is fixed or the next action is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.lint_one.7.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Run a linter and fix ONE issue.",
+    "done_condition": "when the issue is fixed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "focus",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.refactor_1.8.v1",
+    "category": "work_momentum",
+    "minutes": 8,
+    "activity": "Refactor one small function: rename for clarity + remove one duplication.",
+    "done_condition": "when the refactor is committed or saved",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.debug_log.9.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Add one debug log/print, run once, then remove it.",
+    "done_condition": "when the log is removed",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.code.reduce_scope.10.v1",
+    "category": "work_momentum",
+    "minutes": 4,
+    "activity": "Reduce scope: pick the smallest version of the feature and write it down.",
+    "done_condition": "when the smaller scope is written",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "focus",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.comm.status_update.1.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Send a 3-line status update to someone (what I did / next / blocker).",
+    "done_condition": "when the message is sent",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.comm.ask_for_help.2.v1",
+    "category": "work_momentum",
+    "minutes": 7,
+    "activity": "Ask for help with a precise question (include context + what you tried).",
+    "done_condition": "when the request is sent",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "clarity",
+      "momentum",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.comm.schedule_break.3.v1",
+    "category": "work_momentum",
+    "minutes": 3,
+    "activity": "Schedule your next break on the calendar (10 minutes).",
+    "done_condition": "when the calendar entry exists",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "closure"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.comm.reply_short.4.v1",
+    "category": "work_momentum",
+    "minutes": 5,
+    "activity": "Reply to one email/message with the shortest honest answer.",
+    "done_condition": "when it's sent",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "connection"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.work.comm.close_loop_ticket.5.v1",
+    "category": "work_momentum",
+    "minutes": 6,
+    "activity": "Close one ticket/issue: comment 'done' + link to commit.",
+    "done_condition": "when the comment is posted",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "closure",
+      "momentum",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.mercado_rusafa.buy_small.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Mercado de Ruzafa and buy one small thing (fruit, nuts, or bread).",
+    "done_condition": "when the purchase is complete",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "errand",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.mercado_rusafa.lap_return.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk to Mercado de Ruzafa, do one slow lap around the building, return.",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.calle_cuba.turnaround_point.v1",
+    "category": "physical",
+    "minutes": 9,
+    "activity": "Walk to Calle Cuba, pick a 'turnaround point' (a shop sign), then walk back.",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.plaza_doctor_landete.calf_raises10.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Plaza del Doctor Landete and do 10 gentle calf raises at the edge of the plaza.",
+    "done_condition": "when calf raise 10 is done",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "energy",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.literato_azorin.long_way_back.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Calle Literato Azorín and take the long way back (one extra block).",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "momentum"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.bluebell.posture_walk.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Bluebell Coffee Co and do a slow 'look-up' posture reset on the way (chin level).",
+    "done_condition": "when you arrive back at your start point",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "back_friendly",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.blackbird.pause60_return.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Blackbird, pause outside for 60 seconds, then walk back.",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.horno_valencia.optional_buy.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Horno Valencia on Calle Cuba and buy a single roll or pastry (optional).",
+    "done_condition": "when you're back with it (or you decide not to buy)",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "errand"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.plaza_doctor_landete.box4_rounds4.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "Sit in Plaza del Doctor Landete and do 4 rounds of box breathing (4-4-4-4).",
+    "done_condition": "after round 4",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.mercado_rusafa.bodyscan2.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Mercado de Ruzafa entrance, do a 2-minute body-scan (jaw -> shoulders -> belly).",
+    "done_condition": "when 2 minutes are up",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.calle_cuba.smells10.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "Walk to Calle Cuba and notice 10 different smells (bakery, soap, coffee...).",
+    "done_condition": "when you've noticed 10 smells",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.tree_breathing.breaths12.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Stand near a tree in Ruzafa and take 12 slow breaths, counting them.",
+    "done_condition": "after breath 12",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "reset",
+      "sensory",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.ruzafa.literato_azorin.detail_photos3.v1",
+    "category": "creative",
+    "minutes": 9,
+    "activity": "Walk to Calle Literato Azorín and take 3 photos of street art details (close-ups).",
+    "done_condition": "when photo 3 is saved",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "aesthetic",
+      "sensory",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.ruzafa.mercado_rusafa.adjectives5.v1",
+    "category": "creative",
+    "minutes": 8,
+    "activity": "At Mercado de Ruzafa, pick one stall and describe it with 5 adjectives in notes.",
+    "done_condition": "when you have 5 adjectives",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.ruzafa.micro_spanish.friendly_sentence.v1",
+    "category": "social",
+    "minutes": 8,
+    "activity": "Buy something small in Ruzafa and say one friendly sentence in Spanish (e.g., '¡Que vaya bien!').",
+    "done_condition": "when you've said the sentence",
+    "location": "ruzafa",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.plaza_doctor_landete.sit60_return.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk to Plaza del Doctor Landete, sit for 60 seconds, return.",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.mercado_rusafa.touch_wall_return.v1",
+    "category": "physical",
+    "minutes": 8,
+    "activity": "Walk to Mercado de Ruzafa, touch the wall, and walk back (no phone).",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.ruzafa.loop.one_block_variation.v1",
+    "category": "physical",
+    "minutes": 9,
+    "activity": "Walk one Ruzafa loop: go out one block, back a different block.",
+    "done_condition": "when you're back at your start point",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.plaza_doctor_landete.breaths10.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "Sit in Plaza del Doctor Landete and do 10 slow breaths.",
+    "done_condition": "after breath 10",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.calle_cuba.soft_eyes5min.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "Walk to Calle Cuba and do a 'soft eyes' walk for 5 minutes (wide peripheral vision).",
+    "done_condition": "when 5 minutes are up",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.ruzafa.mercado_rusafa.color7.v1",
+    "category": "restorative",
+    "minutes": 6,
+    "activity": "At Mercado de Ruzafa, pick a color and find 7 items that match it.",
+    "done_condition": "when you've found 7 matches",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.ruzafa.literato_azorin.sketch5_shapes.v1",
+    "category": "creative",
+    "minutes": 7,
+    "activity": "On Calle Literato Azorín, find one mural and sketch it as 5 simple shapes.",
+    "done_condition": "when you've drawn 5 shapes",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "aesthetic",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.ruzafa.hello_one.simple.v1",
+    "category": "social",
+    "minutes": 6,
+    "activity": "Say hello to one person (barista, neighbor, vendor) in Ruzafa-no extra chat needed.",
+    "done_condition": "when you've said hello",
+    "location": "ruzafa",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.estacion_norte.touch_tile_return.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Estación del Norte, touch one cool tile detail, and walk back.",
+    "done_condition": "when you're back at your start point",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.plaza_ayuntamiento.one_lap.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Plaza del Ayuntamiento and do one slow lap around the square.",
+    "done_condition": "after the lap is complete",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.mercado_central.buy_or_browse.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Mercado Central and buy one small thing (or just browse one aisle).",
+    "done_condition": "when you finish the purchase or aisle",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "errand"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.plaza_virgen.pause60_return.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Plaza de la Virgen, pause 60 seconds, then return.",
+    "done_condition": "when you're back at your start point",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.calle_de_la_paz.out_and_back5.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk Calle de la Paz for 5 minutes, turn around, return.",
+    "done_condition": "when you arrive back",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.san_agustin.sit2.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Iglesia de San Agustín and sit for 2 minutes.",
+    "done_condition": "when 2 minutes are up",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.calle_colon.count12_signs.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk Calle Colón and count 12 shop signs as you pass.",
+    "done_condition": "when you reach 12 signs",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.estacion_norte.shoulder_circles20.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Estación del Norte and do 20 slow shoulder circles outside.",
+    "done_condition": "after the last circle",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "outdoor",
+      "reset",
+      "restless"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_ayuntamiento.coherent3.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Plaza del Ayuntamiento, do coherent breathing (5 in / 5 out) for 3 minutes.",
+    "done_condition": "when 3 minutes are up",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "focus"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_virgen.sounds5.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Plaza de la Virgen, notice 5 different sounds (no labeling).",
+    "done_condition": "when you've noticed 5 sounds",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.san_agustin.physio_sigh6.v1",
+    "category": "restorative",
+    "minutes": 7,
+    "activity": "Inside (or near) San Agustín, do 6 physiological sighs (double inhale, long exhale).",
+    "done_condition": "after sigh 6",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.mercado_central.smell_breaths8.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Mercado Central entrance, pick one smell and take 8 slow breaths.",
+    "done_condition": "after breath 8",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "sensory",
+      "reset",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.estacion_norte.sketch_pattern.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "At Estación del Norte, find one tile pattern and sketch it as a simple grid.",
+    "done_condition": "when the grid sketch is done",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "aesthetic",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.calle_de_la_paz.adjectives3.v1",
+    "category": "creative",
+    "minutes": 10,
+    "activity": "On Calle de la Paz, pick one window display and write 3 adjectives about it.",
+    "done_condition": "when you have 3 adjectives",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "aesthetic",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.valencia.micro_spanish.ask_one_question.v1",
+    "category": "social",
+    "minutes": 9,
+    "activity": "Buy something small in Valencia city and ask one simple question in Spanish.",
+    "done_condition": "when the question is asked and answered",
+    "location": "valencia",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "clarity",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.estacion_norte.look_up30_return.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Estación del Norte, look up at the facade for 30 seconds, return.",
+    "done_condition": "when you're back at your start point",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.plaza_ayuntamiento.sit90.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Plaza del Ayuntamiento and sit for 90 seconds.",
+    "done_condition": "when 90 seconds are up",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "reset",
+      "low_energy"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.valencia.calle_colon.turnaround.v1",
+    "category": "physical",
+    "minutes": 10,
+    "activity": "Walk to Calle Colón, pick a turnaround point, and return.",
+    "done_condition": "when you arrive back",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "outdoor",
+      "focus",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_virgen.breaths10.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Plaza de la Virgen, do 10 slow breaths while watching the fountain.",
+    "done_condition": "after breath 10",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "sensory"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.plaza_ayuntamiento.bodyscan2.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "At Plaza del Ayuntamiento, do a quick body-scan: jaw -> shoulders -> hands.",
+    "done_condition": "when 2 minutes are up",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "sensory",
+      "clarity"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.valencia.calle_de_la_paz.soft_eyes5.v1",
+    "category": "restorative",
+    "minutes": 8,
+    "activity": "Walk Calle de la Paz with 'soft eyes' for 5 minutes (wide vision).",
+    "done_condition": "when 5 minutes are up",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "focus",
+      "anxious"
+    ],
+    "active": true
+  },
+  {
+    "key": "creative.valencia.mercado_central.typography_photos2.v1",
+    "category": "creative",
+    "minutes": 9,
+    "activity": "At Mercado Central entrance, take 2 photos of interesting typography/signage.",
+    "done_condition": "when photo 2 is saved",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "aesthetic",
+      "sensory",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.valencia.hello_one.buenos_dias.v1",
+    "category": "social",
+    "minutes": 6,
+    "activity": "Smile and say 'buenos días' to one person in Valencia city.",
+    "done_condition": "when you've said it once",
+    "location": "valencia",
+    "rarity": "common",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  }
+]

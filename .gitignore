@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+packages/*/dist/
+*.tsbuildinfo
+
+# Local data / logs
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+server.log
+usage.log
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp files
+/tmp/
+*.pid
+
+# Generated plist (user-specific paths)
+com.siteblocker.plist
+
+# Legacy plist (if present)
+com.ryanpfister.siteblocker.plist
+
+# Claude local settings
+.claude/
+
+# Firebase debug
+firebase-debug.log
+
+# Screenshots
+*.png
+
+# Expert prompts
+*_expert_prompt.md
+*_expert_prompt.sh

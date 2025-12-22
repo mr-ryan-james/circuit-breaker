@@ -1,0 +1,360 @@
+[
+  {
+    "key": "physical.office.neck_rolls.5.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Slow neck circles (pain-free range): do 5 reps",
+    "done_condition": "when you finish 5 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.neck_rolls.10.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Slow neck circles (pain-free range): do 10 reps",
+    "done_condition": "when you finish 10 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.seated_twist.30.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Seated spinal twist (hand to opposite knee): do 30 seconds hold",
+    "done_condition": "when you finish 30 seconds hold",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.seated_twist.45.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Seated spinal twist (hand to opposite knee): do 45 seconds hold",
+    "done_condition": "when you finish 45 seconds hold",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.desk_pec_stretch.30.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Doorway/Wall Pec Stretch: do 30 seconds hold",
+    "done_condition": "when you finish 30 seconds hold",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.desk_pec_stretch.45.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Doorway/Wall Pec Stretch: do 45 seconds hold",
+    "done_condition": "when you finish 45 seconds hold",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.standing_hip_hinge.10.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Standing Hip Hinge (flat back): do 10 reps",
+    "done_condition": "when you finish 10 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.standing_hip_hinge.15.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Standing Hip Hinge (flat back): do 15 reps",
+    "done_condition": "when you finish 15 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.calf_raises.15.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Calf Raises (hold wall/desk): do 15 reps",
+    "done_condition": "when you finish 15 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.calf_raises.20.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Calf Raises (hold wall/desk): do 20 reps",
+    "done_condition": "when you finish 20 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.calf_raises.25.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Calf Raises (hold wall/desk): do 25 reps",
+    "done_condition": "when you finish 25 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.wrist_relief.30.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Wrist Flexor/Extensor stretch: do 30 seconds",
+    "done_condition": "when you finish 30 seconds",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.wrist_relief.45.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Wrist Flexor/Extensor stretch: do 45 seconds",
+    "done_condition": "when you finish 45 seconds",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.scapular_squeeze.15.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Scapular Squeezes (pinch shoulder blades): do 15 reps",
+    "done_condition": "when you finish 15 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "physical.office.scapular_squeeze.20.v1",
+    "category": "physical",
+    "minutes": 1,
+    "activity": "Scapular Squeezes (pinch shoulder blades): do 20 reps",
+    "done_condition": "when you finish 20 reps",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "reset",
+      "mobility",
+      "coworking_friendly"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.3m.v1",
+    "category": "restorative",
+    "minutes": 3,
+    "activity": "Practice 4-7-8 Relaxing Breath for 3 minutes (inhale 4, hold 7, exhale 8)",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "physiological"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.4m.v1",
+    "category": "restorative",
+    "minutes": 4,
+    "activity": "Practice 4-7-8 Relaxing Breath for 4 minutes (inhale 4, hold 7, exhale 8)",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "physiological"
+    ],
+    "active": true
+  },
+  {
+    "key": "restorative.breath.4_7_8.5m.v1",
+    "category": "restorative",
+    "minutes": 5,
+    "activity": "Practice 4-7-8 Relaxing Breath for 5 minutes (inhale 4, hold 7, exhale 8)",
+    "done_condition": "when the timer ends",
+    "location": "any",
+    "rarity": "common",
+    "tags": [
+      "anxious",
+      "reset",
+      "physiological"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.micro.clear_desktop.v1",
+    "category": "work_momentum",
+    "minutes": 3,
+    "activity": "Clear 5 files from desktop",
+    "done_condition": "when done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "quick"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.micro.close_tabs.v1",
+    "category": "work_momentum",
+    "minutes": 3,
+    "activity": "Close 5 browser tabs",
+    "done_condition": "when done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "quick"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.micro.update_slack.v1",
+    "category": "work_momentum",
+    "minutes": 3,
+    "activity": "Update Slack status",
+    "done_condition": "when done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "quick"
+    ],
+    "active": true
+  },
+  {
+    "key": "work_momentum.micro.clean_screen.v1",
+    "category": "work_momentum",
+    "minutes": 3,
+    "activity": "Wipe your monitor screen",
+    "done_condition": "when done",
+    "location": "indoor",
+    "rarity": "common",
+    "tags": [
+      "momentum",
+      "clarity",
+      "quick"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.nudge.weekend_plan.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Propose a weekend plan to a friend",
+    "done_condition": "when sent",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  },
+  {
+    "key": "social.nudge.thank_you.v1",
+    "category": "social",
+    "minutes": 4,
+    "activity": "Send a thank you text for something small",
+    "done_condition": "when sent",
+    "location": "any",
+    "rarity": "uncommon",
+    "tags": [
+      "connection",
+      "reset"
+    ],
+    "active": true
+  }
+]
