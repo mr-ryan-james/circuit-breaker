@@ -1843,7 +1843,7 @@ function cmdDaemonTick(json: boolean): void {
   else console.log(`Re-blocked ${results.length} site(s) from DB timers.`);
 }
 
-const DAEMON_LABEL = "com.ryanpfister.circuitbreaker.timers";
+const DAEMON_LABEL = "com.circuitbreaker.timers";
 const DAEMON_PLIST_PATH = `/Library/LaunchDaemons/${DAEMON_LABEL}.plist`;
 
 function daemonPlistXml(): string {
