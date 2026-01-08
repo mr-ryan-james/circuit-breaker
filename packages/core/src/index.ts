@@ -10,5 +10,6 @@ export * from "./timers.js";
 export * from "./engine/selection.js";
 export * from "./engine/break.js";
 export * from "./modules/registry.js";
+export * from "./modules/spanish.js";
 export * from "./modules/types.js";
 export * from "./types.js";

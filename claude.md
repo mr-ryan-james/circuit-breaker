@@ -357,6 +357,37 @@ Modules are defined in `data/modules/*.json` and match cards by tags (e.g. Spani
 
 4. **Key principle:** Completion tracking is explicit. Sessions are "open" until marked complete. This is intentional — it lets Ryan pick up where he left off.
 
+### Spanish Test Mode
+
+Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the agent constructs questions and grades using Spanish knowledge.
+
+**Start a test:**
+```bash
+./site-toggle module spanish test --json
+```
+
+**If fewer than 5 completed verbs:** tell Ryan how many are available and suggest more practice first.
+
+**Agent flow:**
+1. Present overview (20 questions, mixed tenses: presente/indefinido/imperfecto).
+2. Build questions from the verb pool using these types:
+   - fill_blank
+   - imp_vs_indef
+   - quick_form
+   - translate
+   - error_correction
+   - transformation
+3. After each answer: grade, show correction, **play TTS** of the correct form/sentence.
+4. Final score summary, then log completion:
+```bash
+./site-toggle module spanish test-complete <event_key> --score 17 --total 20 --json
+```
+
+**Notes:**
+- The CLI does **not** provide answer keys. The agent builds and grades dynamically.
+- Accept minor accent/spelling variations when reasonable.
+- Use the existing `site-toggle speak` flow after every answer.
+
 ### Command Reference
 
 ```bash
@@ -376,6 +407,7 @@ Modules are defined in `data/modules/*.json` and match cards by tags (e.g. Spani
 ./site-toggle speak "cómo estás" --voice es-MX-JorgeNeural
 ./site-toggle modules
 ./site-toggle module spanish history --days 7 --limit 5 --json
+./site-toggle module spanish test --json
 ./site-toggle module spanish complete --status completed
 
 # Manual unblock/block (requires sudo because it edits /etc/hosts)

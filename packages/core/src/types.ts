@@ -51,6 +51,17 @@ export interface CardRow {
   active: number;
 }
 
+export interface CompletedVerbCard {
+  cardId: number;
+  cardKey: string;
+  verb: string;
+  meaning: string;
+  verbType: string;
+  tags: string[];
+  completedCount: number;
+  lastCompletedAt: string;
+}
+
 export interface BreakCard {
   id: number;
   key: string;

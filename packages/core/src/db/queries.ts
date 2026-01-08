@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { CardRating, CardRow, SiteRow } from "../types.js";
+import type { CardRating, CardRow, CompletedVerbCard, SiteRow } from "../types.js";
+import { extractVerbInfo } from "../modules/spanish.js";
 
 export interface LocationRow {
   id: number;
@@ -11,6 +12,16 @@ export interface ContextRow {
   id: number;
   slug: string;
   name: string | null;
+}
+
+function parseTagsJson(tagsJson: string): string[] {
+  try {
+    const parsed = JSON.parse(tagsJson) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(String).map((t) => t.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 export function getSiteBySlug(db: DatabaseSync, slug: string): SiteRow | null {
@@ -243,6 +254,91 @@ export function setSiteUnblockedUntil(db: DatabaseSync, siteId: number, unblocke
      ON CONFLICT(site_id) DO UPDATE SET unblocked_until_unix=excluded.unblocked_until_unix, updated_at=excluded.updated_at`,
   );
   stmt.run(siteId, unblockedUntilUnix);
+}
+
+export function getCompletedSpanishVerbCards(db: DatabaseSync, options: { days?: number } = {}): CompletedVerbCard[] {
+  const days = options.days;
+  const args: Array<string | number> = [];
+  const daysClause =
+    typeof days === "number" && Number.isFinite(days) && days > 0 ? (() => {
+      args.push(`-${Math.trunc(days)} days`);
+      return "AND e.created_at >= datetime('now', ?)";
+    })() : "";
+
+  const rows = db
+    .prepare(
+      `SELECT e.card_id AS card_id,
+              e.created_at AS created_at,
+              e.meta_json AS meta_json,
+              c.key AS card_key,
+              c.activity AS activity,
+              c.tags_json AS tags_json
+       FROM events e
+       JOIN cards c ON c.id = e.card_id
+       WHERE e.type = 'practice_completed'
+         AND e.card_id IS NOT NULL
+         AND c.active = 1
+         ${daysClause}
+       ORDER BY e.id DESC`,
+    )
+    .all(...args) as Array<{
+    card_id: number | null;
+    created_at: string;
+    meta_json: string | null;
+    card_key: string;
+    activity: string;
+    tags_json: string;
+  }>;
+
+  const byCard = new Map<number, CompletedVerbCard>();
+
+  for (const row of rows) {
+    const cardId = row.card_id;
+    if (!cardId) continue;
+
+    let meta: Record<string, unknown> = {};
+    try {
+      meta = row.meta_json ? (JSON.parse(row.meta_json) as Record<string, unknown>) : {};
+    } catch {
+      meta = {};
+    }
+
+    const status = typeof meta["status"] === "string" ? meta["status"].trim() : "";
+    if (status !== "completed") continue;
+
+    const moduleSlug = typeof meta["module_slug"] === "string" ? meta["module_slug"].trim() : "";
+    if (moduleSlug && moduleSlug !== "spanish") continue;
+
+    const tags = parseTagsJson(row.tags_json ?? "[]");
+    const tagSet = new Set(tags);
+    if (!tagSet.has("spanish")) continue;
+    if (!(tagSet.has("verb") || tagSet.has("conjugation"))) continue;
+
+    const { verb, meaning, verbType } = extractVerbInfo(row.card_key, row.activity, tags);
+    if (!verb) continue;
+
+    const existing = byCard.get(cardId);
+    if (existing) {
+      existing.completedCount += 1;
+      if (row.created_at > existing.lastCompletedAt) {
+        existing.lastCompletedAt = row.created_at;
+      }
+      continue;
+    }
+
+    byCard.set(cardId, {
+      cardId,
+      cardKey: row.card_key,
+      verb,
+      meaning,
+      verbType,
+      tags,
+      completedCount: 1,
+      lastCompletedAt: row.created_at,
+    });
+  }
+
+  return Array.from(byCard.values()).sort((a, b) => b.lastCompletedAt.localeCompare(a.lastCompletedAt));
 }
 
 export function getSitesWithExpiredUnblocks(db: DatabaseSync, nowUnix: number): Array<{ site_id: number }> {

@@ -20,6 +20,7 @@ import {
   getBreakServedEvent,
   getContextLocations,
   getDomainsForSiteId,
+  getCompletedSpanishVerbCards,
   getSetting,
   getSiteBySlug,
   getSitesWithExpiredUnblocks,
@@ -866,6 +867,12 @@ function generateModuleEventKey(moduleSlug: string): string {
   return `mod-${moduleSlug}-${ts}-${rand}`;
 }
 
+function generateTestEventKey(moduleSlug: string): string {
+  const ts = Math.floor(Date.now() / 1000);
+  const rand = crypto.randomBytes(2).toString("hex");
+  return `test-${moduleSlug}-${ts}-${rand}`;
+}
+
 function generateSuggestEventKey(): string {
   const ts = Math.floor(Date.now() / 1000);
   const rand = crypto.randomBytes(2).toString("hex");
@@ -1055,7 +1062,7 @@ function cmdModules(json: boolean): void {
 async function cmdModule(args: string[], json: boolean): Promise<void> {
   const moduleSlug = args[0];
   const action = args[1] ?? "history";
-  if (!moduleSlug) throw new Error("Usage: module <slug> <history|start|complete|resume|last> [args]");
+  if (!moduleSlug) throw new Error("Usage: module <slug> <history|start|complete|resume|last|test|test-complete> [args]");
 
   const moduleDef = findModuleOrThrow(moduleSlug);
   const actionArgs = args.slice(2);
@@ -1065,8 +1072,10 @@ async function cmdModule(args: string[], json: boolean): Promise<void> {
   if (action === "complete") return cmdModuleComplete(moduleDef, actionArgs, json);
   if (action === "resume") return cmdModuleResume(moduleDef, actionArgs, json);
   if (action === "last") return cmdModuleLast(moduleDef, actionArgs, json);
+  if (action === "test") return cmdModuleTest(moduleDef, actionArgs, json);
+  if (action === "test-complete") return cmdModuleTestComplete(moduleDef, actionArgs, json);
 
-  throw new Error(`Unknown module action: ${action}\nUsage: module <slug> <history|start|complete|resume|last>`);
+  throw new Error(`Unknown module action: ${action}\nUsage: module <slug> <history|start|complete|resume|last|test|test-complete>`);
 }
 
 function cmdModuleHistory(moduleDef: ModuleDefinition, args: string[], json: boolean): void {
@@ -1654,6 +1663,154 @@ function cmdModuleLast(moduleDef: ModuleDefinition, _args: string[], json: boole
   console.log(`Session: ${newEventKey}`);
   console.log(`Card: ${chosen.card.activity}`);
   if (chosen.card.prompt) printPromptBlock(chosen.card.prompt);
+}
+
+function cmdModuleTest(moduleDef: ModuleDefinition, args: string[], json: boolean): void {
+  let count = 20;
+  let days: number | undefined;
+
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (!a) continue;
+    const next = args[i + 1];
+
+    if (a === "--count" && next && /^\d+$/.test(next)) {
+      count = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--days" && next && /^\d+$/.test(next)) {
+      days = Number(next);
+      i += 1;
+      continue;
+    }
+
+    if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
+  }
+
+  if (moduleDef.slug !== "spanish") throw new Error('Test mode is only supported for module "spanish".');
+
+  const { db } = openDb();
+  const verbPool = getCompletedSpanishVerbCards(db, { days });
+
+  const minCount = 5;
+  if (verbPool.length < minCount) {
+    throw new CliError(
+      "INSUFFICIENT_COMPLETED",
+      `Need at least ${minCount} completed verb cards to start a test. Found ${verbPool.length}.`,
+    );
+  }
+
+  const eventKey = generateTestEventKey(moduleDef.slug);
+  insertEvent(db, {
+    type: "test_started",
+    eventKey,
+    metaJson: JSON.stringify({
+      module_slug: moduleDef.slug,
+      question_count: count,
+      verb_count: verbPool.length,
+      days: days ?? null,
+    }),
+  });
+
+  if (json) {
+    printJson({
+      ok: true,
+      command: "module",
+      module: { slug: moduleDef.slug, name: moduleDef.name },
+      action: "test",
+      event_key: eventKey,
+      test: {
+        question_count: count,
+        tenses: ["presente", "indefinido", "imperfecto"],
+        verb_pool: verbPool.map((v) => ({
+          card_id: v.cardId,
+          card_key: v.cardKey,
+          verb: v.verb,
+          meaning: v.meaning,
+          verb_type: v.verbType,
+          tags: v.tags,
+          completed_count: v.completedCount,
+          last_completed_at: v.lastCompletedAt,
+        })),
+      },
+    });
+    return;
+  }
+
+  console.log(`Spanish test ready: ${verbPool.length} completed verbs.`);
+  console.log(`Event key: ${eventKey}`);
+}
+
+function cmdModuleTestComplete(moduleDef: ModuleDefinition, args: string[], json: boolean): void {
+  const eventKey = args[0];
+  if (!eventKey) {
+    throw new Error("Usage: module <slug> test-complete <event_key> --score <n> --total <n> [--duration-seconds <n>]");
+  }
+
+  let score: number | null = null;
+  let total: number | null = null;
+  let durationSeconds: number | null = null;
+
+  for (let i = 1; i < args.length; i += 1) {
+    const a = args[i];
+    if (!a) continue;
+    const next = args[i + 1];
+
+    if (a === "--score" && next && /^\d+$/.test(next)) {
+      score = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--total" && next && /^\d+$/.test(next)) {
+      total = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--duration-seconds" && next && /^\d+$/.test(next)) {
+      durationSeconds = Number(next);
+      i += 1;
+      continue;
+    }
+
+    if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
+  }
+
+  if (score === null || total === null) {
+    throw new Error("Usage: module <slug> test-complete <event_key> --score <n> --total <n> [--duration-seconds <n>]");
+  }
+
+  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+
+  const { db } = openDb();
+  insertEvent(db, {
+    type: "test_completed",
+    eventKey,
+    metaJson: JSON.stringify({
+      module_slug: moduleDef.slug,
+      score,
+      total,
+      percentage,
+      duration_seconds: durationSeconds,
+    }),
+  });
+
+  if (json) {
+    printJson({
+      ok: true,
+      command: "module",
+      module: { slug: moduleDef.slug, name: moduleDef.name },
+      action: "test-complete",
+      event_key: eventKey,
+      score,
+      total,
+      percentage,
+      duration_seconds: durationSeconds,
+    });
+    return;
+  }
+
+  console.log(`Test completed: ${score}/${total} (${percentage}%)`);
 }
 
 function cmdChoose(args: string[], json: boolean): void {
