@@ -1,0 +1,14 @@
+[
+  {
+    "key": "learning.spanish.grammar.past_tenses_mixed.v1",
+    "category": "learning",
+    "minutes": 10,
+    "activity": "Preterite vs Imperfect Drill (Mixed AR/ER/IR) - 15 Questions",
+    "done_condition": "after 15 questions are completed and reviewed",
+    "prompt": "Quiz me on the difference between the Preterite (Indefinido) and Imperfect (Imperfecto) tenses in Spanish. Mix -AR, -ER, and -IR verbs. Total: 15 questions. Use a mix of fill-in-the-blank sentences and translation tasks. Focus on triggers like 'ayer', 'siempre', 'mientras', and 'de repente'. Correct my answers and explain the logic for each choice. Use Castilian Spanish with vosotros.",
+    "location": "any",
+    "rarity": "common",
+    "tags": ["spanish", "grammar", "advanced", "drill"],
+    "active": true
+  }
+]

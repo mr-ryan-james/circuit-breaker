@@ -111,6 +111,10 @@ function parseArgs(argv: string[]): { command: string; args: string[]; json: boo
   return { command, args: filtered.slice(1), json };
 }
 
+function isHelpToken(value: string | undefined): boolean {
+  return value === "--help" || value === "-h" || value === "help";
+}
+
 function printJson(obj: unknown): void {
   process.stdout.write(`${JSON.stringify(obj)}\n`);
 }
@@ -168,6 +172,120 @@ function printPromptBlock(prompt: string | null): void {
   console.log(prompt.trim());
   console.log("------------------------");
   console.log("");
+}
+
+function printMainHelp(json: boolean): void {
+  const commands = [
+    "status",
+    "on",
+    "off",
+    "stats",
+    "clear-stats",
+    "seed",
+    "suggest",
+    "break",
+    "choose",
+    "rate",
+    "locations",
+    "contexts",
+    "context",
+    "modules",
+    "module",
+    "import",
+    "speak",
+    "doctor",
+  ];
+
+  if (json) {
+    printJson({
+      ok: true,
+      command: "help",
+      usage: "site-toggle <command> [args] [--json]",
+      commands,
+    });
+    return;
+  }
+
+  console.log("Usage:");
+  console.log("  site-toggle <command> [args] [--json]");
+  console.log("");
+  console.log("Commands:");
+  for (const cmd of commands) console.log(`  - ${cmd}`);
+  console.log("");
+  console.log('Tips: use "site-toggle <command> --help" or "site-toggle module --help" for details.');
+}
+
+function printModuleHelp(json: boolean, moduleSlug?: string): void {
+  const actions = ["history", "start", "complete", "resume", "last", "test", "test-complete"];
+  const usageBase = moduleSlug ? `site-toggle module ${moduleSlug}` : "site-toggle module <slug>";
+
+  if (json) {
+    printJson({
+      ok: true,
+      command: "module",
+      help: true,
+      usage: `${usageBase} <${actions.join("|")}> [args]`,
+      actions,
+    });
+    return;
+  }
+
+  console.log("Module usage:");
+  console.log(`  ${usageBase} <${actions.join("|")}> [args]`);
+  console.log("");
+  console.log("Actions:");
+  for (const action of actions) console.log(`  - ${action}`);
+  console.log("");
+  console.log(`Examples:`);
+  console.log(`  ${usageBase} history --days 7 --limit 5 --json`);
+  console.log(`  ${usageBase} test --count 20 --json`);
+}
+
+function printModuleActionHelp(json: boolean, moduleSlug: string, action: string): void {
+  const base = `site-toggle module ${moduleSlug}`;
+  let usage = `${base} ${action}`;
+  const notes: string[] = [];
+
+  switch (action) {
+    case "history":
+      usage = `${base} history [--days N] [--limit N] [--served-limit N] [--unique] [--only sessions|served] [--status open|completed|partial|abandoned]`;
+      break;
+    case "start":
+      usage = `${base} start <card_id|card_key>`;
+      break;
+    case "complete":
+      usage = `${base} complete --status completed|partial|abandoned [--parts ...] [--note ...] [--event-key <k> --card-id <id>]`;
+      break;
+    case "resume":
+      usage = `${base} resume`;
+      break;
+    case "last":
+      usage = `${base} last`;
+      break;
+    case "test":
+      usage = `${base} test [--count N] [--days N]`;
+      notes.push("Returns a randomized subset of completed verbs (no answer keys).");
+      notes.push("Each verb includes a randomized tense + person pick for quizzing.");
+      break;
+    case "test-complete":
+      usage = `${base} test-complete <event_key> --score <n> --total <n> [--duration-seconds <n>]`;
+      break;
+    default:
+      usage = `${base} ${action}`;
+      break;
+  }
+
+  if (json) {
+    printJson({ ok: true, command: "module", help: true, action, usage, notes });
+    return;
+  }
+
+  console.log("Module action usage:");
+  console.log(`  ${usage}`);
+  if (notes.length > 0) {
+    console.log("");
+    for (const note of notes) console.log(`  - ${note}`);
+  }
 }
 
 async function resolveContextOrThrow(db: any, opts: { location?: string; context?: string; json: boolean }): Promise<string | undefined> {
@@ -642,8 +760,14 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
 
   // Log both cards as served
   for (const lane of menu.lanes) {
-    if ((lane.type === "card" || lane.type === "card2") && (lane as any).card?.id) {
-      insertEvent(db, { type: "card_served", eventKey: menu.event_key, siteSlug: menu.site, cardId: (lane as any).card.id, metaJson: JSON.stringify({ source: "break", lane: lane.type }) });
+    if ((lane as any)?.card?.id && lane.type !== "feed" && lane.type !== "same_need") {
+      insertEvent(db, {
+        type: "card_served",
+        eventKey: menu.event_key,
+        siteSlug: menu.site,
+        cardId: (lane as any).card.id,
+        metaJson: JSON.stringify({ source: "break", lane: lane.type }),
+      });
     }
   }
 
@@ -654,23 +778,47 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
 
   console.log(`Break menu for ${menu.site}`);
   console.log("");
-  const hasCard2 = menu.lanes.some((l) => l.type === "card2");
+  const labelForLane = (type: string): string => {
+    switch (type) {
+      case "physical":
+        return "Physical";
+      case "verb":
+        return "Verb";
+      case "noun":
+        return "Noun";
+      case "lesson":
+        return "B1/B2 Lesson";
+      case "card":
+        return "Card";
+      case "card2":
+        return "Card2";
+      default:
+        return type;
+    }
+  };
+
+  let optionNum = 1;
   for (const lane of menu.lanes) {
     if (lane.type === "same_need") {
-      console.log(`1) Same-need: ${lane.prompt}`);
-    } else if (lane.type === "card") {
-      console.log(`2) Card [${lane.card.category}]: ${lane.card.activity} (${lane.card.minutes} min) — ${lane.card.doneCondition}`);
-      if (lane.card.prompt) printPromptBlock(lane.card.prompt);
-    } else if (lane.type === "card2") {
-      console.log(`3) Card [${lane.card.category}]: ${lane.card.activity} (${lane.card.minutes} min) — ${lane.card.doneCondition}`);
-      if (lane.card.prompt) printPromptBlock(lane.card.prompt);
-    } else if (lane.type === "feed") {
-      const feedNum = hasCard2 ? 4 : 3;
-      console.log(`${feedNum}) Feed: unblock ${lane.site} for ${lane.minutes} min`);
+      console.log(`${optionNum}) Same-need: ${lane.prompt}`);
+      optionNum += 1;
+      continue;
     }
+    if (lane.type === "feed") {
+      console.log(`${optionNum}) Feed: unblock ${lane.site} for ${lane.minutes} min`);
+      optionNum += 1;
+      continue;
+    }
+
+    const card = (lane as any).card;
+    if (!card) continue;
+    console.log(`${optionNum}) ${labelForLane(lane.type)} [${card.category}]: ${card.activity} (${card.minutes} min) — ${card.doneCondition}`);
+    if (card.prompt) printPromptBlock(card.prompt);
+    optionNum += 1;
   }
   console.log("");
-  console.log(`Choose: site-toggle choose ${menu.event_key} card|card2|feed|same_need`);
+  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|feed|same_need`);
+  console.log("(Legacy aliases: card=first card lane, card2=second card lane)");
 }
 
 function cmdLocations(args: string[], json: boolean): void {
@@ -879,6 +1027,14 @@ function generateSuggestEventKey(): string {
   return `sug-${ts}-${rand}`;
 }
 
+function shuffleInPlace<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(0, i + 1);
+    [items[i], items[j]] = [items[j]!, items[i]!];
+  }
+  return items;
+}
+
 function rowToModuleCard(row: {
   id: number;
   key: string;
@@ -1062,10 +1218,22 @@ function cmdModules(json: boolean): void {
 async function cmdModule(args: string[], json: boolean): Promise<void> {
   const moduleSlug = args[0];
   const action = args[1] ?? "history";
-  if (!moduleSlug) throw new Error("Usage: module <slug> <history|start|complete|resume|last|test|test-complete> [args]");
+  if (!moduleSlug || isHelpToken(moduleSlug)) {
+    printModuleHelp(json);
+    return;
+  }
+  if (isHelpToken(action)) {
+    printModuleHelp(json, moduleSlug);
+    return;
+  }
 
   const moduleDef = findModuleOrThrow(moduleSlug);
   const actionArgs = args.slice(2);
+
+  if (actionArgs.length > 0 && isHelpToken(actionArgs[0])) {
+    printModuleActionHelp(json, moduleDef.slug, action);
+    return;
+  }
 
   if (action === "history") return cmdModuleHistory(moduleDef, actionArgs, json);
   if (action === "start") return cmdModuleStart(moduleDef, actionArgs, json);
@@ -1691,15 +1859,14 @@ function cmdModuleTest(moduleDef: ModuleDefinition, args: string[], json: boolea
   if (moduleDef.slug !== "spanish") throw new Error('Test mode is only supported for module "spanish".');
 
   const { db } = openDb();
-  const verbPool = getCompletedSpanishVerbCards(db, { days });
+  const allVerbs = getCompletedSpanishVerbCards(db, { days });
 
-  const minCount = 5;
-  if (verbPool.length < minCount) {
-    throw new CliError(
-      "INSUFFICIENT_COMPLETED",
-      `Need at least ${minCount} completed verb cards to start a test. Found ${verbPool.length}.`,
-    );
-  }
+  const effectiveCount = Math.min(count, allVerbs.length);
+  const shuffled = shuffleInPlace([...allVerbs]);
+  const poolLimit = Math.min(shuffled.length, effectiveCount);
+  const verbPool = shuffled.slice(0, poolLimit);
+  const tenses = ["presente", "indefinido", "imperfecto"] as const;
+  const persons = ["yo", "tu", "el/ella", "nosotros", "vosotros", "ellos/ellas"] as const;
 
   const eventKey = generateTestEventKey(moduleDef.slug);
   insertEvent(db, {
@@ -1707,8 +1874,9 @@ function cmdModuleTest(moduleDef: ModuleDefinition, args: string[], json: boolea
     eventKey,
     metaJson: JSON.stringify({
       module_slug: moduleDef.slug,
-      question_count: count,
+      question_count: effectiveCount,
       verb_count: verbPool.length,
+      verb_total: allVerbs.length,
       days: days ?? null,
     }),
   });
@@ -1721,14 +1889,18 @@ function cmdModuleTest(moduleDef: ModuleDefinition, args: string[], json: boolea
       action: "test",
       event_key: eventKey,
       test: {
-        question_count: count,
-        tenses: ["presente", "indefinido", "imperfecto"],
+        question_count: effectiveCount,
+        tenses,
+        verb_pool_total: allVerbs.length,
+        verb_pool_limit: verbPool.length,
         verb_pool: verbPool.map((v) => ({
           card_id: v.cardId,
           card_key: v.cardKey,
           verb: v.verb,
           meaning: v.meaning,
           verb_type: v.verbType,
+          tense: tenses[crypto.randomInt(0, tenses.length)],
+          person: persons[crypto.randomInt(0, persons.length)],
           tags: v.tags,
           completed_count: v.completedCount,
           last_completed_at: v.lastCompletedAt,
@@ -1852,14 +2024,37 @@ function cmdChoose(args: string[], json: boolean): void {
     return;
   }
 
-  if (lane === "card" || lane === "card2") {
-    const cardLane = (menu.lanes as any[]).find((l) => l.type === lane);
-    if (!cardLane?.card?.id) throw new Error(`Break menu missing ${lane} lane`);
-    insertEvent(db, { type: "card_chosen", eventKey, siteSlug: menu.site, cardId: cardLane.card.id, metaJson: JSON.stringify({ lane }) });
+  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson"].includes(t);
+
+  const resolveCardLane = (requested: string): any | null => {
+    const direct = (menu.lanes as any[]).find((l) => l.type === requested);
+    if (direct?.card?.id) return direct;
+
+    // Backwards-compatible aliases:
+    // - If the menu is "v2" (physical/verb/noun/lesson), allow `card`/`card2`
+    //   to mean the 1st/2nd available card lane in the menu order.
+    if (requested === "card" || requested === "card2") {
+      const allCardLanes = (menu.lanes as any[]).filter((l) => l?.card?.id);
+      const idx = requested === "card" ? 0 : 1;
+      return allCardLanes[idx] ?? null;
+    }
+
+    return null;
+  };
+
+  if (isCardLaneType(lane)) {
+    const cardLane = resolveCardLane(lane);
+    if (!cardLane?.card?.id) {
+      const available = Array.isArray(menu?.lanes) ? (menu.lanes as any[]).map((l) => l.type).join(", ") : "";
+      throw new Error(`Break menu missing ${lane} lane.${available ? ` Available: ${available}` : ""}`);
+    }
+
+    const resolvedLane = String(cardLane.type);
+    insertEvent(db, { type: "card_chosen", eventKey, siteSlug: menu.site, cardId: cardLane.card.id, metaJson: JSON.stringify({ lane: resolvedLane }) });
     notify("Break Card", `Do: ${cardLane.card.activity} (${cardLane.card.minutes} min)`);
     const reentryPid = spawnDetached([siteToggleJsPath(), "_reentry", eventKey, String(cardLane.card.minutes), String(cardLane.card.id)]);
     if (json) {
-      printJson({ ok: true, command: "choose", event_key: eventKey, lane, card: cardLane.card, card_id: cardLane.card.id, reentry_pid: reentryPid });
+      printJson({ ok: true, command: "choose", event_key: eventKey, lane: resolvedLane, card: cardLane.card, card_id: cardLane.card.id, reentry_pid: reentryPid });
       return;
     }
     console.log(`Do: ${cardLane.card.activity} (${cardLane.card.minutes} min) — ${cardLane.card.doneCondition}`);
@@ -2297,6 +2492,10 @@ async function main(): Promise<void> {
   const { command, args, json } = parseArgs(process.argv.slice(2));
 
   try {
+    if (isHelpToken(command)) {
+      printMainHelp(json);
+      return;
+    }
     switch (command) {
       case "doctor":
         await cmdDoctor(json);

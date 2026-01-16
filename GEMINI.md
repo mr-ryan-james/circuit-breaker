@@ -1,4 +1,4 @@
-# Circuit Breaker - Claude Instructions
+# Circuit Breaker - Gemini Instructions
 
 This folder contains Ryan's circuit breaker system for managing distracting websites on macOS.
 

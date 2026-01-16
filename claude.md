@@ -4,9 +4,15 @@ This folder contains Ryan's circuit breaker system for managing distracting webs
 
 ## Quick Start (Agents / CLI)
 
-If you’re an agent (Claude/Codex) and you need to operate the blocker, this is the fastest reliable path:
+If you're an agent (Claude/Codex) and you need to operate the blocker, this is the fastest reliable path:
 
 All commands below assume your working directory is `~/Dev/circuit-breaker`. If not, replace `./site-toggle` with `~/Dev/circuit-breaker/site-toggle`.
+
+**Spanish test mode** (when Ryan says "quiz me", "test me", "give me a test"):
+```bash
+./site-toggle module spanish test --json              # 20 questions
+./site-toggle module spanish test --count 10 --json   # custom count
+```
 
 1. **Sanity check:** `./site-toggle doctor`
 2. **Set current context (important for Break Cards):**
@@ -15,12 +21,15 @@ All commands below assume your working directory is `~/Dev/circuit-breaker`. If 
 3. **Ensure a deck exists (optional if already seeded):**
    - `./site-toggle seed` (loads all `data/cards/*.json|*.csv|*.tsv` into SQLite)
    - Or `./site-toggle import cards /path/to/cards.csv`
-4. **Preferred unblock flow (generates 4-option menu automatically):**
+4. **Preferred unblock flow (generates 6-option menu automatically):**
    - `./site-toggle break reddit --json`
-   - If Ryan chooses feed: `sudo -n ./site-toggle choose <event_key> feed --json`
-   - If Ryan chooses card: `./site-toggle choose <event_key> card --json`
-   - If Ryan chooses card2: `./site-toggle choose <event_key> card2 --json`
    - If Ryan chooses same-need: `./site-toggle choose <event_key> same_need --json`
+   - If Ryan chooses physical: `./site-toggle choose <event_key> physical --json`
+   - If Ryan chooses verb: `./site-toggle choose <event_key> verb --json`
+   - If Ryan chooses noun: `./site-toggle choose <event_key> noun --json`
+   - If Ryan chooses B1/B2 lesson: `./site-toggle choose <event_key> lesson --json`
+   - If Ryan chooses feed: `sudo -n ./site-toggle choose <event_key> feed --json`
+   - (Legacy aliases: `card` = first card lane, `card2` = second card lane)
 
 ## When Ryan Asks to Unblock Sites
 
@@ -30,17 +39,19 @@ Ryan ultimately wants autonomy. Your job is to add a brief, non-preachy pause an
 
 **REQUIRED — ALWAYS query the break command:** For EVERY unblock request, run `./site-toggle break <site> --json` to generate a fresh menu. This applies even on repeat requests in the same session. NEVER skip the query or invent alternatives from memory — always pull a fresh Break Card from the database.
 
-The break command returns 4 lanes (2 cards guaranteed to be different categories):
+The break command returns 6 lanes (4 cards, always in this order):
 - a **same-need** prompt (lane `same_need`)
-- **first Break Card** (lane `card`) — could be any category
-- **second Break Card** (lane `card2`) — guaranteed different category from first
+- a **Physical** Break Card (lane `physical`)
+- a **Spanish Verb** Break Card (lane `verb`)
+- a **Spanish Noun** Break Card (lane `noun`)
+- a **Spanish B1/B2 Lesson + Quiz** Break Card (lane `lesson`)
 - the **unblock option** (lane `feed`)
 
-**Step 1: Query and present all 4 lanes**
-Run `./site-toggle break <site> --json` and present the options. The two card lanes are guaranteed to be different categories (e.g., if one is "learning", the other might be "physical" or "restorative").
+**Step 1: Query and present all 6 lanes**
+Run `./site-toggle break <site> --json` and present the options.
 
 **Step 2: Give the unblock option**
-After the alternatives, offer the focused window (social: 10 min, news/tech: 15 min) or whatever Ryan requests.
+After the alternatives, offer a focused 10 min window (or whatever Ryan explicitly requests).
 
 **Step 3: Execute immediately if Ryan chooses**
 - Don't force multiple turns — if Ryan says "just do it" or picks an option, execute
@@ -48,17 +59,19 @@ After the alternatives, offer the focused window (social: 10 min, news/tech: 15 
 
 ### Example Responses
 
-**Standard response (4 options, two cards of different categories):**
+**Standard response (6 options, four different card lanes):**
 
-Note: Card order is random. The only guarantee is: `card.category ≠ card2.category`. Use the `category` field from JSON to label boxes dynamically.
+Note: Lane order is stable. Use the lane name (physical/verb/noun/lesson) + `category` field from JSON for labels.
 
 ```
-Before I unblock Twitter — four options:
+Before I unblock Twitter — six options:
 
 1. Same-need — What are you looking for? I'll find it.
 2. Quick walk — 5 min (physical)
-3. Spanish practice — 5 min verb drill (learning)
-4. Feed — 10 min window
+3. Verb drill — 5 min (verb)
+4. Noun drill — 5 min (noun)
+5. B1/B2 lesson — 10 min (lesson)
+6. Feed — 10 min window
 
 ┌─ Physical Card (option 2) ────────────────────────┐
 │                                                   │
@@ -71,7 +84,7 @@ Before I unblock Twitter — four options:
 │  → "2" to start                                   │
 └───────────────────────────────────────────────────┘
 
-┌─ Learning Card (option 3) ────────────────────────┐
+┌─ Verb Card (option 3) ────────────────────────────┐
 │                                                   │
 │  PERTENECER (to belong)                           │
 │  Irregular -zco verb · 5 min                      │
@@ -84,27 +97,52 @@ Before I unblock Twitter — four options:
 │  → "quiz me" or "3" to start                      │
 └───────────────────────────────────────────────────┘
 
-Your call — 1, 2, 3, or 4?
+┌─ Noun Card (option 4) ────────────────────────────┐
+│                                                   │
+│  AGUA (water)                                     │
+│  Noun · 5 min                                     │
+│                                                   │
+│  Prompt:                                          │
+│  Quiz me on “agua”: gender/article (el agua),     │
+│  plural (las aguas), and 5 example sentences.     │
+│                                                   │
+│  → "quiz me" or "4" to start                      │
+└───────────────────────────────────────────────────┘
+
+┌─ B1/B2 Lesson Card (option 5) ────────────────────┐
+│                                                   │
+│  SUBJUNCTIVE TRIGGERS (Wishes/Emotion/Doubt)      │
+│  Grammar · 10 min                                 │
+│                                                   │
+│  Prompt:                                          │
+│  Teach → 5 examples → 15-question quiz.           │
+│                                                   │
+│  → "5" to start                                   │
+└───────────────────────────────────────────────────┘
+
+Your call — 1, 2, 3, 4, 5, or 6?
 ```
 
 **When Ryan says "unblock everything":**
 
-Still run `./site-toggle break twitter --json` (or any site) to get fresh card alternatives. Present the 4 options, but adapt the feed lane to "unblock all":
+Still run `./site-toggle break twitter --json` (or any site) to get fresh card alternatives. Present the 6 options, but adapt the feed lane to "unblock all":
 
 ```
-Before I unblock everything — four options:
+Before I unblock everything — six options:
 
 1. Same-need — What are you looking for? I'll find it.
-2. Spanish verb drill — 5 min (learning)
-3. Quick walk — 5 min (physical)
-4. Feed — 10 min window for all 23 sites
+2. Quick walk — 5 min (physical)
+3. Verb drill — 5 min (verb)
+4. Noun drill — 5 min (noun)
+5. B1/B2 lesson — 10 min (lesson)
+6. Feed — 10 min window for all 23 sites
 
-[Show both card boxes as usual]
+[Show the four card boxes as usual]
 
-Your call — 1, 2, 3, or 4?
+Your call — 1, 2, 3, 4, 5, or 6?
 ```
 
-If Ryan picks 4 (feed), run: `sudo -n ./site-toggle on "" 10`
+If Ryan picks 6 (feed), run: `sudo -n ./site-toggle on "" 10`
 
 **When Ryan says "just do it" or picks unblock:**
 > [runs command immediately, no more friction]
@@ -125,18 +163,18 @@ Run `sudo ~/Dev/circuit-breaker/site-toggle stats` to check usage patterns. The 
 
 **When to check stats:** Optionally before responding to an unblock request, especially if it feels like a high-frequency day.
 
-**IMPORTANT:** Friction level affects **phrasing and tone**, NOT whether to query the break command. You MUST still run `./site-toggle break <site> --json` every time — friction just changes how you frame the 4 options.
+**IMPORTANT:** Friction level affects **phrasing and tone**, NOT whether to query the break command. You MUST still run `./site-toggle break <site> --json` every time — friction just changes how you frame the 6 options.
 
 **How to calibrate friction:**
 
 | Today's pattern | Friction level | What changes |
 |-----------------|----------------|--------------|
-| First request | Light | Present the 4 options matter-of-factly, no stats mention |
-| 2-3 requests | Light-medium | Present 4 options, maybe note "quick check: what are you looking for?" |
-| 4+ requests | Medium | Present 4 options + brief awareness: "that's your 4th today" |
-| 60+ min already today | Medium | Present 4 options + brief awareness: "you've had about an hour today" |
+| First request | Light | Present the 6 options matter-of-factly, no stats mention |
+| 2-3 requests | Light-medium | Present 6 options, maybe note "quick check: what are you looking for?" |
+| 4+ requests | Medium | Present 6 options + brief awareness: "that's your 4th today" |
+| 60+ min already today | Medium | Present 6 options + brief awareness: "you've had about an hour today" |
 
-In ALL cases: query `./site-toggle break`, present the 4 options, comply if Ryan chooses feed.
+In ALL cases: query `./site-toggle break`, present the 6 options, comply if Ryan chooses feed.
 
 **Tone rules for stats mentions:**
 - Use **coarse language** ("a few times", "about an hour") not exact counts unless Ryan asks
@@ -149,8 +187,8 @@ In ALL cases: query `./site-toggle break`, present the 4 options, comply if Ryan
 | Category | Sites | Default |
 |----------|-------|---------|
 | Social | twitter, reddit | 10 min |
-| News | nytimes, cnn, bloomberg, wsj, cnbc, ft, marketwatch, businessinsider, reuters, theatlantic, washingtonpost, theguardian, bbc, npr, politico, axios, vox | 15 min |
-| Tech | techcrunch, theverge, wired, arstechnica | 15 min |
+| News | nytimes, cnn, bloomberg, wsj, cnbc, ft, marketwatch, businessinsider, reuters, theatlantic, washingtonpost, theguardian, bbc, npr, politico, axios, vox | 10 min |
+| Tech | techcrunch, theverge, wired, arstechnica | 10 min |
 
 ### Spanish Pronunciation Audio (TTS)
 
@@ -343,7 +381,7 @@ Modules are defined in `data/modules/*.json` and match cards by tags (e.g. Spani
    - Otherwise proceed with Break card selection or `start <card_id>`
 
 2. **When Ryan chooses a Spanish card from Break menu:**
-   - The `choose <event_key> card` command already logs `card_chosen`
+   - The `choose <event_key> verb|noun|lesson` commands already log `card_chosen` (legacy aliases: `card`, `card2`)
    - This counts as a started session — no extra `start` needed
    - **Save the `event_key` and `card_id`** from the choose response — you'll need both for `complete`
 
@@ -361,24 +399,31 @@ Modules are defined in `data/modules/*.json` and match cards by tags (e.g. Spani
 
 Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the agent constructs questions and grades using Spanish knowledge.
 
+**Trigger phrases** — run the test command when Ryan says:
+- "quiz me" / "test me" / "give me a test"
+- "Spanish test" / "verb test"
+- "quiz me with N questions" (use `--count N`)
+
 **Start a test:**
 ```bash
 ./site-toggle module spanish test --json
+./site-toggle module spanish test --count 10 --json  # for specific count
 ```
 
-**If fewer than 5 completed verbs:** tell Ryan how many are available and suggest more practice first.
+**Pool size:** CLI returns a randomized subset of completed verbs (limited to keep context small). If fewer verbs exist than requested, the test will be shorter.
 
-**Agent flow:**
-1. Present overview (20 questions, mixed tenses: presente/indefinido/imperfecto).
-2. Build questions from the verb pool using these types:
-   - fill_blank
-   - imp_vs_indef
-   - quick_form
-   - translate
-   - error_correction
-   - transformation
-3. After each answer: grade, show correction, **play TTS** of the correct form/sentence.
-4. Final score summary, then log completion:
+**Agent flow (default = fill‑in‑the‑blank):**
+1. Present overview (N questions, mixed tenses: presente/indefinido/imperfecto).
+2. **Do NOT list the verb pool.** Start Q1 immediately after the overview.
+3. **Use the provided picks** from JSON: each verb includes a random `tense` + `person`. Do **not** re-randomize unless those fields are missing.
+4. Ask a **fill‑in‑the‑blank** sentence that forces that tense/person.
+   - Avoid “give me all 6 forms” unless Ryan asks.
+   - Avoid definition‑only prompts.
+5. After each answer (correct OR incorrect):
+   - Grade the answer
+   - **Show English translation** of the correct Spanish (e.g., "anduve = I walked" or full sentence "Nosotros tenemos mucha suerte = We have a lot of luck")
+   - Play TTS of the correct sentence
+6. Final score summary, then log completion:
 ```bash
 ./site-toggle module spanish test-complete <event_key> --score 17 --total 20 --json
 ```
@@ -387,6 +432,26 @@ Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the 
 - The CLI does **not** provide answer keys. The agent builds and grades dynamically.
 - Accept minor accent/spelling variations when reasonable.
 - Use the existing `site-toggle speak` flow after every answer.
+- Favor fill‑in‑the‑blank (~70% of questions); mix in quick_form/imp_vs_indef occasionally.
+- If you want to mention the pool at all, show at most 2–3 verbs as examples, not the full list.
+
+**Fill‑in‑the‑blank template (use by default):**
+```
+┌─ Question 3/10 ────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                                            │
+│  Complete the sentence (pretérito indefinido, tú):                                                         │
+│                                                                                                            │
+│  "Ayer _______ temprano a casa."  (llegar)                                                                 │
+│                                                                                                            │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Quick_form template (optional):**
+```
+┌─ Question 7/10 ────────────────────────────────────────────────────────────────────────────────────────────┐
+│  Quick! DAR · imperfecto · nosotros                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ### Command Reference
 
@@ -401,13 +466,17 @@ Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the 
 ./site-toggle context set home
 ./site-toggle context set coworking
 ./site-toggle break reddit --json
-./site-toggle choose <event_key> card --json
-./site-toggle choose <event_key> card2 --json
+./site-toggle choose <event_key> physical --json
+./site-toggle choose <event_key> verb --json
+./site-toggle choose <event_key> noun --json
+./site-toggle choose <event_key> lesson --json
 ./site-toggle speak "vincular"
 ./site-toggle speak "cómo estás" --voice es-MX-JorgeNeural
 ./site-toggle modules
 ./site-toggle module spanish history --days 7 --limit 5 --json
-./site-toggle module spanish test --json
+./site-toggle module spanish test --json                # 20 questions from completed verbs
+./site-toggle module spanish test --count 10 --json     # custom question count
+./site-toggle module spanish test-complete <event_key> --score 8 --total 10 --json
 ./site-toggle module spanish complete --status completed
 
 # Manual unblock/block (requires sudo because it edits /etc/hosts)
@@ -416,7 +485,7 @@ sudo -n ./site-toggle off reddit
 
 # Unblock/block ALL sites (only if explicitly requested)
 sudo -n ./site-toggle on                 # unblock all (default minutes per site)
-sudo -n ./site-toggle on "" 15           # unblock all for 15 minutes
+sudo -n ./site-toggle on "" 10           # unblock all for 10 minutes
 sudo -n ./site-toggle off                # block all
 
 # Break menu choice (feed lane requires sudo because it unblocks in /etc/hosts)
@@ -476,12 +545,15 @@ The `break` command is the agent-friendly “menu generator”:
 
 It returns a single JSON object with:
 - `event_key` (use this for `choose`)
-- `lanes`: `same_need`, `card`, and `feed`
+- `lanes`: `same_need`, `physical`, `verb`, `noun`, `lesson`, and `feed`
 
 Then execute the chosen lane:
 
 ```bash
-./site-toggle choose <event_key> card --json      # no sudo
+./site-toggle choose <event_key> physical --json  # no sudo
+./site-toggle choose <event_key> verb --json      # no sudo
+./site-toggle choose <event_key> noun --json      # no sudo
+./site-toggle choose <event_key> lesson --json    # no sudo
 ./site-toggle choose <event_key> same_need --json # no sudo
 sudo -n ./site-toggle choose <event_key> feed --json  # requires sudo (edits /etc/hosts)
 ```

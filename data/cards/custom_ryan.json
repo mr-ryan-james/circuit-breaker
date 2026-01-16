@@ -1,0 +1,14 @@
+[
+  {
+    "key": "learning.spanish.mixed.past_tense_drill.v1",
+    "category": "learning",
+    "minutes": 10,
+    "activity": "Preterite vs Imperfect Drill (Mixed AR/ER/IR) - 15 Questions",
+    "done_condition": "when you finish 15 questions",
+    "prompt": "Quiz me on the difference between Preterite (Indefinido) and Imperfect (Imperfecto). Mix regular -AR, -ER, and -IR verbs. Ask 15 questions total. For each, give me a sentence in English and the verb infinitive, and ask me to translate the verb into the correct past tense based on the context (completed action vs ongoing/habitual). Correct me if I'm wrong and explain why. Use Castilian Spanish with vosotros.",
+    "location": "any",
+    "rarity": "common",
+    "tags": ["spanish", "grammar", "past-tense", "drill"],
+    "active": true
+  }
+]

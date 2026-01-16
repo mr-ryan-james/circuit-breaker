@@ -74,6 +74,9 @@ export interface SelectCardsOptions {
   context?: string;
   maxMinutes?: number;
   cooldownServed?: number;
+  excludeCardIds?: number[];
+  tagsAny?: string[];
+  tagsAll?: string[];
 }
 
 export function selectBreakCards(db: DatabaseSync, options: SelectCardsOptions): BreakCard[] {
@@ -82,6 +85,24 @@ export function selectBreakCards(db: DatabaseSync, options: SelectCardsOptions):
   const cooldownServed = options.cooldownServed ?? 20;
 
   const recentServed = new Set(getRecentServedCardIds(db, cooldownServed));
+  const excluded = new Set(options.excludeCardIds ?? []);
+
+  const tagsAny = (options.tagsAny ?? []).map((t) => t.trim()).filter(Boolean);
+  const tagsAll = (options.tagsAll ?? []).map((t) => t.trim()).filter(Boolean);
+
+  const rowMatchesTags = (row: CardRow): boolean => {
+    if (tagsAny.length === 0 && tagsAll.length === 0) return true;
+    const tagSet = new Set(parseTags(row.tags_json));
+    if (tagsAny.length > 0) {
+      const okAny = tagsAny.some((t) => tagSet.has(t));
+      if (!okAny) return false;
+    }
+    if (tagsAll.length > 0) {
+      const okAll = tagsAll.every((t) => tagSet.has(t));
+      if (!okAll) return false;
+    }
+    return true;
+  };
 
   let rows: CardRow[];
   if (options.location) {
@@ -93,6 +114,8 @@ export function selectBreakCards(db: DatabaseSync, options: SelectCardsOptions):
   }
 
   rows = rows.filter((r) => !recentServed.has(r.id));
+  rows = rows.filter((r) => !excluded.has(r.id));
+  rows = rows.filter(rowMatchesTags);
 
   const picked: BreakCard[] = [];
   const usedCategories = new Set<string>();

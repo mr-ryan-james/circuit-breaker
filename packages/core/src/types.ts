@@ -18,7 +18,9 @@ export type CardRarity = "common" | "uncommon" | "rare";
 
 export type CardRating = "love" | "ok" | "meh" | "ban";
 
-export type BreakLane = "same_need" | "card" | "card2" | "feed";
+// NOTE: "card"/"card2" are legacy lane names kept for backwards compatibility
+// with older break menus stored in the DB events log.
+export type BreakLane = "same_need" | "physical" | "verb" | "noun" | "lesson" | "card" | "card2" | "feed";
 
 // Context slugs are user-extensible, so keep as string.
 export type BreakContext = string;
@@ -91,6 +93,26 @@ export interface BreakMenuLaneCard2 {
   card: BreakCard;
 }
 
+export interface BreakMenuLanePhysical {
+  type: "physical";
+  card: BreakCard;
+}
+
+export interface BreakMenuLaneVerb {
+  type: "verb";
+  card: BreakCard;
+}
+
+export interface BreakMenuLaneNoun {
+  type: "noun";
+  card: BreakCard;
+}
+
+export interface BreakMenuLaneLesson {
+  type: "lesson";
+  card: BreakCard;
+}
+
 export interface BreakMenuLaneFeed {
   type: "feed";
   site: string;
@@ -98,7 +120,15 @@ export interface BreakMenuLaneFeed {
   command: string;
 }
 
-export type BreakMenuLane = BreakMenuLaneSameNeed | BreakMenuLaneCard | BreakMenuLaneCard2 | BreakMenuLaneFeed;
+export type BreakMenuLane =
+  | BreakMenuLaneSameNeed
+  | BreakMenuLanePhysical
+  | BreakMenuLaneVerb
+  | BreakMenuLaneNoun
+  | BreakMenuLaneLesson
+  | BreakMenuLaneCard
+  | BreakMenuLaneCard2
+  | BreakMenuLaneFeed;
 
 export interface BreakMenu {
   event_key: string;

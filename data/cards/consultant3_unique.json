@@ -189,7 +189,7 @@
   {
     "key": "creative.valencia.tribunal_aguas.thursday_noon.v1",
     "category": "creative",
-    "minutes": 15,
+    "minutes": 10,
     "activity": "Walk to Cathedral's Apostles' Gate to watch Tribunal de las Aguas (Thursdays at noon ONLY). World's oldest court—8 farmers in black resolving water disputes.",
     "done_condition": "when you've watched the tribunal proceedings",
     "location": "valencia",
@@ -200,7 +200,7 @@
   {
     "key": "creative.valencia.post_office_dome.3min.v1",
     "category": "creative",
-    "minutes": 12,
+    "minutes": 10,
     "activity": "Walk to Central Post Office (Plaza Ayuntamiento). Look up at the glass dome: 370 panels, 3,500 stained glass pieces showing all Spanish province coats of arms.",
     "done_condition": "when you've counted 5 different province coats of arms",
     "location": "valencia",
