@@ -11,13 +11,13 @@ When you ask your AI agent to unblock a site:
 ```
 You: "unblock twitter"
 
-Agent: "Before I unblock Twitter — quick menu:
-  1. Same-need: What specifically are you hoping to find? (I can help without the feed.)
-  2. Physical: 2–5 min stretch / walk (done when the timer ends)
-  3. Verb: 5 min conjugation drill (Spanish)
-  4. Noun: 5 min vocab drill (Spanish)
-  5. B1/B2: 10 min mini-lesson + 15-question quiz (Spanish)
-  6. Feed: 10 min window, your call."
+Agent: "Before I unblock Twitter — quick menu (pick a lane):
+  1. same_need — What specifically are you hoping to find? (I can help without the feed.)
+  2. physical — 2–5 min stretch / walk (done when the timer ends)
+  3. verb — 5 min conjugation drill (Spanish)
+  4. noun — 5 min vocab drill (Spanish)
+  5. lesson — 10 min mini-lesson + 15-question quiz (Spanish)
+  6. feed — unblock Twitter for 10 min"
 
 You: "just do it"
 
