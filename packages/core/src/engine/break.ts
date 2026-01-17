@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { getSiteBySlug } from "../db/queries.js";
-import type { BreakMenu, BreakMenuLane, SiteType } from "../types.js";
+import type { BreakCard, BreakMenu, BreakMenuLane, SiteType } from "../types.js";
 import { selectBreakCards } from "./selection.js";
 
 export function generateEventKey(): string {
@@ -66,15 +66,51 @@ export function buildBreakMenu(options: BuildBreakMenuOptions): BreakMenu {
     return pickOne(primary) ?? pickOne(primary, 0) ?? pickOne(fallback) ?? pickOne(fallback, 0);
   };
 
+  const shortTitle = (activity: string): string => {
+    const idx = activity.indexOf(" - ");
+    return (idx >= 0 ? activity.slice(0, idx) : activity).trim();
+  };
+
+  const extractLessonTeach = (prompt: string | null): string | null => {
+    if (!prompt) return null;
+    const startToken = "PHASE 1 - TEACH:";
+    const endToken = "PHASE 2 - EXAMPLES:";
+    const start = prompt.indexOf(startToken);
+    if (start === -1) return null;
+    const afterStart = start + startToken.length;
+    const end = prompt.indexOf(endToken, afterStart);
+    const slice = prompt.slice(afterStart, end === -1 ? undefined : end).trim();
+    return slice.length > 0 ? slice : null;
+  };
+
+  const buildFusionPrompt = (templatePrompt: string, opts: { verb: BreakCard; noun: BreakCard; lesson: BreakCard }): string => {
+    const teach = extractLessonTeach(opts.lesson?.prompt ?? null);
+    const teachBlock = teach ? `\n\nB1/B2 LESSON TEACH NOTES (use as your source):\n${teach}` : "";
+    return (
+      `${templatePrompt.trim()}\n\n---\n\n` +
+      `SELECTED INPUTS (use these; do not replace with random words):\n` +
+      `VERB CARD:\n- key: ${opts.verb.key}\n- activity: ${opts.verb.activity}\n\n` +
+      `NOUN CARD:\n- key: ${opts.noun.key}\n- activity: ${opts.noun.activity}\n\n` +
+      `B1/B2 LESSON CARD:\n- key: ${opts.lesson.key}\n- activity: ${opts.lesson.activity}` +
+      teachBlock
+    ).trim();
+  };
+
   // Goal: 4 distinct "break cards" every time:
   // - physical activity
   // - spanish verb
   // - spanish noun
   // - B1/B2 spanish lesson/quiz
   const physical = pickOneOrFallback({ category: "physical" }, {});
-  const verb = pickOneOrFallback({ tagsAll: ["spanish", "verb"] }, { tagsAny: ["spanish"] });
-  const noun = pickOneOrFallback({ tagsAll: ["spanish", "noun"] }, { tagsAny: ["spanish"] });
-  const lesson = pickOneOrFallback({ tagsAll: ["spanish", "lesson", "b1b2"] }, { tagsAll: ["spanish", "grammar"] });
+  const verb = pickOneOrFallback({ tagsAll: ["spanish", "verb"] }, { tagsAny: ["verb"] });
+  const noun = pickOneOrFallback({ tagsAll: ["spanish", "noun"] }, { tagsAny: ["noun"] });
+  const lesson = pickOneOrFallback({ tagsAll: ["spanish", "lesson", "b1b2"] }, { tagsAll: ["lesson", "b1b2"] });
+
+  const hasVerb = !!verb && verb.tags.includes("spanish") && verb.tags.includes("verb");
+  const hasNoun = !!noun && noun.tags.includes("spanish") && noun.tags.includes("noun");
+  const hasLesson = !!lesson && lesson.tags.includes("spanish") && lesson.tags.includes("lesson") && lesson.tags.includes("b1b2");
+
+  const fusionTemplate = hasVerb && hasNoun && hasLesson ? pickOne({ tagsAll: ["spanish", "fusion"] }, 0) : null;
 
   const cards = [physical, verb, noun, lesson].filter(Boolean);
   if (cards.length === 0) throw new Error("No cards available. Run `site-toggle seed` to load a deck.");
@@ -86,6 +122,15 @@ export function buildBreakMenu(options: BuildBreakMenuOptions): BreakMenu {
     ...(noun ? [{ type: "noun", card: noun } as BreakMenuLane] : []),
     ...(lesson ? [{ type: "lesson", card: lesson } as BreakMenuLane] : []),
   ];
+
+  if (fusionTemplate && fusionTemplate.prompt && hasVerb && hasNoun && hasLesson) {
+    const fusionCard = {
+      ...fusionTemplate,
+      activity: `Fusion (7 min): ${shortTitle(verb!.activity)} + ${shortTitle(noun!.activity)} + ${lesson!.activity}`,
+      prompt: buildFusionPrompt(fusionTemplate.prompt, { verb, noun, lesson }),
+    };
+    lanes.push({ type: "fusion", card: fusionCard } as BreakMenuLane);
+  }
 
   lanes.push({
     type: "feed",

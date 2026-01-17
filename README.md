@@ -17,7 +17,8 @@ Agent: "Before I unblock Twitter — quick menu (pick a lane):
   3. verb — 5 min conjugation drill (Spanish)
   4. noun — 5 min vocab drill (Spanish)
   5. lesson — 10 min mini-lesson + 15-question quiz (Spanish)
-  6. feed — unblock Twitter for 10 min"
+  6. fusion — 7 min integrated drill (verb + noun + B1/B2 concept)
+  7. feed — unblock Twitter for 10 min"
 
 You: "just do it"
 
@@ -25,8 +26,8 @@ Agent: "Done. Twitter unblocked for 10 min. Auto-reblocks at 2:45 PM."
 ```
 
 The AI reads `claude.md` / `AGENTS.md` (agent instructions) which tells it to:
-- Offer a short, structured menu (same-need + 4 alternatives) before unblocking
-- Suggest Break Cards (physical) + Spanish practice (verb, noun, B1/B2 lesson)
+- Offer a short, structured menu (same-need + alternatives) before unblocking
+- Suggest Break Cards (physical) + Spanish practice (verb, noun, B1/B2 lesson, fusion)
 - Comply immediately when you say "just do it" — no lectures
 - Track usage patterns and calibrate friction accordingly
 
@@ -164,6 +165,7 @@ sudo ./site-toggle choose <event_key> feed --json   # unblock
 ./site-toggle choose <event_key> verb --json        # verb card
 ./site-toggle choose <event_key> noun --json        # noun card
 ./site-toggle choose <event_key> lesson --json      # B1/B2 lesson card
+./site-toggle choose <event_key> fusion --json      # fusion card (7-question integrated drill)
 ```
 
 See `claude.md` / `AGENTS.md` for the full agent protocol.

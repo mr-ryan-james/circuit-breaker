@@ -788,6 +788,8 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
         return "Noun";
       case "lesson":
         return "B1/B2 Lesson";
+      case "fusion":
+        return "Fusion";
       case "card":
         return "Card";
       case "card2":
@@ -817,7 +819,7 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
     optionNum += 1;
   }
   console.log("");
-  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|feed|same_need`);
+  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|fusion|feed|same_need`);
   console.log("(Legacy aliases: card=first card lane, card2=second card lane)");
 }
 
@@ -2024,7 +2026,7 @@ function cmdChoose(args: string[], json: boolean): void {
     return;
   }
 
-  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson"].includes(t);
+  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson", "fusion"].includes(t);
 
   const resolveCardLane = (requested: string): any | null => {
     const direct = (menu.lanes as any[]).find((l) => l.type === requested);
