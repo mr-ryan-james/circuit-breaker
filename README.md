@@ -196,6 +196,32 @@ sudo ~/Dev/circuit-breaker/site-toggle off
 # Rate a card (affects future suggestions)
 ~/Dev/circuit-breaker/site-toggle rate 42 love   # show more often
 ~/Dev/circuit-breaker/site-toggle rate 42 ban    # never show again
+
+# Play synthesized audio (for singing/pitch practice)
+~/Dev/circuit-breaker/site-toggle play scale C4 major --json
+~/Dev/circuit-breaker/site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
+```
+
+## Audio Prerequisites (SOVT / Pitch)
+
+`site-toggle play` renders piano notes with **FluidSynth** and a SoundFont. There is **no fallback**; playback fails if the SoundFont is missing.
+
+```bash
+# Install FluidSynth (native binary)
+brew install fluidsynth
+
+# Download a SoundFont (FluidR3 GM from Debian) and place it locally
+mkdir -p ~/Library/Application\ Support/Circuit\ Breaker/soundfonts
+curl -L -o /tmp/fluid-soundfont-gm.deb \\
+  https://deb.debian.org/debian/pool/main/f/fluid-soundfont/fluid-soundfont-gm_3.1-5.3_all.deb
+cd /tmp
+ar x fluid-soundfont-gm.deb
+tar -xf data.tar.xz
+cp /tmp/usr/share/sounds/sf2/FluidR3_GM.sf2 \\
+  ~/Library/Application\ Support/Circuit\ Breaker/soundfonts/
+
+# Point site-toggle at the SoundFont
+export CIRCUIT_BREAKER_SF2_PATH=~/Library/Application\\ Support/Circuit\\ Breaker/soundfonts/FluidR3_GM.sf2
 ```
 
 ## Practice Modules (Optional)
@@ -213,6 +239,9 @@ Modules track:
 # Show last week of Spanish module activity (sessions + served suggestions)
 ~/Dev/circuit-breaker/site-toggle module spanish history --days 7 --limit 10
 
+# Show SOVT module history (sessions + served suggestions)
+~/Dev/circuit-breaker/site-toggle module sovt history --days 7 --limit 10
+
 # Continue the most recent open session (does not create a new session)
 ~/Dev/circuit-breaker/site-toggle module spanish resume
 
@@ -221,6 +250,9 @@ Modules track:
 
 # Mark the most recent open session as completed
 ~/Dev/circuit-breaker/site-toggle module spanish complete --status completed
+
+# Mark the most recent SOVT session as completed
+~/Dev/circuit-breaker/site-toggle module sovt complete --status completed
 ```
 
 ## Blocked Sites
@@ -233,7 +265,7 @@ Modules track:
 
 ## Break Cards
 
-Break Cards are 1-10 minute alternative activities with clear done-conditions:
+Break Cards are usually 1-10 minute alternative activities with clear done-conditions (SOVT cards can be ~15 minutes):
 
 - **Physical**: stretches, walks, core exercises
 - **Restorative**: breathing exercises, tea rituals, sensory resets

@@ -52,6 +52,7 @@ import {
 } from "@circuit-breaker/core";
 
 import type { ModuleDefinition } from "@circuit-breaker/core";
+import { cmdPlay } from "./commands/play.js";
 
 class CliError extends Error {
   public readonly code: string;
@@ -193,6 +194,7 @@ function printMainHelp(json: boolean): void {
     "module",
     "import",
     "speak",
+    "play",
     "doctor",
   ];
 
@@ -788,6 +790,8 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
         return "Noun";
       case "lesson":
         return "B1/B2 Lesson";
+      case "sovt":
+        return "SOVT / Pitch";
       case "fusion":
         return "Fusion";
       case "card":
@@ -819,7 +823,7 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
     optionNum += 1;
   }
   console.log("");
-  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|fusion|feed|same_need`);
+  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|sovt|fusion|feed|same_need`);
   console.log("(Legacy aliases: card=first card lane, card2=second card lane)");
 }
 
@@ -2026,7 +2030,7 @@ function cmdChoose(args: string[], json: boolean): void {
     return;
   }
 
-  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson", "fusion"].includes(t);
+  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson", "sovt", "fusion"].includes(t);
 
   const resolveCardLane = (requested: string): any | null => {
     const direct = (menu.lanes as any[]).find((l) => l.type === requested);
@@ -2554,6 +2558,9 @@ async function main(): Promise<void> {
       case "speak":
         await cmdSpeak(args, json);
         return;
+      case "play":
+        await cmdPlay(args, json);
+        return;
       case "daemon":
         if (args[0] === "tick") return cmdDaemonTick(json);
         if (args[0] === "install") return cmdDaemonInstall(json);
@@ -2575,7 +2582,7 @@ async function main(): Promise<void> {
       }
       default:
         throw new Error(
-          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|suggest|break|choose|rate|locations|contexts|context|modules|module|import|speak|doctor]`,
+          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|suggest|break|choose|rate|locations|contexts|context|modules|module|import|speak|play|doctor]`,
         );
     }
   } catch (err) {

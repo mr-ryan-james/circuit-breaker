@@ -21,14 +21,15 @@ All commands below assume your working directory is `~/Dev/circuit-breaker`. If 
 3. **Ensure a deck exists (optional if already seeded):**
    - `./site-toggle seed` (loads all `data/cards/*.json|*.csv|*.tsv` into SQLite)
    - Or `./site-toggle import cards /path/to/cards.csv`
-4. **Preferred unblock flow (generates 7-option menu automatically when fusion is available):**
+4. **Preferred unblock flow (generates up to 8-option menu when SOVT + fusion are available):**
    - `./site-toggle break reddit --json`
    - If Ryan chooses same-need: `./site-toggle choose <event_key> same_need --json`
    - If Ryan chooses physical: `./site-toggle choose <event_key> physical --json`
    - If Ryan chooses verb: `./site-toggle choose <event_key> verb --json`
-   - If Ryan chooses noun: `./site-toggle choose <event_key> noun --json`
-   - If Ryan chooses B1/B2 lesson: `./site-toggle choose <event_key> lesson --json`
-   - If Ryan chooses fusion: `./site-toggle choose <event_key> fusion --json`
+  - If Ryan chooses noun: `./site-toggle choose <event_key> noun --json`
+  - If Ryan chooses B1/B2 lesson: `./site-toggle choose <event_key> lesson --json`
+  - If Ryan chooses SOVT: `./site-toggle choose <event_key> sovt --json`
+  - If Ryan chooses fusion: `./site-toggle choose <event_key> fusion --json`
    - If Ryan chooses feed: `sudo -n ./site-toggle choose <event_key> feed --json`
    - (Legacy aliases: `card` = first card lane, `card2` = second card lane)
 
@@ -40,16 +41,17 @@ Ryan ultimately wants autonomy. Your job is to add a brief, non-preachy pause an
 
 **REQUIRED — ALWAYS query the break command:** For EVERY unblock request, run `./site-toggle break <site> --json` to generate a fresh menu. This applies even on repeat requests in the same session. NEVER skip the query or invent alternatives from memory — always pull a fresh Break Card from the database.
 
-The break command returns 7 lanes when fusion is available (fusion only appears when verb+noun+lesson lanes were found):
+The break command returns up to 8 lanes when SOVT + fusion are available (fusion only appears when verb+noun+lesson lanes were found):
 - a **same-need** prompt (lane `same_need`)
 - a **Physical** Break Card (lane `physical`)
 - a **Spanish Verb** Break Card (lane `verb`)
 - a **Spanish Noun** Break Card (lane `noun`)
 - a **Spanish B1/B2 Lesson + Quiz** Break Card (lane `lesson`)
+- a **SOVT / Pitch** Break Card (lane `sovt`) — ~15-minute guided voice session
 - a **Fusion** Break Card (lane `fusion`) — 7-minute integrated drill combining the selected verb+noun+lesson
 - the **unblock option** (lane `feed`)
 
-**Step 1: Query and present all 7 lanes**
+**Step 1: Query and present all available lanes (up to 8)**
 Run `./site-toggle break <site> --json` and present the options.
 
 **Step 2: Give the unblock option**
@@ -61,20 +63,21 @@ After the alternatives, offer a focused 10 min window (or whatever Ryan explicit
 
 ### Example Responses
 
-**Standard response (7 options, five different card lanes):**
+**Standard response (8 options, six different card lanes):**
 
-Note: Lane order is stable. Use the lane name (physical/verb/noun/lesson) + `category` field from JSON for labels.
+Note: Lane order is stable. Use the lane name (physical/verb/noun/lesson/sovt) + `category` field from JSON for labels.
 
 ```
-Before I unblock Twitter — seven options:
+Before I unblock Twitter — eight options:
 
 1. Same-need — What are you looking for? I'll find it.
 2. Quick walk — 5 min (physical)
 3. Verb drill — 5 min (verb)
 4. Noun drill — 5 min (noun)
 5. B1/B2 lesson — 10 min (lesson)
-6. Fusion — 7 min integrated drill (fusion)
-7. Feed — 10 min window
+6. SOVT / Pitch — 15 min (sovt)
+7. Fusion — 7 min integrated drill (fusion)
+8. Feed — 10 min window
 
 ┌─ Physical Card (option 2) ────────────────────────┐
 │                                                   │
@@ -123,7 +126,18 @@ Before I unblock Twitter — seven options:
 │  → "5" to start                                   │
 └───────────────────────────────────────────────────┘
 
-┌─ Fusion Card (option 6) ──────────────────────────┐
+┌─ SOVT Card (option 6) ────────────────────────────┐
+│                                                   │
+│  SOVT / PITCH (15 MIN)                            │
+│  Learning · 15 min                                │
+│                                                   │
+│  Prompt:                                          │
+│  Guided SOVT + pitch exercises with playback.     │
+│                                                   │
+│  → "6" to start                                   │
+└───────────────────────────────────────────────────┘
+
+┌─ Fusion Card (option 7) ──────────────────────────┐
 │                                                   │
 │  FUSION (verb + noun + B1/B2)                     │
 │  Learning · 7 min                                 │
@@ -131,33 +145,34 @@ Before I unblock Twitter — seven options:
 │  7 quick questions that combine today’s verb,     │
 │  noun, and B1/B2 concept.                         │
 │                                                   │
-│  → "6" to start                                   │
+│  → "7" to start                                   │
 └───────────────────────────────────────────────────┘
 
-Your call — 1, 2, 3, 4, 5, 6, or 7?
+Your call — 1, 2, 3, 4, 5, 6, 7, or 8?
 ```
 
 **When Ryan says "unblock everything":**
 
-Still run `./site-toggle break twitter --json` (or any site) to get fresh card alternatives. Present the 7 options, but adapt the feed lane to "unblock all":
+Still run `./site-toggle break twitter --json` (or any site) to get fresh card alternatives. Present the 8 options, but adapt the feed lane to "unblock all":
 
 ```
-Before I unblock everything — seven options:
+Before I unblock everything — eight options:
 
 1. Same-need — What are you looking for? I'll find it.
 2. Quick walk — 5 min (physical)
 3. Verb drill — 5 min (verb)
 4. Noun drill — 5 min (noun)
 5. B1/B2 lesson — 10 min (lesson)
-6. Fusion — 7 min integrated drill (fusion)
-7. Feed — 10 min window for all 23 sites
+6. SOVT / Pitch — 15 min (sovt)
+7. Fusion — 7 min integrated drill (fusion)
+8. Feed — 10 min window for all 23 sites
 
 [Show the four card boxes as usual]
 
-Your call — 1, 2, 3, 4, 5, 6, or 7?
+Your call — 1, 2, 3, 4, 5, 6, 7, or 8?
 ```
 
-If Ryan picks 7 (feed), run: `sudo -n ./site-toggle on "" 10`
+If Ryan picks 8 (feed), run: `sudo -n ./site-toggle on "" 10`
 
 **When Ryan says "just do it" or picks unblock:**
 > [runs command immediately, no more friction]
@@ -184,10 +199,10 @@ Run `sudo ~/Dev/circuit-breaker/site-toggle stats` to check usage patterns. The 
 
 | Today's pattern | Friction level | What changes |
 |-----------------|----------------|--------------|
-| First request | Light | Present the 7 options matter-of-factly, no stats mention |
-| 2-3 requests | Light-medium | Present 7 options, maybe note "quick check: what are you looking for?" |
-| 4+ requests | Medium | Present 7 options + brief awareness: "that's your 4th today" |
-| 60+ min already today | Medium | Present 7 options + brief awareness: "you've had about an hour today" |
+| First request | Light | Present the 8 options matter-of-factly, no stats mention |
+| 2-3 requests | Light-medium | Present 8 options, maybe note "quick check: what are you looking for?" |
+| 4+ requests | Medium | Present 8 options + brief awareness: "that's your 4th today" |
+| 60+ min already today | Medium | Present 8 options + brief awareness: "you've had about an hour today" |
 
 In ALL cases: query `./site-toggle break`, present the options, comply if Ryan chooses feed.
 
@@ -343,6 +358,43 @@ Use `--refresh` to force regeneration if needed.
 - Requires internet connection (uses Microsoft Edge TTS service)
 - Use `--json` when calling from an agent flow
 
+### Singing / SOVT / Pitch Practice
+
+Use `site-toggle play` to render and play piano exercises via **FluidSynth**.
+Requires `CIRCUIT_BREAKER_SF2_PATH` (SoundFont path). **No fallback.**
+**`play` does NOT require sudo** and does not write to `/etc/hosts`.
+
+**Key commands:**
+```bash
+# Play a scale (major/minor/chromatic/pentatonic)
+./site-toggle play scale C3 major --direction updown --bpm 60 --note-beats 1 --json
+
+# Play an arpeggio (major/minor/dom7/dim)
+./site-toggle play arpeggio C3 major --pattern 1-3-5-8-5-3-1 --bpm 60 --json
+
+# Play interval jumps
+./site-toggle play jumps C3 major --degrees 1-5-1-8-1 --bpm 80 --note-beats 0.75 --json
+
+# Play a siren/glide (for SOVT warmup)
+./site-toggle play glide C3 G3 --seconds 6 --volume 0.55 --json
+
+# Play a raw sequence (use @beats for duration, R for rest)
+./site-toggle play seq C4@1 D4@1 E4@1 R@1 C4@2 --bpm 60 --json
+
+# Play a transpose loop (trainer-style up/down)
+./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
+```
+
+**Agent guidance:**
+- **Only use `play` when the card explicitly requests it** (e.g. in the SOVT module).
+- Follow the **Script** in the card prompt exactly. Do not improvise new musical exercises.
+- Safety: If the user reports strain, suggest transposing down (lower root) or stopping.
+
+**Module integration:**
+- SOVT is a module (`slug: sovt`).
+- Track history: `./site-toggle module sovt history --json`
+- Mark complete: `./site-toggle module sovt complete --status completed --json`
+
 ### Practice Modules (History + Completion)
 
 Modules provide a plugin-like way to track practice history (served vs started sessions) and mark completion status, without hard-coding Spanish-specific logic into the CLI.
@@ -396,7 +448,7 @@ Modules are defined in `data/modules/*.json` and match cards by tags (e.g. Spani
    - Otherwise proceed with Break card selection or `start <card_id>`
 
 2. **When Ryan chooses a Spanish card from Break menu:**
-   - The `choose <event_key> verb|noun|lesson|fusion` commands already log `card_chosen` (legacy aliases: `card`, `card2`)
+  - The `choose <event_key> verb|noun|lesson|sovt|fusion` commands already log `card_chosen` (legacy aliases: `card`, `card2`)
    - This counts as a started session — no extra `start` needed
    - **Save the `event_key` and `card_id`** from the choose response — you'll need both for `complete`
 
@@ -485,10 +537,15 @@ Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the 
 ./site-toggle choose <event_key> verb --json
 ./site-toggle choose <event_key> noun --json
 ./site-toggle choose <event_key> lesson --json
+./site-toggle choose <event_key> sovt --json
 ./site-toggle choose <event_key> fusion --json
 ./site-toggle speak "vincular"
 ./site-toggle speak "cómo estás" --voice es-MX-JorgeNeural
+./site-toggle play scale C3 major --direction updown --bpm 60 --note-beats 1 --json
+./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
 ./site-toggle modules
+./site-toggle module sovt history --days 7 --limit 5 --json
+./site-toggle module sovt complete --status completed --json
 ./site-toggle module spanish history --days 7 --limit 5 --json
 ./site-toggle module spanish test --json                # 20 questions from completed verbs
 ./site-toggle module spanish test --count 10 --json     # custom question count
@@ -561,7 +618,7 @@ The `break` command is the agent-friendly “menu generator”:
 
 It returns a single JSON object with:
 - `event_key` (use this for `choose`)
-- `lanes`: `same_need`, `physical`, `verb`, `noun`, `lesson`, `fusion` (if available), and `feed`
+- `lanes`: `same_need`, `physical`, `verb`, `noun`, `lesson`, `sovt`, `fusion` (if available), and `feed`
 
 Then execute the chosen lane:
 
@@ -570,6 +627,7 @@ Then execute the chosen lane:
 ./site-toggle choose <event_key> verb --json      # no sudo
 ./site-toggle choose <event_key> noun --json      # no sudo
 ./site-toggle choose <event_key> lesson --json    # no sudo
+./site-toggle choose <event_key> sovt --json      # no sudo
 ./site-toggle choose <event_key> fusion --json    # no sudo
 ./site-toggle choose <event_key> same_need --json # no sudo
 sudo -n ./site-toggle choose <event_key> feed --json  # requires sudo (edits /etc/hosts)

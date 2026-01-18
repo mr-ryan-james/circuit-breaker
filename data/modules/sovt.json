@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "slug": "sovt",
+  "name": "SOVT / Pitch",
+  "match": {
+    "tags_any": ["sovt"]
+  },
+  "completion": {
+    "parts_suggestions": ["warmup", "exercises", "cooldown"]
+  }
+}
