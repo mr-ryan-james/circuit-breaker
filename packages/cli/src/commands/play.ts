@@ -306,6 +306,7 @@ function generateTransposeTokens(
     const r = roots[i];
     if (r === undefined) continue;
     if (i > 0 && previewMult > 0) {
+      tokens.push({ type: "rest", midi: 0, beats });
       tokens.push({ type: "note", midi: r + firstOffset, beats: previewBeats });
     }
     for (const st of offsets) {
@@ -365,7 +366,7 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   let glideCurve: "linear" | "exp" = "exp";
   let rangeHigh = "F4";
   let step = 1;
-  let previewMult = 3;
+  let previewMult = 6;
 
   const cleanArgs: string[] = [];
 

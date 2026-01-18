@@ -200,7 +200,7 @@ sudo ~/Dev/circuit-breaker/site-toggle off
 # Play synthesized audio (for singing/pitch practice)
 ~/Dev/circuit-breaker/site-toggle play scale C4 major --json
 ~/Dev/circuit-breaker/site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
-# Note: transpose inserts a longer preview note (3x) between sequences for breath.
+# Note: transpose inserts a 1‑note pause, then a longer preview note (6x) between sequences for breath.
 ```
 
 ## Audio Prerequisites (SOVT / Pitch)
