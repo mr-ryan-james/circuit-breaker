@@ -1,0 +1,20 @@
+Exercise 1: events=268, range=C2–C5
+  Dropped short: 30, dropped jumps: 0, octave shifts: 0, merges: 3
+  Top notes: F#3(14), F3(13), G#3(13), G3(12), A3(12), C#4(12), D4(12), E4(12), A#3(11), D#4(11)
+  First 40 notes: C#3 G#2 A#2 B2 F3 F#3 F3 D3 A#2 B2 B2 C3 B2 C3 F#3 G3 F#3 D#3 B2 B2 C3 C3 C#3 G3 E3 C3 C#3 C#3 G#3 G#3 F3 C#3 D3 D3 A3 A3 F#3 D3 D#3 D#3
+Exercise 2: events=375, range=D2–D5
+  Dropped short: 29, dropped jumps: 0, octave shifts: 0, merges: 0
+  Top notes: C#4(24), A#3(23), B3(23), C4(23), G3(18), G#3(18), D4(18), D#4(18), F3(17), F#3(16)
+  First 40 notes: A#2 A#2 B2 A#2 A#3 A3 G3 F3 D#3 D3 C3 D3 A#2 B2 B2 B2 B3 A#3 G#3 F#3 E3 D#3 C#3 D#3 B2 C3 C3 C3 C#3 C4 B3 A3 G3 F3 E3 D3 E3 C3 C#3 C#3
+Exercise 3: events=695, range=C2–G4
+  Dropped short: 88, dropped jumps: 0, octave shifts: 0, merges: 0
+  Top notes: F#3(52), G#3(52), A#3(52), B3(52), G3(51), D#3(48), F3(48), C4(46), E3(43), D3(40)
+  First 40 notes: C#3 A#2 A#2 A#2 D3 D#3 F3 D3 A#2 C#3 D3 D#3 F3 D#3 D3 C#3 A#2 C#3 F3 C#3 A#2 C#3 D#3 F3 D#3 D3 C3 A#2 B2 A#2 B2 B2 D#3 F#3 D#3 B2 C#3 D#3 E3 F#3
+Exercise 4: events=489, range=C2–A#4
+  Dropped short: 141, dropped jumps: 0, octave shifts: 0, merges: 5
+  Top notes: G3(42), D#3(37), A#3(35), F#3(32), B3(32), C#4(32), D#4(31), E3(30), G#3(30), F#4(25)
+  First 40 notes: A#2 A#2 A#2 D#3 F3 D#3 A#2 D3 D#3 D#3 A#2 D3 F3 D3 A#2 B2 B2 D#3 E3 F#3 E3 D#3 D#3 E3 F#3 E3 D#3 B2 D#3 F#3 D#3 B2 C3 C3 D3 F3 G3 E3 G3 E3
+Exercise 5: events=672, range=C2–C#5
+  Dropped short: 113, dropped jumps: 0, octave shifts: 0, merges: 0
+  Top notes: A#3(54), B3(52), C4(51), C#4(51), D#4(42), G3(40), G#3(38), F#3(34), F3(31), F#4(30)
+  First 40 notes: F3 A2 A#2 A#2 D3 C#3 D#3 D3 F#3 G3 F#3 A3 G3 A#3 B3 A#3 D4 A#3 B3 A3 A#3 G3 A3 F3 G3 D#3 F3 D3 D#3 C3 A#2 B2 B2 D#3 C#3 E3 D#3 F#3 E3 G#3

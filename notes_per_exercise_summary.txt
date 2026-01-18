@@ -1,0 +1,15 @@
+Exercise 1: events=301, range=C2–C5
+  Top notes: F3(17), F#3(15), A3(14), G3(13), G#3(13), A#3(12), C#4(12), D4(12), D#4(12), E4(12)
+  First 40 notes: C#3 G#2 A2 A#2 B2 F3 F#3 F3 D3 A#2 B2 B2 C3 B2 C3 F#3 G3 F#3 D#3 B2 B2 C3 C3 C#3 G3 E3 C3 C#3 C#3 G#3 G#3 F3 C#3 D3 D3 A3 A3 F#3 F#2 D3
+Exercise 2: events=404, range=C2–D5
+  Top notes: B3(24), C#4(24), A#3(23), C4(23), G3(18), G#3(18), D4(18), D#4(18), F3(17), E3(17)
+  First 40 notes: D3 C#3 A#2 A#2 B2 A#2 A#3 A3 G3 F3 D#3 D3 C3 D3 A#2 B2 B2 C3 B2 B3 A#3 G#3 F#3 E3 D#3 C#3 D#3 B2 C3 C3 C3 C#3 C3 C4 B3 A3 G3 F3 E3 D3
+Exercise 3: events=783, range=C2–G4
+  Top notes: F#3(52), G#3(52), A#3(52), B3(52), G3(51), F3(50), D#3(49), C4(46), E3(43), D3(41)
+  First 40 notes: C#3 D3 A#2 B2 A#2 A2 A#2 D3 D#3 F3 D3 A#2 C#3 D3 D#3 F3 D#3 D3 C#3 A#2 C#3 F3 C#3 A#2 C3 C#3 D#3 F3 D#3 D3 C#3 C3 A#2 B2 A#2 B2 B2 D#2 D#3 F#3
+Exercise 4: events=635, range=C2–A#4
+  Top notes: G3(43), D#3(42), F#3(40), G#3(39), A#3(37), E3(36), C#4(36), B3(34), D#4(34), C4(32)
+  First 40 notes: A#2 A#2 A#2 D#3 F3 D#3 C#3 A#2 D3 D#3 F3 D#3 D3 C#3 A#2 B2 D3 F#3 F3 D3 A#2 B2 B2 B2 D#3 E3 F#3 E3 D#3 C#3 D#3 E3 F#3 E3 D#3 B2 D#3 F#3 D#3 B2
+Exercise 5: events=785, range=C2–C#5
+  Top notes: B3(55), C4(55), A#3(54), C#4(52), G3(46), G#3(43), D#4(42), F#3(34), F3(31), F#4(30)
+  First 40 notes: F3 B2 A2 A#2 A#2 D3 C#3 D#3 D3 D#3 F#3 E3 E3 G3 F#3 G3 A3 G#3 G3 A#3 B3 A#3 B3 D4 A#3 B3 A3 A#3 G#3 G3 A3 G#3 F3 G3 D#3 F3 D#3 D3 D#3 C3
