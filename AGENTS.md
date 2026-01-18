@@ -383,7 +383,7 @@ Requires `CIRCUIT_BREAKER_SF2_PATH` (SoundFont path). **No fallback.**
 
 # Play a transpose loop (trainer-style up/down)
 ./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
-# Note: transpose inserts a 1‑note pause, then a longer preview note (6x) between sequences for breath.
+# Note: transpose holds the last note 2x, adds a half‑note pause, then plays a longer preview note (6x) between sequences for breath.
 ```
 
 **Agent guidance:**

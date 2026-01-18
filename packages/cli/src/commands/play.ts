@@ -274,7 +274,9 @@ function generateTransposeTokens(
   beats: number,
   rangeHigh: string,
   step: number,
-  previewMult: number
+  previewMult: number,
+  previewPauseMult: number,
+  lastNoteHoldMult: number
 ): MidiToken[] {
   const rootMidi = parseNoteToMidi(root);
   if (rootMidi < 0) throw new Error(`Invalid root note: ${root}`);
@@ -302,15 +304,22 @@ function generateTransposeTokens(
 
   const tokens: MidiToken[] = [];
   const previewBeats = beats * previewMult;
+  const previewPauseBeats = beats * previewPauseMult;
   for (let i = 0; i < roots.length; i++) {
     const r = roots[i];
     if (r === undefined) continue;
     if (i > 0 && previewMult > 0) {
-      tokens.push({ type: "rest", midi: 0, beats });
+      if (previewPauseMult > 0) {
+        tokens.push({ type: "rest", midi: 0, beats: previewPauseBeats });
+      }
       tokens.push({ type: "note", midi: r + firstOffset, beats: previewBeats });
     }
-    for (const st of offsets) {
-      tokens.push({ type: "note", midi: r + st, beats });
+    for (let j = 0; j < offsets.length; j++) {
+      const st = offsets[j];
+      if (st === undefined) continue;
+      const isLast = j === offsets.length - 1;
+      const noteBeats = isLast ? beats * lastNoteHoldMult : beats;
+      tokens.push({ type: "note", midi: r + st, beats: noteBeats });
     }
   }
 
@@ -367,6 +376,8 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   let rangeHigh = "F4";
   let step = 1;
   let previewMult = 6;
+  let previewPauseMult = 0.5;
+  let lastNoteHoldMult = 2;
 
   const cleanArgs: string[] = [];
 
@@ -454,6 +465,16 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
       i++;
       continue;
     }
+    if (a === "--preview-pause-mult") {
+      previewPauseMult = requireNumberFlag(a, next, { min: 0 });
+      i++;
+      continue;
+    }
+    if (a === "--last-note-hold-mult") {
+      lastNoteHoldMult = requireNumberFlag(a, next, { min: 0.5 });
+      i++;
+      continue;
+    }
 
     if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
     cleanArgs.push(a);
@@ -489,8 +510,18 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   } else if (subcommand === "transpose") {
     const root = cleanArgs[0] || "A2";
     const scale = cleanArgs[1] || "major";
-    tokens = generateTransposeTokens(root, scale, degrees, noteBeats, rangeHigh, step, previewMult);
-    cacheKeyBase = `transpose|${root}|${scale}|${degrees}|${rangeHigh}|${step}|preview=${previewMult}`;
+    tokens = generateTransposeTokens(
+      root,
+      scale,
+      degrees,
+      noteBeats,
+      rangeHigh,
+      step,
+      previewMult,
+      previewPauseMult,
+      lastNoteHoldMult
+    );
+    cacheKeyBase = `transpose|${root}|${scale}|${degrees}|${rangeHigh}|${step}|preview=${previewMult}|pause=${previewPauseMult}|last=${lastNoteHoldMult}`;
   } else {
     throw new Error(`Unknown play subcommand: ${subcommand}`);
   }
