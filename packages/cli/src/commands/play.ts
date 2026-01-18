@@ -273,7 +273,8 @@ function generateTransposeTokens(
   degreesStr: string,
   beats: number,
   rangeHigh: string,
-  step: number
+  step: number,
+  previewMult: number
 ): MidiToken[] {
   const rootMidi = parseNoteToMidi(root);
   if (rootMidi < 0) throw new Error(`Invalid root note: ${root}`);
@@ -284,6 +285,8 @@ function generateTransposeTokens(
   const degrees = degreesFromString(degreesStr, "transpose");
   const offsets = degrees.map((d) => scaleDegreeToSemitone(d, scaleType));
   const maxOffset = Math.max(...offsets);
+  const firstOffset = offsets[0];
+  if (firstOffset === undefined) throw new Error("Transpose pattern cannot be empty");
 
   const maxRoot = rangeHighMidi - maxOffset;
   if (rootMidi > maxRoot) {
@@ -298,7 +301,13 @@ function generateTransposeTokens(
   const roots = rootsUp.concat(rootsDown);
 
   const tokens: MidiToken[] = [];
-  for (const r of roots) {
+  const previewBeats = beats * previewMult;
+  for (let i = 0; i < roots.length; i++) {
+    const r = roots[i];
+    if (r === undefined) continue;
+    if (i > 0 && previewMult > 0) {
+      tokens.push({ type: "note", midi: r + firstOffset, beats: previewBeats });
+    }
     for (const st of offsets) {
       tokens.push({ type: "note", midi: r + st, beats });
     }
@@ -356,6 +365,7 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   let glideCurve: "linear" | "exp" = "exp";
   let rangeHigh = "F4";
   let step = 1;
+  let previewMult = 3;
 
   const cleanArgs: string[] = [];
 
@@ -438,6 +448,11 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
       i++;
       continue;
     }
+    if (a === "--preview-mult") {
+      previewMult = requireNumberFlag(a, next, { min: 0.5 });
+      i++;
+      continue;
+    }
 
     if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
     cleanArgs.push(a);
@@ -473,8 +488,8 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   } else if (subcommand === "transpose") {
     const root = cleanArgs[0] || "A2";
     const scale = cleanArgs[1] || "major";
-    tokens = generateTransposeTokens(root, scale, degrees, noteBeats, rangeHigh, step);
-    cacheKeyBase = `transpose|${root}|${scale}|${degrees}|${rangeHigh}|${step}`;
+    tokens = generateTransposeTokens(root, scale, degrees, noteBeats, rangeHigh, step, previewMult);
+    cacheKeyBase = `transpose|${root}|${scale}|${degrees}|${rangeHigh}|${step}|preview=${previewMult}`;
   } else {
     throw new Error(`Unknown play subcommand: ${subcommand}`);
   }
