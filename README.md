@@ -200,6 +200,8 @@ sudo ~/Dev/circuit-breaker/site-toggle off
 # Play synthesized audio (for singing/pitch practice)
 ~/Dev/circuit-breaker/site-toggle play scale C4 major --json
 ~/Dev/circuit-breaker/site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
+# Alternate major/minor within the same loop
+~/Dev/circuit-breaker/site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --scale-cycle major,minor --cycle-within-root --range-high F4 --json
 # Note: transpose holds the last note 2x, adds a half‑note pause, then plays a longer preview note (6x) between sequences for breath.
 ```
 

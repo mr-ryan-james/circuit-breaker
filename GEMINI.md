@@ -376,13 +376,15 @@ Crucially, **play does NOT require sudo** and does not write to `/etc/hosts`.
 ./site-toggle play jumps C3 major --degrees 1-5-1-8-1 --bpm 80 --note-beats 0.75 --json
 
 # Play a siren/glide (for SOVT warmup)
-./site-toggle play glide C3 G3 --seconds 6 --volume 0.55 --json
+./site-toggle play glide C3 G3 --seconds 6 --volume 1 --json
 
 # Play a raw sequence (use @beats for duration, R for rest)
 ./site-toggle play seq C4@1 D4@1 E4@1 R@1 C4@2 --bpm 60 --json
 
 # Play a transpose loop (trainer-style up/down)
 ./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
+# Alternate major/minor within the same loop
+./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --scale-cycle major,minor --cycle-within-root --range-high F4 --json
 # Note: transpose holds the last note 2x, adds a half‑note pause, then plays a longer preview note (6x) between sequences for breath.
 ```
 

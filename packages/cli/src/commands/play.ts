@@ -114,6 +114,8 @@ function parseSequenceToken(token: string, defaultBeats = 1): MidiToken {
   return { type: "note", midi, beats };
 }
 
+const SCALE_TYPES = ["major", "minor", "pentatonic", "chromatic"] as const;
+
 function scaleDegreeToSemitone(degree: number, scaleType: string): number {
   const base: Record<string, number[]> = {
     major: [0, 2, 4, 5, 7, 9, 11],
@@ -136,12 +138,28 @@ function scaleDegreeToSemitone(degree: number, scaleType: string): number {
   return step + octave * 12;
 }
 
-function degreesFromString(degreesStr: string, label: string): number[] {
-  return degreesStr.split("-").map((s) => {
-    const d = Number(s);
-    if (!Number.isFinite(d) || d <= 0) throw new Error(`Invalid ${label} degree: ${s}`);
-    return d;
-  });
+type DegreeToken = { degree: number; accidental: number };
+
+function parseDegreeToken(token: string, label: string): DegreeToken {
+  const t = token.trim();
+  if (!t) throw new Error(`Invalid ${label} degree: "${token}"`);
+  const match = t.match(/^([#b]*)(\d+)$/i);
+  if (!match) throw new Error(`Invalid ${label} degree: ${token}`);
+  const acc = match[1] ?? "";
+  const degree = Number(match[2]);
+  if (!Number.isFinite(degree) || degree <= 0) {
+    throw new Error(`Invalid ${label} degree: ${token}`);
+  }
+  let accidental = 0;
+  for (const ch of acc) {
+    if (ch === "#") accidental += 1;
+    else if (ch === "b" || ch === "B") accidental -= 1;
+  }
+  return { degree, accidental };
+}
+
+function degreesFromString(degreesStr: string, label: string): DegreeToken[] {
+  return degreesStr.split("-").map((s) => parseDegreeToken(s, label));
 }
 
 function generateScaleTokens(
@@ -214,14 +232,14 @@ function generateArpeggioTokens(
 
   const degrees = degreesFromString(patternStr, "arpeggio");
 
-  return degrees.map((d) => {
-    let st = mapped[d];
+  return degrees.map((tok) => {
+    let st = mapped[tok.degree];
     if (st === undefined) {
-      const idx = d - 1;
+      const idx = tok.degree - 1;
       st = pool[idx];
     }
-    if (st === undefined) throw new Error(`Invalid arpeggio degree: ${d}`);
-    return { type: "note", midi: rootMidi + st, beats };
+    if (st === undefined) throw new Error(`Invalid arpeggio degree: ${tok.degree}`);
+    return { type: "note", midi: rootMidi + st + tok.accidental, beats };
   });
 }
 
@@ -236,8 +254,8 @@ function generateJumpTokens(
 
   const degrees = degreesFromString(degreesStr, "jump");
 
-  return degrees.map((d) => {
-    const st = scaleDegreeToSemitone(d, scaleType);
+  return degrees.map((tok) => {
+    const st = scaleDegreeToSemitone(tok.degree, scaleType) + tok.accidental;
     return { type: "note", midi: rootMidi + st, beats };
   });
 }
@@ -269,14 +287,15 @@ function generateGlideTokens(
 
 function generateTransposeTokens(
   root: string,
-  scaleType: string,
+  scaleTypes: string[],
   degreesStr: string,
   beats: number,
   rangeHigh: string,
   step: number,
   previewMult: number,
   previewPauseMult: number,
-  lastNoteHoldMult: number
+  lastNoteHoldMult: number,
+  cycleWithinRoot: boolean
 ): MidiToken[] {
   const rootMidi = parseNoteToMidi(root);
   if (rootMidi < 0) throw new Error(`Invalid root note: ${root}`);
@@ -285,9 +304,14 @@ function generateTransposeTokens(
   if (rangeHighMidi < 0) throw new Error(`Invalid range high note: ${rangeHigh}`);
 
   const degrees = degreesFromString(degreesStr, "transpose");
-  const offsets = degrees.map((d) => scaleDegreeToSemitone(d, scaleType));
-  const maxOffset = Math.max(...offsets);
-  const firstOffset = offsets[0];
+  const scaleCycle = scaleTypes.length > 0 ? scaleTypes : ["major"];
+  const offsetsByScale = scaleCycle.map((st) => ({
+    scale: st,
+    offsets: degrees.map((d) => scaleDegreeToSemitone(d.degree, st) + d.accidental),
+  }));
+  if (offsetsByScale.length === 0) throw new Error("Scale cycle cannot be empty");
+  const maxOffset = Math.max(...offsetsByScale.flatMap((entry) => entry.offsets));
+  const firstOffset = offsetsByScale[0]?.offsets[0];
   if (firstOffset === undefined) throw new Error("Transpose pattern cannot be empty");
 
   const maxRoot = rangeHighMidi - maxOffset;
@@ -305,25 +329,50 @@ function generateTransposeTokens(
   const tokens: MidiToken[] = [];
   const previewBeats = beats * previewMult;
   const previewPauseBeats = beats * previewPauseMult;
+  const effectiveScaleCycle = scaleCycle;
+
   for (let i = 0; i < roots.length; i++) {
     const r = roots[i];
     if (r === undefined) continue;
+
     if (i > 0 && previewMult > 0) {
       if (previewPauseMult > 0) {
         tokens.push({ type: "rest", midi: 0, beats: previewPauseBeats });
       }
       tokens.push({ type: "note", midi: r + firstOffset, beats: previewBeats });
     }
-    for (let j = 0; j < offsets.length; j++) {
-      const st = offsets[j];
-      if (st === undefined) continue;
-      const isLast = j === offsets.length - 1;
-      const noteBeats = isLast ? beats * lastNoteHoldMult : beats;
-      tokens.push({ type: "note", midi: r + st, beats: noteBeats });
+
+    const cycle = (cycleWithinRoot
+      ? effectiveScaleCycle
+      : [effectiveScaleCycle[i % effectiveScaleCycle.length] ?? effectiveScaleCycle[0]]).filter(
+      (v): v is string => typeof v === "string"
+    );
+
+    for (const scaleType of cycle) {
+      const offsets = degrees.map((d) => scaleDegreeToSemitone(d.degree, scaleType) + d.accidental);
+      for (let j = 0; j < offsets.length; j++) {
+        const st = offsets[j];
+        if (st === undefined) continue;
+        const isLast = j === offsets.length - 1;
+        const noteBeats = isLast ? beats * lastNoteHoldMult : beats;
+        tokens.push({ type: "note", midi: r + st, beats: noteBeats });
+      }
     }
   }
 
   return tokens;
+}
+
+function parseScaleCycle(value: string | undefined): string[] {
+  if (!value) return [];
+  const raw = value.split(",").map((s) => s.trim()).filter(Boolean);
+  if (raw.length === 0) return [];
+  for (const st of raw) {
+    if (!SCALE_TYPES.includes(st as (typeof SCALE_TYPES)[number])) {
+      throw new Error(`Invalid scale type in --scale-cycle: ${st}`);
+    }
+  }
+  return raw;
 }
 
 function requireSoundfontPath(): string {
@@ -360,7 +409,7 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
 
   // Defaults
   let bpm = 60;
-  let volume = 0.55;
+  let volume = 1;
   let gapMs = 15;
   let noteBeats = 1;
   let refresh = false;
@@ -378,6 +427,8 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   let previewMult = 6;
   let previewPauseMult = 0.5;
   let lastNoteHoldMult = 2;
+  let scaleCycle: string[] = [];
+  let cycleWithinRoot = false;
 
   const cleanArgs: string[] = [];
 
@@ -475,6 +526,16 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
       i++;
       continue;
     }
+    if (a === "--scale-cycle") {
+      if (!next) throw new Error(`Missing value for ${a}`);
+      scaleCycle = parseScaleCycle(next);
+      i++;
+      continue;
+    }
+    if (a === "--cycle-within-root") {
+      cycleWithinRoot = true;
+      continue;
+    }
 
     if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
     cleanArgs.push(a);
@@ -510,18 +571,20 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   } else if (subcommand === "transpose") {
     const root = cleanArgs[0] || "A2";
     const scale = cleanArgs[1] || "major";
+    const cycle = scaleCycle.length > 0 ? scaleCycle : [scale];
     tokens = generateTransposeTokens(
       root,
-      scale,
+      cycle,
       degrees,
       noteBeats,
       rangeHigh,
       step,
       previewMult,
       previewPauseMult,
-      lastNoteHoldMult
+      lastNoteHoldMult,
+      cycleWithinRoot
     );
-    cacheKeyBase = `transpose|${root}|${scale}|${degrees}|${rangeHigh}|${step}|preview=${previewMult}|pause=${previewPauseMult}|last=${lastNoteHoldMult}`;
+    cacheKeyBase = `transpose|${root}|${cycle.join(",")}|within=${cycleWithinRoot}|${degrees}|${rangeHigh}|${step}|preview=${previewMult}|pause=${previewPauseMult}|last=${lastNoteHoldMult}`;
   } else {
     throw new Error(`Unknown play subcommand: ${subcommand}`);
   }
