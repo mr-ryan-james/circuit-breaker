@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "slug": "acting",
+  "name": "Run Lines / Acting",
+  "match": {
+    "tags_any": ["acting"]
+  },
+  "completion": {
+    "parts_suggestions": ["scene", "loop", "notes"]
+  }
+}
+

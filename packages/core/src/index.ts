@@ -1,6 +1,6 @@
 export * from "./paths.js";
-export * from "./db/index.js";
 export * from "./db/queries.js";
+export * from "./db/schema.js";
 export * from "./seed/sites.js";
 export * from "./seed/contexts.js";
 export * from "./seed/cards.js";

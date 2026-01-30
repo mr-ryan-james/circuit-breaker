@@ -7,10 +7,12 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "dependencies": {
+    "@circuit-breaker/shared-sqlite": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
-

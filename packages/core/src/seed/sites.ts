@@ -1,4 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import type { SiteSeedDefinition } from "../types.js";
 
 export const SITE_DEFINITIONS: SiteSeedDefinition[] = [
@@ -82,7 +82,7 @@ export const SITE_DEFINITIONS: SiteSeedDefinition[] = [
 
 export const ALL_SITE_SLUGS = SITE_DEFINITIONS.map((s) => s.slug);
 
-export function seedSites(db: DatabaseSync): void {
+export function seedSites(db: SqliteDb): void {
   const upsertSite = db.prepare(
     `INSERT INTO sites (slug, type, default_minutes)
      VALUES (?, ?, ?)

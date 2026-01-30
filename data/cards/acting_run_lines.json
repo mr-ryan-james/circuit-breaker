@@ -1,0 +1,14 @@
+[
+  {
+    "key": "learning.acting.run_lines.v1",
+    "category": "learning",
+    "minutes": 10,
+    "activity": "Run lines (10 min)",
+    "done_condition": "Complete one loop of a scene",
+    "location": "any",
+    "rarity": "common",
+    "tags": ["acting"],
+    "active": true,
+    "prompt": "RUN LINES / REHEARSAL (Agent-driven)\n\nGoal: rehearse a scene with distinct voices per character. Stage directions should be printed, not spoken.\n\nTip: the Break menu's Acting lane includes your 3 most recent scenes (ordered by last practiced) when available.\n\nFAST START (PDF):\n1) Import a scene PDF:\n   ./site-toggle run-lines import /path/to/scene.pdf --format colon --title \"My Scene\" --json\n2) See characters:\n   ./site-toggle run-lines characters <script_id> --json\n3) List available Edge TTS voices (authoritative list):\n   ./site-toggle run-lines tts-voices --lang en-US --json\n4) Set voices for characters:\n   ./site-toggle run-lines set-voice <script_id> --character \"WENDLA\" --voice en-US-JennyNeural --rate +0% --json\n\nMODES (varieties):\n- Only read other parts (you stay silent):\n  ./site-toggle run-lines practice <script_id> --me \"Melchior\" --mode practice --loop 3\n- Read other parts + reveal your line after the pause:\n  ./site-toggle run-lines practice <script_id> --me \"Melchior\" --mode learn --reveal-after --loop 2\n- Read all parts aloud (table read):\n  ./site-toggle run-lines practice <script_id> --read-all --loop 1\n- Speed through:\n  ./site-toggle run-lines practice <script_id> --me \"Melchior\" --mode boss --loop 1 --no-directions\n\nFIXING SCRIPT ARTIFACTS (one-time, persistent):\n- Inspect a range:\n  ./site-toggle run-lines lines <script_id> --from 1 --to 120 --json\n- Patch lines (agent applies based on your feedback):\n  Drop a range:    ./site-toggle run-lines patch <script_id> drop-range --from N --to M --json\n  Merge lines:     ./site-toggle run-lines patch <script_id> merge --idx N --count 2 --json\n  Set speaker:     ./site-toggle run-lines patch <script_id> set-speaker --idx N --speaker \"MORITZ\" --json\n  Set type:        ./site-toggle run-lines patch <script_id> set-type --idx N --type action --json\n  Replace text:    ./site-toggle run-lines patch <script_id> replace-text --idx N --match \"COPIONI\" --with \"\" --json\n\nNOTE: voices come from Edge TTS (edge-tts). If something sounds off, just say what to change and the agent will patch it once."
+  }
+]

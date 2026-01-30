@@ -33,6 +33,37 @@ All commands below assume your working directory is `~/Dev/circuit-breaker`. If 
    - If Ryan chooses feed: `sudo -n ./site-toggle choose <event_key> feed --json`
    - (Legacy aliases: `card` = first card lane, `card2` = second card lane)
 
+## Web UI (Local server + browser)
+
+The project now supports a local web UI backed by a Bun server. If Ryan says things like “start the web server”, “open the UI”, “show me the break menu in the browser”, “practice acting in the browser”, or “send a signal to the UI”, the agent should run the relevant `site-toggle ui ...` commands and confirm the result.
+
+**Start / stop / open:**
+```bash
+./site-toggle ui start --port 33291
+./site-toggle ui status --json
+./site-toggle ui open
+./site-toggle ui stop --json
+```
+
+**Agent signals (CLI → UI):**
+```bash
+./site-toggle ui signal load_scene --payload-json '{"script_id":2}' --json
+./site-toggle ui signal replay_last --payload-json '{"lines":10}' --json
+```
+
+**Important notes:**
+- The UI server is local-only (`127.0.0.1`) and runs in the background.
+- The UI server now supports **Spanish sessions in the browser** (“Spanish (Codex brain)” section). This uses `codex exec --json` on the server and keeps the same Codex thread id across turns.
+  - Flow: Load Break Menu → choose `verb`/`noun`/`lesson`/`fusion` → click “Start Spanish Session (from last break choice)” → answer in UI.
+  - Pronunciation: when prompted, click Record → Stop+Upload. The server runs the existing wav2vec2 phoneme model against a 16kHz mono WAV.
+  - Requirements: `codex` installed and logged in; `edge-tts` available; `sox` installed; `.venv` has torch/transformers/numpy and MPS is available for wav2vec2.
+- The web UI can run the `feed` lane (unblock) **if** passwordless sudo is configured (`sudo -n`) for `site-toggle`. If it fails, fall back to CLI:
+  - Per-site: `sudo -n ./site-toggle choose <event_key> feed --json`
+  - Unblock-all (only if explicitly requested): `sudo -n ./site-toggle on "" 10`
+- The web UI also has an “Unblock ALL” button. It is privileged (token-gated) and still requires passwordless sudo to work. Use carefully.
+- Acting lane in the web UI’s Break Menu includes the most recent scenes; if multiple are available, the UI prompts Ryan to pick which one to `Load` / `Load + Start`.
+- Browser audio autoplay may be blocked. If audio doesn’t start, use the UI’s “Enable audio” button once.
+
 ## When Ryan Asks to Unblock Sites
 
 Ryan ultimately wants autonomy. Your job is to add a brief, non-preachy pause and offer better options — while still complying.
@@ -232,13 +263,13 @@ pipx install edge-tts   # or: pip install edge-tts
 **Basic usage (default Castilian voice):**
 ```bash
 ./site-toggle speak "vincular"
-./site-toggle speak cómo estás   # multi-word, no quotes needed
+./site-toggle speak cómo estás --rate -25%   # multi-word, no quotes needed
 ```
 
 **Choose a different voice:**
 ```bash
-./site-toggle speak "vincular" --voice es-ES-ElviraNeural  # Spain, female
-./site-toggle speak "vincular" --voice es-MX-JorgeNeural   # Mexico, male
+./site-toggle speak "vincular" --voice es-ES-ElviraNeural --rate -25%  # Spain, female
+./site-toggle speak "vincular" --voice es-MX-JorgeNeural --rate -25%   # Mexico, male
 ```
 
 **Agent guidance (when to use):**
@@ -253,7 +284,7 @@ When Ryan selects a Spanish learning card, follow this sequence:
 
 1. **Play the word** (infinitive for verbs, base form for nouns):
    ```bash
-   ./site-toggle speak "vincular"
+   ./site-toggle speak "vincular" --rate -25%
    ```
 
 2. **State the meaning and type**:
@@ -261,11 +292,26 @@ When Ryan selects a Spanish learning card, follow this sequence:
 
 3. **Generate an example sentence** using one conjugation, then play it:
    ```bash
-   ./site-toggle speak "Quiero vincular estas ideas con el proyecto"
+   ./site-toggle speak "Quiero vincular estas ideas con el proyecto" --rate -25%
    ```
    > "Quiero vincular estas ideas con el proyecto" — I want to link these ideas to the project.
 
 4. **Start the quiz** using the card's prompt.
+
+**Pronunciation check (required, no prompt):**
+After **each** quiz question is answered and graded, run:
+```bash
+./site-toggle listen "<correct word or sentence>" --json
+```
+Use the exact target for that question (single form, noun with article, or full sentence). Do not ask permission; this is default.
+
+**Critique + one retry (max 2 attempts):**
+After the `listen` result, give a brief, actionable critique (1–2 bullets) and allow **only one** retry. Example:
+
+- Say “A‑YER” as two clear syllables: “ah‑YER” (no English “r”).
+- Then “imaginé” as “ee‑mah‑hee‑NÉ” (pure vowels).
+
+If Ryan chooses to retry, run `listen` once more, then move on. Do not allow a third attempt.
 
 **Example full presentation:**
 ```
@@ -293,17 +339,19 @@ After Ryan answers a tense (all 6 conjugations), follow this sequence:
 
 2. **Play ALL 6 forms** in order (not just corrections):
    ```bash
-   ./site-toggle speak "vinculo, vinculas, vincula, vinculamos, vinculáis, vinculan"
+   ./site-toggle speak "vinculo, vinculas, vincula, vinculamos, vinculáis, vinculan" --rate -25%
    ```
    Play them as a single phrase so Ryan hears the rhythm of the conjugation pattern.
 
 3. **Pick one form and use it in a sentence**:
    ```bash
-   ./site-toggle speak "Nosotros vinculamos el arte con la vida cotidiana"
+   ./site-toggle speak "Nosotros vinculamos el arte con la vida cotidiana" --rate -25%
    ```
    > "Nosotros vinculamos el arte con la vida cotidiana" — We link art to everyday life.
 
 4. **Continue to the next tense** (or wrap up if done).
+
+Note: Pronunciation checks are already done after each quick question via `listen`, so you do not need an additional listen step here.
 
 **Example post-answer output:**
 ```
@@ -358,11 +406,63 @@ Use `--refresh` to force regeneration if needed.
 - Requires internet connection (uses Microsoft Edge TTS service)
 - Use `--json` when calling from an agent flow
 
+### Spanish Pronunciation Feedback (listen)
+
+Use `site-toggle listen` to record and compare pronunciation using a wav2vec2 phoneme model on **Apple Silicon MPS**. It **hard‑fails** if MPS is unavailable (no CPU fallback).
+
+**Setup:**
+```bash
+python3 -m venv .venv
+./.venv/bin/python -m pip install --upgrade pip
+./.venv/bin/python -m pip install torch transformers numpy
+./.venv/bin/python -c "import torch; print(torch.backends.mps.is_available())"
+```
+
+If your venv is elsewhere:
+```bash
+export CIRCUIT_BREAKER_PYTHON=/path/to/venv/bin/python
+```
+
+**Usage:**
+```bash
+./site-toggle listen "hola"
+./site-toggle listen "cómo estás" --no-play-ref
+```
+
+**Agent flow (required during Spanish lessons + tests):**
+
+After **each** Spanish answer is graded (single verb form, noun+article, or full sentence), run `listen` on the **exact target**:
+```bash
+./site-toggle listen "<correct word or sentence>" --json
+```
+
+Then give brief feedback with these elements (focus on the *steps*, not a fixed script):
+- Open with a short, supportive line (vary phrasing; no required wording).
+- Give **1–2 bullets** of actionable pronunciation tweaks using **phonetic English spelling** (no IPA), with hyphenated syllables and stress in CAPS.
+- Offer a single retry prompt (e.g., “Want a retry?”).
+
+Examples of the desired feedback style:
+- `aguja` → “ah-GOO-hah” (clear “GOO” and a soft Spanish “h”)
+- `inyección` → “in-yehk-SYON” (crisp final “-ción”)
+
+**Retry rule (required):**
+- If the user wants a retry, run `listen` **once more** and re-grade briefly.
+- Do not allow a third attempt; move on to the next question/line.
+
+**Important constraints:**
+- Do **not** paste IPA or the model’s phone arrays into the user-facing feedback.
+- Keep it short: 1–2 bullets max, then continue the lesson.
+
+**Notes:**
+- Requires Apple Silicon + MPS
+- Fails if `PYTORCH_ENABLE_MPS_FALLBACK=1`
+
 ### Singing / SOVT / Pitch Practice
 
 Use `site-toggle play` to render and play piano exercises via **FluidSynth**.
 Requires `CIRCUIT_BREAKER_SF2_PATH` (SoundFont path). **No fallback.**
 **`play` does NOT require sudo** and does not write to `/etc/hosts`.
+Default volume is **1.0**; omit `--volume` unless you want quieter playback.
 
 **Key commands:**
 ```bash
@@ -392,6 +492,8 @@ Requires `CIRCUIT_BREAKER_SF2_PATH` (SoundFont path). **No fallback.**
 - **Only use `play` when the card explicitly requests it** (e.g. in the SOVT module).
 - Follow the **Script** in the card prompt exactly. Do not improvise new musical exercises.
 - Safety: If the user reports strain, suggest transposing down (lower root) or stopping.
+- Playback is blocking and can run **10–15+ minutes**. **Do not interrupt/kill** audio playback once started.
+- If you must use a timeout, set it to **20 minutes or longer** (or no timeout).
 
 **Module integration:**
 - SOVT is a module (`slug: sovt`).
@@ -543,7 +645,7 @@ Test Ryan on **completed Spanish verbs**. The CLI returns a verb pool only; the 
 ./site-toggle choose <event_key> sovt --json
 ./site-toggle choose <event_key> fusion --json
 ./site-toggle speak "vincular"
-./site-toggle speak "cómo estás" --voice es-MX-JorgeNeural
+./site-toggle speak "cómo estás" --voice es-MX-JorgeNeural --rate -25%
 ./site-toggle play scale C3 major --direction updown --bpm 60 --note-beats 1 --json
 ./site-toggle play transpose A2 major --degrees 1-2-3-4-5-4-3-2-1 --range-high F4 --json
 ./site-toggle modules
@@ -838,3 +940,103 @@ sudo launchctl load /Library/LaunchDaemons/com.circuitbreaker.plist
 - HTTPS sites show certificate errors (this still blocks access)
 - Does not affect local dev servers (they use different ports)
 - The script has passwordless sudo configured, so Claude can run it directly
+
+---
+
+## Acting / Run Lines (Rehearsal)
+
+Run Lines is designed to be used with an AI agent runner. The core design is:
+**simple APIs + clear agent instructions**, not heavy heuristics in the CLI.
+
+### Break Menu Integration (Recent Scenes)
+
+When the Acting lane appears in `./site-toggle break <site> --json`, it includes a structured `recent_scripts` field
+containing the **3 most recently practiced** scenes (falling back to import time). An agent can use this to pick a script
+without asking the user to remember IDs.
+
+### Quick Start (Spring Awakening validation fixtures)
+
+This repo contains a canonical test script PDF and extracted scene PDFs:
+
+```bash
+# One-time: install the PDF extractor deps
+./.venv/bin/python -m pip install -r packages/cli/scripts/requirements-pdf.txt
+
+# Extract Scene 4 + Scene 5 as cropped PDFs (after SCENE markers)
+./.venv/bin/python packages/cli/scripts/extract_scene_pdfs.py --in "SPRING AWAKENING FULL SCRIPT.pdf" --out-dir packages/cli/test/fixtures --verify
+
+# Import one scene (PDF -> pdftotext -> sanitizer -> colon parser)
+./site-toggle run-lines import packages/cli/test/fixtures/spring_awakening_scene4.pdf --format colon --title "Spring Awakening - Scene 4" --json
+
+# See characters
+./site-toggle run-lines characters <script_id> --json
+
+# List available Edge TTS voices (authoritative list)
+./site-toggle run-lines tts-voices --lang en-US --json
+
+# Set a voice (repeat per character as needed)
+./site-toggle run-lines set-voice <script_id> --character "WENDLA" --voice en-US-JennyNeural --rate +0% --json
+
+# Practice (Ryan is Melchior)
+./site-toggle run-lines practice <script_id> --me "Melchior" --mode practice --loop 3
+```
+
+### Voice Assignment (agent-driven; minimal code)
+
+1) Default: the agent should pick distinct voices based on names (best effort).
+2) If unsure: the agent should ask the user to classify characters (male/female/other), then pick voices.
+3) Use these APIs:
+```bash
+./site-toggle run-lines characters <script_id> --json
+./site-toggle run-lines tts-voices --lang en-US --gender Male --json
+./site-toggle run-lines tts-voices --lang en-US --gender Female --json
+./site-toggle run-lines set-voice <script_id> --character "MORITZ" --voice en-US-GuyNeural --rate +0% --json
+```
+
+### Script Cleanup / Fixes (agent-driven; persistent)
+
+Parsing and PDF extraction will never be perfect. Fixes should be done **once**, saved in the acting DB,
+and reused in future practice sessions unless the user asks to revisit.
+
+Workflow:
+1) Inspect:
+```bash
+./site-toggle run-lines lines <script_id> --from 1 --to 140 --json
+```
+2) User points out the problem (wrapped lines, wrong speaker, junk, wrong type)
+3) Agent patches the DB using one of:
+```bash
+./site-toggle run-lines patch <script_id> drop-range --from N --to M --json
+./site-toggle run-lines patch <script_id> merge --idx N --count 2 --json
+./site-toggle run-lines patch <script_id> set-speaker --idx N --speaker "MORITZ" --json
+./site-toggle run-lines patch <script_id> set-type --idx N --type action --json
+./site-toggle run-lines patch <script_id> replace-text --idx N --match "COPIONI" --with "" --json
+```
+
+### Playback Rules (hard requirements)
+
+- Stage directions / scene headings / parentheticals are **printed only** (never spoken).
+- Speaker labels like `MORITZ:` are never spoken; they only route voice selection.
+- PDF footer junk is handled by a sanitizer before parsing and before TTS.
+
+### Modes / Variants (how to run a scene)
+
+**Only read other parts (you stay silent):**
+```bash
+./site-toggle run-lines practice <script_id> --me "Melchior" --mode practice --loop 3
+```
+
+**Read other parts, then reveal your line after the pause (learning / checking):**
+```bash
+./site-toggle run-lines practice <script_id> --me "Melchior" --mode learn --reveal-after --loop 2
+```
+
+**Read all parts aloud (table read):**
+```bash
+./site-toggle run-lines practice <script_id> --read-all --loop 1
+```
+
+**Speed through (boss mode):**
+```bash
+./site-toggle run-lines practice <script_id> --me "Melchior" --mode boss --loop 1 --no-directions
+```

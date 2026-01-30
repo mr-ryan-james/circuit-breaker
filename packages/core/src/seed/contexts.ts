@@ -1,4 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 
 export interface LocationSeed {
   slug: string;
@@ -26,7 +26,7 @@ export const SEED_CONTEXTS: ContextSeed[] = [
 ];
 
 // Additive seeding: insert defaults if missing; never deletes user customizations.
-export function seedContextsAndLocations(db: DatabaseSync): void {
+export function seedContextsAndLocations(db: SqliteDb): void {
   const insertLocation = db.prepare(`INSERT OR IGNORE INTO locations (slug, name) VALUES (?, ?)`);
   const insertContext = db.prepare(`INSERT OR IGNORE INTO contexts (slug, name) VALUES (?, ?)`);
   const getLocationId = db.prepare(`SELECT id FROM locations WHERE slug = ? LIMIT 1`);
@@ -48,4 +48,3 @@ export function seedContextsAndLocations(db: DatabaseSync): void {
     }
   }
 }
-

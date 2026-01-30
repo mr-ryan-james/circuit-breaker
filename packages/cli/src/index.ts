@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { spawn } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 
 import {
@@ -38,7 +39,6 @@ import {
   addContext,
   addLocation,
   moduleMatchesTags,
-  openDb,
   readHostsFile,
   resolveDbPath,
   seedCardsFromDir,
@@ -52,7 +52,11 @@ import {
 } from "@circuit-breaker/core";
 
 import type { ModuleDefinition } from "@circuit-breaker/core";
+import { openDb } from "./db/openDb.js";
 import { cmdPlay } from "./commands/play.js";
+import { cmdRunLines } from "./acting/cli.js";
+import { openActingDb } from "./acting/db.js";
+import { renderTts } from "./tts/edgeTts.js";
 
 class CliError extends Error {
   public readonly code: string;
@@ -193,8 +197,11 @@ function printMainHelp(json: boolean): void {
     "modules",
     "module",
     "import",
+    "run-lines",
     "speak",
+    "listen",
     "play",
+    "ui",
     "doctor",
   ];
 
@@ -215,6 +222,224 @@ function printMainHelp(json: boolean): void {
   for (const cmd of commands) console.log(`  - ${cmd}`);
   console.log("");
   console.log('Tips: use "site-toggle <command> --help" or "site-toggle module --help" for details.');
+}
+
+function uiStateDir(): string {
+  return path.join(path.dirname(resolveDbPath()), "ui-server");
+}
+
+function uiStatePath(): string {
+  return path.join(uiStateDir(), "state.json");
+}
+
+function tryReadUiState(): any | null {
+  try {
+    const raw = fs.readFileSync(uiStatePath(), "utf8");
+    return JSON.parse(raw) as any;
+  } catch {
+    return null;
+  }
+}
+
+function isPidAlive(pid: number): boolean {
+  if (!Number.isFinite(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureExecutableOnPath(cmd: string): void {
+  try {
+    execFileSync("command", ["-v", cmd], { stdio: "ignore" });
+  } catch {
+    throw new Error(`${cmd} not found on PATH.`);
+  }
+}
+
+async function cmdUi(args: string[], json: boolean): Promise<void> {
+  const sub = args[0] ?? "status";
+  const subArgs = args.slice(1);
+
+  if (isHelpToken(sub)) {
+    const usage = [
+      "site-toggle ui start [--port N] [--dev] [--json]",
+      "site-toggle ui stop [--json]",
+      "site-toggle ui status [--json]",
+      "site-toggle ui open",
+      "site-toggle ui signal <name> [--payload-json '{...}'] [--payload 'text'] [--json]",
+    ];
+    if (json) {
+      printJson({ ok: true, command: "ui", help: true, usage });
+      return;
+    }
+    console.log("UI usage:");
+    for (const u of usage) console.log(`  ${u}`);
+    return;
+  }
+
+  if (sub === "status") {
+    const state = tryReadUiState();
+    const pid = Number(state?.pid ?? 0);
+    const running = isPidAlive(pid);
+    if (json) {
+      printJson({ ok: true, command: "ui", action: "status", running, state: state ?? null });
+      return;
+    }
+    if (!state) {
+      console.log("ui-server: not running (no state.json)");
+      return;
+    }
+    console.log(`ui-server: ${running ? "running" : "not running"} (pid ${pid || "?"})`);
+    console.log(JSON.stringify(state, null, 2));
+    return;
+  }
+
+  if (sub === "start") {
+    ensureExecutableOnPath("bun");
+
+    const stateDir = uiStateDir();
+    fs.mkdirSync(stateDir, { recursive: true });
+    const logPath = path.join(stateDir, "server.log");
+
+    const existing = tryReadUiState();
+    const existingPid = Number(existing?.pid ?? 0);
+    if (existing && isPidAlive(existingPid)) {
+      if (json) printJson({ ok: true, command: "ui", action: "start", already_running: true, state: existing });
+      else console.log(`ui-server already running (pid ${existingPid})`);
+      return;
+    }
+
+    // Parse flags: --port N, --dev
+    let port: number | null = null;
+    let dev = false;
+    for (let i = 0; i < subArgs.length; i += 1) {
+      const a = subArgs[i];
+      const next = subArgs[i + 1];
+      if (a === "--port" && next && /^\d+$/.test(next)) {
+        port = Number(next);
+        i += 1;
+        continue;
+      }
+      if (a === "--dev") {
+        dev = true;
+        continue;
+      }
+    }
+
+    const repoRoot = repoRootFromHere();
+    const serverTs = path.join(repoRoot, "packages", "ui-server", "src", "server.ts");
+
+    const bunArgs = ["run", serverTs, "--state-dir", stateDir];
+    if (port !== null) bunArgs.push("--port", String(port));
+    if (dev) bunArgs.push("--dev");
+
+    const outFd = fs.openSync(logPath, "a");
+    const child = spawn("bun", bunArgs, { detached: true, stdio: ["ignore", outFd, outFd] });
+    child.unref();
+
+    // Poll for state.json to appear (server writes it after bind).
+    const deadline = Date.now() + 2500;
+    while (Date.now() < deadline) {
+      const st = tryReadUiState();
+      if (st?.pid && isPidAlive(Number(st.pid))) {
+        if (json) printJson({ ok: true, command: "ui", action: "start", started: true, state: st });
+        else console.log(`ui-server started (pid ${st.pid}) → ${st.ui_url}`);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    throw new Error(`ui-server failed to start (no state.json after 2.5s). Check logs: ${logPath}`);
+  }
+
+  if (sub === "stop") {
+    const state = tryReadUiState();
+    const pid = Number(state?.pid ?? 0);
+    if (!state || !pid) {
+      if (json) printJson({ ok: true, command: "ui", action: "stop", already_stopped: true });
+      else console.log("ui-server already stopped.");
+      return;
+    }
+
+    if (isPidAlive(pid)) {
+      try {
+        process.kill(pid, "SIGTERM");
+      } catch {
+        // ignore
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      if (isPidAlive(pid)) {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    try {
+      fs.rmSync(uiStatePath(), { force: true });
+    } catch {
+      // ignore
+    }
+
+    if (json) printJson({ ok: true, command: "ui", action: "stop", stopped: true, pid });
+    else console.log(`ui-server stopped (pid ${pid})`);
+    return;
+  }
+
+  if (sub === "open") {
+    const state = tryReadUiState();
+    const url = String(state?.ui_url ?? "");
+    if (!url) throw new Error("ui-server not running (missing ui_url in state.json).");
+    execFileSync("open", [url], { stdio: "ignore" });
+    if (json) printJson({ ok: true, command: "ui", action: "open", url });
+    return;
+  }
+
+  if (sub === "signal") {
+    const name = subArgs[0];
+    if (!name) throw new Error("Usage: site-toggle ui signal <name> [--payload-json '{...}'] [--payload 'text']");
+
+    let payload: unknown = null;
+    for (let i = 1; i < subArgs.length; i += 1) {
+      const a = subArgs[i];
+      const next = subArgs[i + 1];
+      if (a === "--payload-json" && next) {
+        payload = JSON.parse(next);
+        i += 1;
+        continue;
+      }
+      if (a === "--payload" && next) {
+        payload = next;
+        i += 1;
+        continue;
+      }
+    }
+
+    const state = tryReadUiState();
+    const port = Number(state?.port ?? 0);
+    const token = String(state?.token ?? "");
+    if (!port || !token) throw new Error("ui-server not running (missing port/token in state.json).");
+
+    const res = await fetch(`http://127.0.0.1:${port}/api/action`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-cb-token": token,
+      },
+      body: JSON.stringify({ v: 1, action: "agent.signal", payload: { name, payload } }),
+    });
+    const data = await res.json();
+    if (json) printJson(data);
+    else console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  throw new Error(`Unknown ui subcommand: ${sub}`);
 }
 
 function printModuleHelp(json: boolean, moduleSlug?: string): void {
@@ -344,6 +569,17 @@ async function cmdDoctor(json: boolean): Promise<void> {
     timers_path: string;
     hosts_readable?: boolean;
     hosts_writable?: boolean;
+    edge_tts?: boolean;
+    sox?: boolean;
+    afplay?: boolean;
+    python3?: boolean;
+    python_path?: string;
+    python_torch?: boolean;
+    python_transformers?: boolean;
+    python_numpy?: boolean;
+    python_mps_built?: boolean;
+    python_mps_available?: boolean;
+    phonemize_script?: boolean;
   } = {
     ok: true,
     command: "doctor",
@@ -381,6 +617,56 @@ async function cmdDoctor(json: boolean): Promise<void> {
     }
   }
 
+  report.edge_tts = commandExists("edge-tts");
+  report.sox = commandExists("sox");
+  report.afplay = commandExists("afplay");
+  let pythonPath: string | null = null;
+  try {
+    pythonPath = pythonExecPath();
+    report.python3 = true;
+    report.python_path = pythonPath;
+  } catch {
+    report.python3 = false;
+  }
+  report.python_torch = report.python3 && pythonPath ? pythonModuleExists(pythonPath, "torch") : false;
+  report.python_transformers = report.python3 && pythonPath ? pythonModuleExists(pythonPath, "transformers") : false;
+  report.python_numpy = report.python3 && pythonPath ? pythonModuleExists(pythonPath, "numpy") : false;
+  report.phonemize_script = fileExistsNonEmpty(phonemizeScriptPath());
+
+  if (report.python_torch && pythonPath) {
+    try {
+      const out = execFileSync(
+        pythonPath,
+        ["-c", "import torch; print(f\"{torch.backends.mps.is_built()}|{torch.backends.mps.is_available()}\")"],
+        { encoding: "utf8" },
+      ).trim();
+      const [builtRaw, availRaw] = out.split("|");
+      report.python_mps_built = builtRaw === "True";
+      report.python_mps_available = availRaw === "True";
+    } catch {
+      report.python_mps_built = false;
+      report.python_mps_available = false;
+    }
+  } else {
+    report.python_mps_built = false;
+    report.python_mps_available = false;
+  }
+
+  if (
+    !report.edge_tts ||
+    !report.sox ||
+    !report.afplay ||
+    !report.python3 ||
+    !report.python_torch ||
+    !report.python_transformers ||
+    !report.python_numpy ||
+    !report.python_mps_built ||
+    !report.python_mps_available ||
+    !report.phonemize_script
+  ) {
+    report.ok = false;
+  }
+
   if (json) {
     printJson(report);
     return;
@@ -395,6 +681,17 @@ async function cmdDoctor(json: boolean): Promise<void> {
     `Hosts: ${HOSTS_FILE_PATH} (${report.hosts_readable ? "readable" : "NOT readable"}${isRoot() ? report.hosts_writable ? ", writable" : ", NOT writable" : ""})`,
   );
   console.log(`Timers dir: ${TIMER_DIR_PATH}`);
+  console.log(`edge-tts: ${report.edge_tts ? "ok" : "MISSING"}`);
+  console.log(`sox: ${report.sox ? "ok" : "MISSING"}`);
+  console.log(`afplay: ${report.afplay ? "ok" : "MISSING"}`);
+  console.log(`python3: ${report.python3 ? "ok" : "MISSING"}${report.python_path ? ` (${report.python_path})` : ""}`);
+  console.log(`torch: ${report.python_torch ? "ok" : "MISSING"}`);
+  console.log(`transformers: ${report.python_transformers ? "ok" : "MISSING"}`);
+  console.log(`numpy: ${report.python_numpy ? "ok" : "MISSING"}`);
+  console.log(
+    `mps: ${report.python_mps_built ? (report.python_mps_available ? "available" : "NOT available") : "NOT built"}`,
+  );
+  console.log(`phonemize script: ${report.phonemize_script ? "ok" : "MISSING"}`);
   console.log("");
   console.log(report.ok ? "✅ OK" : "❌ Issues detected");
 }
@@ -749,6 +1046,7 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
   const { db } = openDb();
   const resolvedContext = await resolveContextOrThrow(db, { location, context, json });
   const menu = buildBreakMenu({ db, siteSlug, feedMinutes: minutes, location, context: location ? undefined : resolvedContext });
+  const hasActingLane = menu.lanes.some((l) => l.type === "acting");
 
   // Log served menu + served card.
   insertEvent(db, {
@@ -773,8 +1071,69 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
     }
   }
 
+  type RecentActingScript = {
+    id: number;
+    title: string;
+    source_format: string;
+    created_at: string;
+    last_practiced_at: string | null;
+    character_count: number;
+    dialogue_lines: number;
+    character_names: string[];
+  };
+
+  const loadRecentActingScripts = (limit: number): RecentActingScript[] => {
+    try {
+      const { db: actingDb } = openActingDb();
+      const rows = actingDb
+        .prepare(
+          `
+          WITH last_practice AS (
+            SELECT script_id, MAX(created_at) AS last_practiced_at
+            FROM script_practice_events
+            GROUP BY script_id
+          )
+          SELECT
+            s.id,
+            s.title,
+            s.source_format,
+            s.created_at,
+            lp.last_practiced_at,
+            (SELECT COUNT(*) FROM script_characters c WHERE c.script_id = s.id) AS character_count,
+            (SELECT COUNT(*) FROM script_lines l WHERE l.script_id = s.id AND l.type = 'dialogue') AS dialogue_lines
+          FROM scripts s
+          LEFT JOIN last_practice lp ON lp.script_id = s.id
+          ORDER BY COALESCE(lp.last_practiced_at, s.created_at) DESC, s.id DESC
+          LIMIT ?
+        `,
+        )
+        .all(limit) as Array<{
+        id: number;
+        title: string;
+        source_format: string;
+        created_at: string;
+        last_practiced_at: string | null;
+        character_count: number;
+        dialogue_lines: number;
+      }>;
+
+      const nameStmt = actingDb.prepare("SELECT name FROM script_characters WHERE script_id = ? ORDER BY name");
+      return rows.map((r) => {
+        const nameRows = nameStmt.all(r.id) as Array<{ name: string }>;
+        const names = nameRows.map((nr) => nr.name).filter(Boolean);
+        return { ...r, character_names: names };
+      });
+    } catch {
+      return [];
+    }
+  };
+
+  const recentActingScripts: RecentActingScript[] = hasActingLane ? loadRecentActingScripts(3) : [];
+
   if (json) {
-    printJson({ ok: true, command: "break", ...menu });
+    // Avoid mutating the menu that we just logged into the events table; enrich only the output.
+    const lanes = menu.lanes.map((l) => (l.type === "acting" ? ({ ...l, recent_scripts: recentActingScripts } as any) : l));
+    printJson({ ok: true, command: "break", ...menu, lanes });
     return;
   }
 
@@ -792,6 +1151,8 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
         return "B1/B2 Lesson";
       case "sovt":
         return "SOVT / Pitch";
+      case "acting":
+        return "Run Lines";
       case "fusion":
         return "Fusion";
       case "card":
@@ -820,10 +1181,21 @@ async function cmdBreak(args: string[], json: boolean): Promise<void> {
     if (!card) continue;
     console.log(`${optionNum}) ${labelForLane(lane.type)} [${card.category}]: ${card.activity} (${card.minutes} min) — ${card.doneCondition}`);
     if (card.prompt) printPromptBlock(card.prompt);
+    if (lane.type === "acting" && recentActingScripts.length > 0) {
+      console.log("");
+      console.log("Recent scenes:");
+      for (const s of recentActingScripts) {
+        const when = s.last_practiced_at ? `last practiced ${s.last_practiced_at}` : `imported ${s.created_at}`;
+        const chars = s.character_count === 1 ? "1 character" : `${s.character_count} characters`;
+        console.log(`- [${s.id}] ${s.title} (${when}; ${chars}, ${s.dialogue_lines} dialogue lines)`);
+      }
+      console.log(`Tip: site-toggle run-lines characters <script_id> --json`);
+      console.log(`Tip: site-toggle run-lines practice <script_id> --me "<YOUR_CHARACTER>" --mode practice --loop 2`);
+    }
     optionNum += 1;
   }
   console.log("");
-  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|sovt|fusion|feed|same_need`);
+  console.log(`Choose: site-toggle choose ${menu.event_key} physical|verb|noun|lesson|sovt|acting|fusion|feed|same_need`);
   console.log("(Legacy aliases: card=first card lane, card2=second card lane)");
 }
 
@@ -2030,7 +2402,7 @@ function cmdChoose(args: string[], json: boolean): void {
     return;
   }
 
-  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson", "sovt", "fusion"].includes(t);
+  const isCardLaneType = (t: string): boolean => ["card", "card2", "physical", "verb", "noun", "lesson", "sovt", "acting", "fusion"].includes(t);
 
   const resolveCardLane = (requested: string): any | null => {
     const direct = (menu.lanes as any[]).find((l) => l.type === requested);
@@ -2360,12 +2732,19 @@ function importUsageLogIfPresent(db: any): { imported: number } {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DEFAULT_SPEAK_VOICE = "es-ES-AlvaroNeural";
+const DEFAULT_SPEAK_RATE = "-25%";
+const DEFAULT_LISTEN_VOICE = "es-ES-ElviraNeural";
 const DEFAULT_EDGE_TTS_TIMEOUT_MS = 15_000;
+const DEFAULT_PHONEME_MODEL = "facebook/wav2vec2-xlsr-53-espeak-cv-ft";
 
 function speakCacheDir(): string {
   // Per-UID cache avoids permission issues if speak is ever run under sudo
   const uid = typeof process.getuid === "function" ? process.getuid() : null;
   return uid === null ? "/tmp/circuit-breaker-audio" : `/tmp/circuit-breaker-audio-${uid}`;
+}
+
+function phonemizeScriptPath(): string {
+  return path.join(repoRootFromHere(), "packages", "cli", "scripts", "phonemize.py");
 }
 
 function normalizeSpeakText(input: string): string {
@@ -2381,8 +2760,230 @@ function fileExistsNonEmpty(filePath: string): boolean {
   }
 }
 
+function pythonExecPath(): string {
+  const override = (process.env["CIRCUIT_BREAKER_PYTHON"] ?? "").trim();
+  if (override) {
+    const resolved = path.resolve(override);
+    if (!fileExistsNonEmpty(resolved)) {
+      throw new Error(`CIRCUIT_BREAKER_PYTHON not found: ${resolved}`);
+    }
+    return resolved;
+  }
+
+  const repoRoot = repoRootFromHere();
+  const candidates = [
+    path.join(repoRoot, ".venv", "bin", "python3"),
+    path.join(repoRoot, ".venv", "bin", "python"),
+  ];
+  for (const candidate of candidates) {
+    if (fileExistsNonEmpty(candidate)) return candidate;
+  }
+
+  throw new Error(
+    "Python venv not found. Create with: python3 -m venv .venv && .venv/bin/python -m pip install torch transformers numpy",
+  );
+}
+
+function commandExists(command: string): boolean {
+  try {
+    execFileSync("which", [command], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pythonModuleExists(pythonPath: string, moduleName: string): boolean {
+  try {
+    execFileSync(pythonPath, ["-c", `import ${moduleName}`], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function requireCommand(command: string, hint: string): void {
+  if (commandExists(command)) return;
+  throw new Error(`${command} not found. ${hint}`);
+}
+
+function hashBuffer(buf: Buffer): string {
+  return crypto.createHash("sha256").update(buf).digest("hex");
+}
+
+function getWavDurationSeconds(wavPath: string): number {
+  try {
+    const out = execFileSync("sox", ["--i", "-D", wavPath], { encoding: "utf8" }).trim();
+    const seconds = Number(out);
+    if (!Number.isFinite(seconds) || seconds <= 0) throw new Error("Invalid duration");
+    return seconds;
+  } catch (e) {
+    throw new Error(`Failed to read duration for ${wavPath}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+function getAudioDurationSeconds(audioPath: string): number {
+  try {
+    const out = execFileSync("sox", ["--i", "-D", audioPath], { encoding: "utf8" }).trim();
+    const seconds = Number(out);
+    if (!Number.isFinite(seconds) || seconds <= 0) throw new Error("Invalid duration");
+    return seconds;
+  } catch (e) {
+    throw new Error(`Failed to read duration for ${audioPath}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+function getWavSampleRate(wavPath: string): number {
+  try {
+    const out = execFileSync("sox", ["--i", "-r", wavPath], { encoding: "utf8" }).trim();
+    const rate = Number(out);
+    if (!Number.isFinite(rate) || rate <= 0) throw new Error("Invalid sample rate");
+    return rate;
+  } catch (e) {
+    throw new Error(`Failed to read sample rate for ${wavPath}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+function getWavChannels(wavPath: string): number {
+  try {
+    const out = execFileSync("sox", ["--i", "-c", wavPath], { encoding: "utf8" }).trim();
+    const channels = Number(out);
+    if (!Number.isFinite(channels) || channels <= 0) throw new Error("Invalid channel count");
+    return channels;
+  } catch (e) {
+    throw new Error(`Failed to read channel count for ${wavPath}: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+function getWavStats(wavPath: string): { max_amp: number; rms_amp: number; length_sec: number; raw: string } {
+  const res = spawnSync("sox", [wavPath, "-n", "stat"], { encoding: "utf8" });
+  if (res.error) throw res.error;
+  if (res.status !== 0) {
+    throw new Error(`sox stat failed: ${res.stderr || res.stdout || "unknown error"}`);
+  }
+  const output = `${res.stderr ?? ""}`.trim();
+  const maxMatch = output.match(/Maximum amplitude:\s*([-\d.]+)/i);
+  const rmsMatch = output.match(/RMS\s+amplitude:\s*([-\d.]+)/i);
+  const lenMatch = output.match(/Length\s+\(seconds\):\s*([-\d.]+)/i);
+  const maxAmp = maxMatch ? Number(maxMatch[1]) : NaN;
+  const rmsAmp = rmsMatch ? Number(rmsMatch[1]) : NaN;
+  const lengthSec = lenMatch ? Number(lenMatch[1]) : NaN;
+  if (!Number.isFinite(maxAmp) || !Number.isFinite(rmsAmp) || !Number.isFinite(lengthSec)) {
+    throw new Error(`Unable to parse sox stat output for ${wavPath}`);
+  }
+  return { max_amp: maxAmp, rms_amp: rmsAmp, length_sec: lengthSec, raw: output };
+}
+
+function getWavStatsSegment(
+  wavPath: string,
+  startSec: number,
+  durationSec: number,
+): { max_amp: number; rms_amp: number; length_sec: number; raw: string } {
+  const safeStart = Math.max(0, startSec);
+  const safeDur = Math.max(0.01, durationSec);
+  const res = spawnSync("sox", [wavPath, "-n", "trim", safeStart.toFixed(3), safeDur.toFixed(3), "stat"], {
+    encoding: "utf8",
+  });
+  if (res.error) throw res.error;
+  if (res.status !== 0) {
+    throw new Error(`sox stat (segment) failed: ${res.stderr || res.stdout || "unknown error"}`);
+  }
+  const output = `${res.stderr ?? ""}`.trim();
+  const maxMatch = output.match(/Maximum amplitude:\s*([-\d.]+)/i);
+  const rmsMatch = output.match(/RMS\s+amplitude:\s*([-\d.]+)/i);
+  const lenMatch = output.match(/Length\s+\(seconds\):\s*([-\d.]+)/i);
+  const maxAmp = maxMatch ? Number(maxMatch[1]) : NaN;
+  const rmsAmp = rmsMatch ? Number(rmsMatch[1]) : NaN;
+  const lengthSec = lenMatch ? Number(lenMatch[1]) : NaN;
+  if (!Number.isFinite(maxAmp) || !Number.isFinite(rmsAmp) || !Number.isFinite(lengthSec)) {
+    throw new Error(`Unable to parse sox stat output for ${wavPath}`);
+  }
+  return { max_amp: maxAmp, rms_amp: rmsAmp, length_sec: lengthSec, raw: output };
+}
+
+type SpeechWindow = {
+  max_amp: number;
+  threshold: number;
+  start_sec: number;
+  end_sec: number;
+  duration_sec: number;
+};
+
+function getSpeechWindow(wavPath: string, thresholdRatio = 0.05): SpeechWindow | null {
+  const buf = fs.readFileSync(wavPath);
+  if (buf.length < 44) return null;
+  if (buf.toString("ascii", 0, 4) !== "RIFF" || buf.toString("ascii", 8, 12) !== "WAVE") return null;
+
+  let offset = 12;
+  let channels = 0;
+  let sampleRate = 0;
+  let bitsPerSample = 0;
+  let dataOffset = -1;
+  let dataSize = 0;
+
+  while (offset + 8 <= buf.length) {
+    const chunkId = buf.toString("ascii", offset, offset + 4);
+    const chunkSize = buf.readUInt32LE(offset + 4);
+    const chunkData = offset + 8;
+    if (chunkId === "fmt ") {
+      const audioFormat = buf.readUInt16LE(chunkData);
+      channels = buf.readUInt16LE(chunkData + 2);
+      sampleRate = buf.readUInt32LE(chunkData + 4);
+      bitsPerSample = buf.readUInt16LE(chunkData + 14);
+      if (audioFormat !== 1) return null;
+    } else if (chunkId === "data") {
+      dataOffset = chunkData;
+      dataSize = chunkSize;
+      break;
+    }
+    offset = chunkData + chunkSize;
+  }
+
+  if (dataOffset < 0 || dataSize <= 0) return null;
+  if (bitsPerSample !== 16 || channels < 1 || sampleRate <= 0) return null;
+
+  const sampleCount = Math.floor(dataSize / 2);
+  let maxAmp = 0;
+  for (let i = 0; i < sampleCount; i += 1) {
+    const sample = buf.readInt16LE(dataOffset + i * 2);
+    const abs = Math.abs(sample);
+    if (abs > maxAmp) maxAmp = abs;
+  }
+  if (maxAmp === 0) return null;
+
+  const threshold = Math.max(1, Math.floor(maxAmp * thresholdRatio));
+  let firstFrame = -1;
+  let lastFrame = -1;
+  const frames = Math.floor(sampleCount / channels);
+  for (let frame = 0; frame < frames; frame += 1) {
+    let frameMax = 0;
+    const base = dataOffset + frame * channels * 2;
+    for (let ch = 0; ch < channels; ch += 1) {
+      const sample = buf.readInt16LE(base + ch * 2);
+      const abs = Math.abs(sample);
+      if (abs > frameMax) frameMax = abs;
+    }
+    if (frameMax >= threshold) {
+      if (firstFrame < 0) firstFrame = frame;
+      lastFrame = frame;
+    }
+  }
+
+  if (firstFrame < 0 || lastFrame < 0) return null;
+  const startSec = firstFrame / sampleRate;
+  const endSec = (lastFrame + 1) / sampleRate;
+  return {
+    max_amp: maxAmp / 32768,
+    threshold: threshold / 32768,
+    start_sec: Number(startSec.toFixed(6)),
+    end_sec: Number(endSec.toFixed(6)),
+    duration_sec: Number((endSec - startSec).toFixed(6)),
+  };
+}
+
 async function cmdSpeak(args: string[], json: boolean): Promise<void> {
   let voice = DEFAULT_SPEAK_VOICE;
+  let rate = DEFAULT_SPEAK_RATE;
   let refresh = false;
   let timeoutMs = DEFAULT_EDGE_TTS_TIMEOUT_MS;
 
@@ -2395,6 +2996,11 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
 
     if (a === "--voice" && next) {
       voice = next;
+      i += 1;
+      continue;
+    }
+    if (a === "--rate" && next) {
+      rate = next;
       i += 1;
       continue;
     }
@@ -2414,62 +3020,16 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
   }
 
   const text = normalizeSpeakText(textParts.join(" "));
-  if (!text) throw new Error("Usage: speak <text> [--voice <voice>]");
+  if (!text) throw new Error("Usage: speak <text> [--voice <voice>] [--rate <rate>]");
 
-  const cacheDir = speakCacheDir();
-  fs.mkdirSync(cacheDir, { recursive: true });
-
-  const hash = crypto
-    .createHash("sha256")
-    .update(`v1|${voice}|${text}`, "utf8")
-    .digest("hex")
-    .slice(0, 24);
-
-  const mp3Path = path.join(cacheDir, `${hash}.mp3`);
-  let cached = false;
-
-  // Check cache first
-  if (!refresh && fileExistsNonEmpty(mp3Path)) {
-    cached = true;
-  } else {
-    // Generate with edge-tts (atomic write via temp file)
-    const tmpMp3 = path.join(cacheDir, `${hash}.tmp-${process.pid}-${Date.now()}.mp3`);
-    try {
-      fs.rmSync(tmpMp3, { force: true });
-    } catch {
-      // ignore
-    }
-
-    try {
-      execFileSync(
-        "edge-tts",
-        ["--voice", voice, "--text", text, "--write-media", tmpMp3],
-        { stdio: ["ignore", "pipe", "pipe"], timeout: timeoutMs },
-      );
-
-      if (!fileExistsNonEmpty(tmpMp3)) {
-        throw new Error("edge-tts produced an empty audio file");
-      }
-
-      fs.renameSync(tmpMp3, mp3Path);
-    } catch (e: unknown) {
-      try {
-        fs.rmSync(tmpMp3, { force: true });
-      } catch {
-        // ignore
-      }
-
-      const err = e as { code?: string; killed?: boolean; message?: string };
-      const errMsg =
-        err.code === "ETIMEDOUT" || err.killed
-          ? `edge-tts timed out after ${timeoutMs}ms (are you offline?)`
-          : err.code === "ENOENT"
-            ? "edge-tts not found. Install with: pipx install edge-tts"
-            : `edge-tts failed: ${err.message || e}`;
-
-      throw new Error(errMsg);
-    }
-  }
+  const { mp3Path, cached } = renderTts({
+    text,
+    voice,
+    rate,
+    refresh,
+    timeoutMs,
+    cacheDir: speakCacheDir(),
+  });
 
   // Play audio (blocking)
   try {
@@ -2485,6 +3045,7 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
       command: "speak",
       text,
       voice,
+      rate,
       cached,
       file: mp3Path,
     });
@@ -2492,6 +3053,674 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
   }
 
   console.log(`🔊 ${text}${cached ? " (cached)" : ""}`);
+}
+
+type ListenScore = {
+  edits: number;
+  ref_len: number;
+  per: number;
+  duration_ratio: number;
+  pass: boolean;
+};
+
+type PhoneTool = {
+  name: string;
+  model: string;
+  device: string;
+  torch?: string;
+  transformers?: string;
+};
+
+type PhonesResult = {
+  phones: string[];
+  tool: PhoneTool;
+  timings_ms?: Record<string, number>;
+};
+
+function levenshteinTokens(a: string[], b: string[]): { edits: number; inserts: number; deletes: number; subs: number } {
+  const n = a.length;
+  const m = b.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  const get = (i: number, j: number): number => dp[i]![j]!;
+  const set = (i: number, j: number, value: number): void => {
+    dp[i]![j] = value;
+  };
+
+  for (let i = 0; i <= n; i += 1) set(i, 0, i);
+  for (let j = 0; j <= m; j += 1) set(0, j, j);
+
+  for (let i = 1; i <= n; i += 1) {
+    for (let j = 1; j <= m; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      set(
+        i,
+        j,
+        Math.min(
+          get(i - 1, j) + 1, // delete
+          get(i, j - 1) + 1, // insert
+          get(i - 1, j - 1) + cost, // substitute
+        ),
+      );
+    }
+  }
+
+  // Backtrack for counts
+  let i = n;
+  let j = m;
+  let inserts = 0;
+  let deletes = 0;
+  let subs = 0;
+  while (i > 0 || j > 0) {
+    if (i > 0 && get(i, j) === get(i - 1, j) + 1) {
+      deletes += 1;
+      i -= 1;
+      continue;
+    }
+    if (j > 0 && get(i, j) === get(i, j - 1) + 1) {
+      inserts += 1;
+      j -= 1;
+      continue;
+    }
+    if (i > 0 && j > 0) {
+      if (a[i - 1] !== b[j - 1]) subs += 1;
+      i -= 1;
+      j -= 1;
+    }
+  }
+
+  return { edits: get(n, m), inserts, deletes, subs };
+}
+
+function extractPhonesWav2Vec2(wavPath: string, pythonPath: string): PhonesResult {
+  const scriptPath = phonemizeScriptPath();
+  if (!fileExistsNonEmpty(scriptPath)) {
+    throw new Error(`Phonemizer script not found: ${scriptPath}`);
+  }
+
+  const env = { ...process.env, PYTORCH_ENABLE_MPS_FALLBACK: "0" };
+
+  let raw: string;
+  try {
+    raw = execFileSync(pythonPath, ["--", scriptPath, "--wav", wavPath, "--model", DEFAULT_PHONEME_MODEL], {
+      encoding: "utf8",
+      env,
+      maxBuffer: 10 * 1024 * 1024,
+    }).trim();
+  } catch (e: unknown) {
+    const err = e as { message?: string; stdout?: string; stderr?: string };
+    const detail = [err.stderr, err.stdout].filter(Boolean).join("\n").trim();
+    const suffix = detail ? `\n${detail}` : `\n${err.message || e}`;
+    throw new Error(
+      `Phoneme extraction failed (wav2vec2). Ensure python3 + torch + transformers + numpy are installed and MPS is available.${suffix}`,
+    );
+  }
+
+  let parsed: { ok?: boolean; phones?: string[]; tool?: PhoneTool; timings_ms?: Record<string, number>; error?: string } | null = null;
+  try {
+    parsed = JSON.parse(raw) as {
+      ok?: boolean;
+      phones?: string[];
+      tool?: PhoneTool;
+      timings_ms?: Record<string, number>;
+      error?: string;
+    };
+  } catch {
+    throw new Error(`Phoneme extraction returned non-JSON output:\n${raw.slice(0, 500)}`);
+  }
+
+  if (!parsed || parsed.ok !== true) {
+    throw new Error(`Phoneme extraction failed: ${parsed?.error || raw.slice(0, 500)}`);
+  }
+  if (!Array.isArray(parsed.phones) || parsed.phones.length === 0) {
+    throw new Error(`Phoneme extraction returned empty phones for ${wavPath}`);
+  }
+
+  const tool: PhoneTool = parsed.tool ?? { name: "wav2vec2", model: DEFAULT_PHONEME_MODEL, device: "mps" };
+
+  return { phones: parsed.phones, tool, timings_ms: parsed.timings_ms };
+}
+
+function ensureDir(p: string): void {
+  fs.mkdirSync(p, { recursive: true });
+}
+
+async function cmdListen(args: string[], json: boolean): Promise<void> {
+  let voice = DEFAULT_LISTEN_VOICE;
+  let refresh = false;
+  const listenRate = "-25%";
+  let startMs = 50;
+  let silenceMs = 1200;
+  let threshold = "1%";
+  let maxSeconds = 12;
+  let refPath: string | null = null;
+  let noPlayRef = false;
+  let keep = false;
+  let outDir: string | null = null;
+  let debug = false;
+  let debugDir: string | null = null;
+
+  const textParts: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (!a) continue;
+    const next = args[i + 1];
+
+    if (isHelpToken(a)) {
+      if (json) {
+        printJson({
+          ok: true,
+          command: "listen",
+          usage: "site-toggle listen <text...> [--voice <voice>] [--start-ms <ms>] [--silence-ms <ms>] [--threshold <value>] [--max-seconds <n>] [--no-play-ref] [--keep] [--out-dir <path>] [--ref <file>] [--refresh] [--debug]",
+        });
+      } else {
+        console.log("Usage:");
+        console.log(
+          "  site-toggle listen <text...> [--voice <voice>] [--start-ms <ms>] [--silence-ms <ms>] [--threshold <value>] [--max-seconds <n>] [--no-play-ref] [--keep] [--out-dir <path>] [--ref <file>] [--refresh] [--debug]",
+        );
+      }
+      return;
+    }
+
+    if (a === "--voice" && next) {
+      voice = next;
+      i += 1;
+      continue;
+    }
+    if (a === "--start-ms" && next && /^\d+$/.test(next)) {
+      startMs = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--silence-ms" && next && /^\d+$/.test(next)) {
+      silenceMs = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--threshold" && next) {
+      threshold = next;
+      i += 1;
+      continue;
+    }
+    if (a === "--max-seconds" && next && /^\d+$/.test(next)) {
+      maxSeconds = Number(next);
+      i += 1;
+      continue;
+    }
+    if (a === "--ref" && next) {
+      refPath = next;
+      i += 1;
+      continue;
+    }
+    if (a === "--out-dir" && next) {
+      outDir = next;
+      i += 1;
+      continue;
+    }
+    if (a === "--refresh" || a === "--no-cache") {
+      refresh = true;
+      continue;
+    }
+    if (a === "--no-play-ref") {
+      noPlayRef = true;
+      continue;
+    }
+    if (a === "--keep") {
+      keep = true;
+      continue;
+    }
+    if (a === "--debug") {
+      debug = true;
+      continue;
+    }
+    if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
+    textParts.push(a);
+  }
+
+  if (debug) keep = true;
+
+  if (refPath && textParts.length > 0) {
+    throw new Error("Provide either <text...> or --ref <file>, not both.");
+  }
+  if (!refPath && textParts.length === 0) {
+    throw new Error("Usage: listen <text...> OR listen --ref <audio-file>");
+  }
+
+  requireCommand("sox", "Install with: brew install sox");
+  if (!noPlayRef) requireCommand("afplay", "afplay is required for audio playback");
+  const pythonPath = pythonExecPath();
+
+  let refMp3Path: string | null = null;
+  let refHash: string;
+  let listenTextUsed: string | null = null;
+  let listenRateUsed: string | null = null;
+  if (refPath) {
+    const absRef = path.resolve(refPath);
+    if (!fileExistsNonEmpty(absRef)) throw new Error(`Reference audio not found or empty: ${absRef}`);
+    const buf = fs.readFileSync(absRef);
+    refHash = hashBuffer(buf).slice(0, 24);
+    refMp3Path = absRef;
+  } else {
+    requireCommand("edge-tts", "Install with: pipx install edge-tts");
+    const text = normalizeSpeakText(textParts.join(" "));
+    if (!text) throw new Error("Usage: listen <text...>");
+    const listenText = /[.!?]$/.test(text) ? text : `${text}.`;
+    listenTextUsed = listenText;
+    listenRateUsed = listenRate;
+
+    const cacheDir = speakCacheDir();
+    fs.mkdirSync(cacheDir, { recursive: true });
+
+    const hash = crypto
+      .createHash("sha256")
+      .update(`v1|listen|${voice}|${listenRate}|${listenText}`, "utf8")
+      .digest("hex")
+      .slice(0, 24);
+
+    const mp3Path = path.join(cacheDir, `${hash}.mp3`);
+    if (!refresh && fileExistsNonEmpty(mp3Path)) {
+      refMp3Path = mp3Path;
+    } else {
+      const tmpMp3 = path.join(cacheDir, `${hash}.tmp-${process.pid}-${Date.now()}.mp3`);
+      try {
+        fs.rmSync(tmpMp3, { force: true });
+      } catch {
+        // ignore
+      }
+
+      try {
+        execFileSync(
+          "edge-tts",
+          ["--voice", voice, "--text", listenText, "--rate", listenRate, "--write-media", tmpMp3],
+          { stdio: ["ignore", "pipe", "pipe"], timeout: DEFAULT_EDGE_TTS_TIMEOUT_MS },
+        );
+
+        if (!fileExistsNonEmpty(tmpMp3)) {
+          throw new Error("edge-tts produced an empty audio file");
+        }
+
+        fs.renameSync(tmpMp3, mp3Path);
+        refMp3Path = mp3Path;
+      } catch (e: unknown) {
+        try {
+          fs.rmSync(tmpMp3, { force: true });
+        } catch {
+          // ignore
+        }
+
+        const err = e as { code?: string; killed?: boolean; message?: string };
+        const errMsg =
+          err.code === "ETIMEDOUT" || err.killed
+            ? `edge-tts timed out after ${DEFAULT_EDGE_TTS_TIMEOUT_MS}ms (are you offline?)`
+            : err.code === "ENOENT"
+              ? "edge-tts not found. Install with: pipx install edge-tts"
+              : `edge-tts failed: ${err.message || e}`;
+
+        throw new Error(errMsg);
+      }
+    }
+    refHash = hash;
+  }
+
+  if (!refMp3Path) throw new Error("Missing reference audio path");
+
+  const baseDir = outDir ? path.resolve(outDir) : path.join(speakCacheDir(), "listen");
+  if (debug) {
+    debugDir = path.join(baseDir, "debug", `listen-${Date.now()}`);
+    ensureDir(debugDir);
+  }
+  const refDir = path.join(baseDir, "refs", refHash);
+  ensureDir(refDir);
+  const refWavPath = path.join(refDir, "ref.wav");
+  const refPhonesPath = path.join(refDir, "ref.phones.json");
+
+  if (refresh || !fileExistsNonEmpty(refWavPath)) {
+    execFileSync("sox", [refMp3Path, "-r", "16000", "-c", "1", "-b", "16", refWavPath], { stdio: "ignore" });
+  }
+  if (!fileExistsNonEmpty(refWavPath)) throw new Error(`Failed to create reference wav: ${refWavPath}`);
+  if (getWavSampleRate(refWavPath) !== 16000) {
+    throw new Error(`Reference wav sample rate is not 16000Hz: ${refWavPath}`);
+  }
+  if (getWavChannels(refWavPath) !== 1) {
+    throw new Error(`Reference wav must be mono: ${refWavPath}`);
+  }
+  if (debug && debugDir) {
+    const debugRefDir = path.join(debugDir, "ref");
+    ensureDir(debugRefDir);
+    try {
+      const ext = path.extname(refMp3Path || "");
+      const refInputName = ext ? `ref_input${ext}` : "ref_input.audio";
+      fs.copyFileSync(refMp3Path, path.join(debugRefDir, refInputName));
+    } catch {
+      // ignore
+    }
+    try {
+      fs.copyFileSync(refWavPath, path.join(debugRefDir, "ref.wav"));
+    } catch {
+      // ignore
+    }
+  }
+
+  let refPhones: string[] | null = null;
+  let refTool: PhoneTool | null = null;
+  let refCached = false;
+  if (!refresh && fileExistsNonEmpty(refPhonesPath)) {
+    const raw = fs.readFileSync(refPhonesPath, "utf8");
+    try {
+      const parsed = JSON.parse(raw) as { phones?: string[]; tool?: PhoneTool };
+      if (
+        Array.isArray(parsed.phones) &&
+        parsed.phones.length > 0 &&
+        parsed.tool?.model === DEFAULT_PHONEME_MODEL &&
+        parsed.tool?.name === "wav2vec2"
+      ) {
+        refPhones = parsed.phones;
+        refTool = parsed.tool;
+        refCached = true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!refPhones) {
+    const refRes = extractPhonesWav2Vec2(refWavPath, pythonPath);
+    refPhones = refRes.phones;
+    refTool = refRes.tool;
+    fs.writeFileSync(
+      refPhonesPath,
+      JSON.stringify(
+        {
+          phones: refPhones,
+          tool: refTool,
+          created_at: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+    );
+  }
+  if (!refPhones || refPhones.length === 0) throw new Error("Reference phones were empty");
+  if (!refTool) refTool = { name: "wav2vec2", model: DEFAULT_PHONEME_MODEL, device: "mps" };
+
+  let refPlaybackSec: number | null = null;
+  if (!noPlayRef) {
+    const playbackStart = Date.now();
+    try {
+      execFileSync("afplay", [refMp3Path], { stdio: "ignore" });
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      throw new Error(`Audio playback failed: ${err.message || e}\nFile: ${refMp3Path}`);
+    } finally {
+      refPlaybackSec = (Date.now() - playbackStart) / 1000;
+    }
+  }
+
+  let refStats:
+    | {
+        wav_bytes: number;
+        wav_duration_sec: number;
+        wav_sample_rate: number;
+        wav_channels: number;
+        wav_stats: { max_amp: number; rms_amp: number; length_sec: number; raw: string };
+        wav_head_stats: { max_amp: number; rms_amp: number; length_sec: number; raw: string };
+        wav_tail_stats: { max_amp: number; rms_amp: number; length_sec: number; raw: string };
+        wav_head_rms: number;
+        wav_tail_rms: number;
+        speech_window: SpeechWindow | null;
+        tts_text: string | null;
+        tts_rate: string | null;
+        tts_voice: string | null;
+        mp3_bytes: number;
+        mp3_duration_sec: number;
+        mp3_path: string;
+        playback_sec: number | null;
+      }
+    | undefined;
+  if (debug) {
+    const refWavDuration = getAudioDurationSeconds(refWavPath);
+    const headWindow = Math.min(0.2, refWavDuration);
+    const tailStart = Math.max(0, refWavDuration - headWindow);
+    const headStats = getWavStatsSegment(refWavPath, 0, headWindow);
+    const tailStats = getWavStatsSegment(refWavPath, tailStart, headWindow);
+    refStats = {
+      wav_bytes: fs.statSync(refWavPath).size,
+      wav_duration_sec: refWavDuration,
+      wav_sample_rate: getWavSampleRate(refWavPath),
+      wav_channels: getWavChannels(refWavPath),
+      wav_stats: getWavStats(refWavPath),
+      wav_head_stats: headStats,
+      wav_tail_stats: tailStats,
+      wav_head_rms: Number(headStats.rms_amp.toFixed(6)),
+      wav_tail_rms: Number(tailStats.rms_amp.toFixed(6)),
+      speech_window: getSpeechWindow(refWavPath),
+      tts_text: listenTextUsed,
+      tts_rate: listenRateUsed,
+      tts_voice: voice,
+      mp3_bytes: fs.statSync(refMp3Path).size,
+      mp3_duration_sec: getAudioDurationSeconds(refMp3Path),
+      mp3_path: refMp3Path,
+      playback_sec: refPlaybackSec,
+    };
+  }
+
+  const attemptDir = outDir ? baseDir : path.join(baseDir, "attempts", `attempt-${Date.now()}`);
+  ensureDir(attemptDir);
+  const attemptPath = path.join(attemptDir, "attempt.wav");
+
+  const startSec = Math.max(0.01, startMs / 1000);
+  const silenceSec = Math.max(0.01, silenceMs / 1000);
+
+  execFileSync(
+    "sox",
+    [
+      "-q",
+      "-d",
+      "-r",
+      "16000",
+      "-c",
+      "1",
+      "-b",
+      "16",
+      "-e",
+      "signed-integer",
+      attemptPath,
+      "silence",
+      "-l",
+      "1",
+      startSec.toFixed(2),
+      threshold,
+      "1",
+      silenceSec.toFixed(2),
+      threshold,
+      "pad",
+      "0.2",
+      "0.2",
+      "trim",
+      "0",
+      String(maxSeconds),
+    ],
+    { stdio: "inherit" },
+  );
+
+  if (!fileExistsNonEmpty(attemptPath)) {
+    throw new Error("Recording failed (empty audio). Check mic permission: System Settings -> Privacy & Security -> Microphone.");
+  }
+
+  const attemptChannels = getWavChannels(attemptPath);
+  if (attemptChannels !== 1) {
+    throw new Error(`Recording must be mono (1 channel). Fix input device channel config and try again.`);
+  }
+
+  const attemptSampleRate = getWavSampleRate(attemptPath);
+  let originalSampleRate: number | null = null;
+  if (attemptSampleRate !== 16000) {
+    const resampled = path.join(attemptDir, "attempt.16k.wav");
+    execFileSync("sox", [attemptPath, "-r", "16000", "-c", "1", "-b", "16", resampled], { stdio: "ignore" });
+    if (!fileExistsNonEmpty(resampled)) {
+      throw new Error("Failed to resample attempt audio to 16kHz.");
+    }
+    if (getWavSampleRate(resampled) !== 16000 || getWavChannels(resampled) !== 1) {
+      throw new Error("Resampled attempt audio is not 16kHz mono.");
+    }
+    originalSampleRate = attemptSampleRate;
+    // Use resampled file for analysis
+    fs.rmSync(attemptPath, { force: true });
+    fs.renameSync(resampled, attemptPath);
+  }
+
+  const attemptDur = getWavDurationSeconds(attemptPath);
+  if (attemptDur < 0.3) {
+    throw new Error("Recording too short or silent. Check mic permission and threshold settings.");
+  }
+
+  const attemptStats = getWavStats(attemptPath);
+  const attemptBytes = fs.statSync(attemptPath).size;
+
+  const attemptRes = extractPhonesWav2Vec2(attemptPath, pythonPath);
+  const attemptPhones = attemptRes.phones;
+  const attemptTool = attemptRes.tool;
+  if (attemptPhones.length === 0) throw new Error("Attempt phones were empty");
+
+  if (debug && debugDir) {
+    const debugAttemptDir = path.join(debugDir, "attempt");
+    ensureDir(debugAttemptDir);
+    try {
+      fs.copyFileSync(attemptPath, path.join(debugAttemptDir, "attempt.wav"));
+    } catch {
+      // ignore
+    }
+    try {
+      fs.writeFileSync(
+        path.join(debugDir, "meta.json"),
+        JSON.stringify(
+          {
+            created_at: new Date().toISOString(),
+            voice,
+            start_ms: startMs,
+            silence_ms: silenceMs,
+            threshold,
+            max_seconds: maxSeconds,
+            no_play_ref: noPlayRef,
+            ref_hash: refHash,
+            ref_text: listenTextUsed,
+            ref_rate: listenRateUsed,
+            ref_voice: voice,
+          },
+          null,
+          2,
+        ),
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  const refDur = getWavDurationSeconds(refWavPath);
+  const refWindow = getSpeechWindow(refWavPath);
+  const attemptWindow = getSpeechWindow(attemptPath);
+  const { edits } = levenshteinTokens(refPhones, attemptPhones);
+  const per = refPhones.length > 0 ? edits / refPhones.length : 1;
+  const refLen = refWindow?.duration_sec ?? refDur;
+  const attemptLen = attemptWindow?.duration_sec ?? attemptDur;
+  const durationRatio = refLen > 0 ? attemptLen / refLen : 0;
+  const pass = per <= 0.15 && durationRatio >= 0.75 && durationRatio <= 1.35;
+
+  const score: ListenScore = {
+    edits,
+    ref_len: refPhones.length,
+    per: Number(per.toFixed(3)),
+    duration_ratio: Number(durationRatio.toFixed(3)),
+    pass,
+  };
+
+  if (!keep && !outDir) {
+    try {
+      fs.rmSync(attemptPath, { force: true });
+    } catch {
+      // ignore
+    }
+  }
+
+  if (json) {
+    printJson({
+      ok: true,
+      command: "listen",
+      debug_dir: debugDir,
+      ref: {
+        wav: refWavPath,
+        phones: refPhones,
+        tool: refTool,
+        cached: refCached,
+        stats: refStats,
+      },
+      attempt: {
+        wav: attemptPath,
+        phones: attemptPhones,
+        tool: attemptTool,
+        stats: debug
+          ? {
+              max_amp: attemptStats.max_amp,
+              rms_amp: attemptStats.rms_amp,
+              length_sec: attemptStats.length_sec,
+              raw: attemptStats.raw,
+              sample_rate: getWavSampleRate(attemptPath),
+              channels: getWavChannels(attemptPath),
+              bytes: attemptBytes,
+              resampled_from_hz: originalSampleRate,
+              speech_window: getSpeechWindow(attemptPath),
+            }
+          : {
+              max_amp: attemptStats.max_amp,
+              rms_amp: attemptStats.rms_amp,
+              length_sec: attemptStats.length_sec,
+            },
+      },
+      score,
+    });
+    return;
+  }
+
+  console.log("Listen");
+  console.log("======");
+  console.log(`Ref phones: ${refPhones.length}`);
+  console.log(`Attempt phones: ${attemptPhones.length}`);
+  if (debug && refStats) {
+    console.log(`Ref wav: ${refWavPath}`);
+    if (debugDir) console.log(`Debug dir: ${debugDir}`);
+    console.log(`Ref wav duration: ${refStats.wav_duration_sec.toFixed(3)}s`);
+    console.log(`Ref wav sample rate: ${refStats.wav_sample_rate}Hz`);
+    console.log(`Ref wav channels: ${refStats.wav_channels}`);
+    console.log(`Ref mp3: ${refStats.mp3_path}`);
+    console.log(`Ref mp3 duration: ${refStats.mp3_duration_sec.toFixed(3)}s`);
+    console.log(`Ref mp3 bytes: ${refStats.mp3_bytes}`);
+    if (refStats.tts_text || refStats.tts_rate) {
+      console.log(`Ref TTS text: ${refStats.tts_text ?? ""}`);
+      console.log(`Ref TTS rate: ${refStats.tts_rate ?? ""}`);
+      console.log(`Ref TTS voice: ${refStats.tts_voice ?? ""}`);
+    }
+    if (refStats.playback_sec !== null) {
+      console.log(`Ref playback seconds: ${refStats.playback_sec.toFixed(3)}s`);
+    }
+    if (refStats.speech_window) {
+      console.log(
+        `Ref speech window: ${refStats.speech_window.start_sec.toFixed(3)}s–${refStats.speech_window.end_sec.toFixed(3)}s ` +
+          `(dur ${refStats.speech_window.duration_sec.toFixed(3)}s, thr ${refStats.speech_window.threshold.toFixed(5)})`,
+      );
+    }
+  }
+  console.log(
+    `Attempt audio: ${attemptStats.length_sec.toFixed(2)}s, max_amp=${attemptStats.max_amp.toFixed(4)}, rms=${attemptStats.rms_amp.toFixed(4)}`,
+  );
+  if (debug) {
+    console.log(`Attempt file: ${attemptPath}`);
+    console.log(`Attempt bytes: ${attemptBytes}`);
+    console.log(`Attempt sample rate: ${getWavSampleRate(attemptPath)}Hz`);
+    console.log(`Attempt channels: ${getWavChannels(attemptPath)}`);
+    if (originalSampleRate) console.log(`Attempt resampled from: ${originalSampleRate}Hz`);
+    console.log("Sox stat:\n" + attemptStats.raw);
+  }
+  console.log(`PER: ${score.per}`);
+  console.log(`Duration ratio: ${score.duration_ratio}`);
+  console.log(pass ? "Result: PASS" : "Result: NEEDS WORK");
 }
 
 async function main(): Promise<void> {
@@ -2555,11 +3784,20 @@ async function main(): Promise<void> {
       case "import":
         cmdImport(args, json);
         return;
+      case "run-lines":
+        await cmdRunLines(args, json, printJson);
+        return;
       case "speak":
         await cmdSpeak(args, json);
         return;
+      case "listen":
+        await cmdListen(args, json);
+        return;
       case "play":
         await cmdPlay(args, json);
+        return;
+      case "ui":
+        await cmdUi(args, json);
         return;
       case "daemon":
         if (args[0] === "tick") return cmdDaemonTick(json);
@@ -2582,7 +3820,7 @@ async function main(): Promise<void> {
       }
       default:
         throw new Error(
-          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|suggest|break|choose|rate|locations|contexts|context|modules|module|import|speak|play|doctor]`,
+          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|suggest|break|choose|rate|locations|contexts|context|modules|module|import|run-lines|speak|listen|play|ui|doctor]`,
         );
     }
   } catch (err) {

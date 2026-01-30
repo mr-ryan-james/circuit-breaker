@@ -1,6 +1,6 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 
-export function applySchema(db: DatabaseSync): void {
+export function applySchema(db: SqliteDb): void {
   // NOTE: Keep this idempotent. We can add migrations later via PRAGMA user_version if needed.
   db.exec(`
     PRAGMA journal_mode = WAL;

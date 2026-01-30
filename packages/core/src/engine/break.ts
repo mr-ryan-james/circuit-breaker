@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import { getSiteBySlug } from "../db/queries.js";
 import type { BreakCard, BreakMenu, BreakMenuLane, SiteType } from "../types.js";
 import { selectBreakCards } from "./selection.js";
@@ -20,7 +20,7 @@ export function sameNeedPromptForType(type: SiteType): string {
 }
 
 export interface BuildBreakMenuOptions {
-  db: DatabaseSync;
+  db: SqliteDb;
   siteSlug: string;
   feedMinutes?: number;
   location?: string;
@@ -116,12 +116,14 @@ export function buildBreakMenu(options: BuildBreakMenuOptions): BreakMenu {
   const noun = pickOneOrFallback({ tagsAll: ["spanish", "noun"] }, { tagsAny: ["noun"] });
   const lesson = pickOneOrFallback({ tagsAll: ["spanish", "lesson", "b1b2"] }, { tagsAll: ["lesson", "b1b2"] });
   const sovt = pickOneOrFallback({ tagsAll: ["sovt"] }, { tagsAll: ["sovt"] }, 15);
+  const acting = pickOneOrFallback({ tagsAll: ["acting"] }, { tagsAny: ["acting"] }, 15);
 
   const hasVerb = !!verb && verb.tags.includes("spanish") && verb.tags.includes("verb");
   const hasNoun = !!noun && noun.tags.includes("spanish") && noun.tags.includes("noun");
   const hasLesson = !!lesson && lesson.tags.includes("spanish") && lesson.tags.includes("lesson") && lesson.tags.includes("b1b2");
 
-  const fusionTemplate = hasVerb && hasNoun && hasLesson ? pickOne({ tagsAll: ["spanish", "fusion"] }, 0) : null;
+  // Keep the break menu at <= 8 options. Acting occupies the "optional" slot and displaces fusion.
+  const fusionTemplate = !acting && hasVerb && hasNoun && hasLesson ? pickOne({ tagsAll: ["spanish", "fusion"] }, 0) : null;
 
   const cards = [physical, verb, noun, lesson, sovt].filter(Boolean);
   if (cards.length === 0) throw new Error("No cards available. Run `site-toggle seed` to load a deck.");
@@ -133,6 +135,7 @@ export function buildBreakMenu(options: BuildBreakMenuOptions): BreakMenu {
     ...(noun ? [{ type: "noun", card: noun } as BreakMenuLane] : []),
     ...(lesson ? [{ type: "lesson", card: lesson } as BreakMenuLane] : []),
     ...(sovt ? [{ type: "sovt", card: sovt } as BreakMenuLane] : []),
+    ...(acting ? [{ type: "acting", card: acting } as BreakMenuLane] : []),
   ];
 
   if (fusionTemplate && fusionTemplate.prompt && hasVerb && hasNoun && hasLesson) {

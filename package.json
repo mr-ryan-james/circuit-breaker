@@ -8,11 +8,17 @@
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
-    "typecheck": "pnpm -r typecheck"
+    "test": "pnpm build && pnpm --filter @circuit-breaker/cli test",
+    "typecheck": "pnpm -r typecheck",
+    "ui:start": "bash scripts/ui-start",
+    "ui:stop": "bash scripts/ui-stop",
+    "ui:status": "bash scripts/ui-status",
+    "ui:open": "bash scripts/ui-open",
+    "ui:dev": "pnpm --filter @circuit-breaker/ui dev",
+    "ui:build": "pnpm --filter @circuit-breaker/ui build"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "^5.9.2"
   }
 }
-

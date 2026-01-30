@@ -1,4 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import { getActiveCards, getActiveCardsForContext, getCardRating, getRecentServedCardIds } from "../db/queries.js";
 import type { BreakCard, CardRating, CardRow } from "../types.js";
 
@@ -79,7 +79,7 @@ export interface SelectCardsOptions {
   tagsAll?: string[];
 }
 
-export function selectBreakCards(db: DatabaseSync, options: SelectCardsOptions): BreakCard[] {
+export function selectBreakCards(db: SqliteDb, options: SelectCardsOptions): BreakCard[] {
   const count = options.count ?? 1;
   const maxMinutes = options.maxMinutes ?? 10;
   const cooldownServed = options.cooldownServed ?? 20;

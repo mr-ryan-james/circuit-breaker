@@ -20,7 +20,18 @@ export type CardRating = "love" | "ok" | "meh" | "ban";
 
 // NOTE: "card"/"card2" are legacy lane names kept for backwards compatibility
 // with older break menus stored in the DB events log.
-export type BreakLane = "same_need" | "physical" | "verb" | "noun" | "lesson" | "fusion" | "card" | "card2" | "feed" | "sovt";
+export type BreakLane =
+  | "same_need"
+  | "physical"
+  | "verb"
+  | "noun"
+  | "lesson"
+  | "sovt"
+  | "acting"
+  | "fusion"
+  | "card"
+  | "card2"
+  | "feed";
 
 // Context slugs are user-extensible, so keep as string.
 export type BreakContext = string;
@@ -123,6 +134,11 @@ export interface BreakMenuLaneSovt {
   card: BreakCard;
 }
 
+export interface BreakMenuLaneActing {
+  type: "acting";
+  card: BreakCard;
+}
+
 export interface BreakMenuLaneFeed {
   type: "feed";
   site: string;
@@ -136,8 +152,9 @@ export type BreakMenuLane =
   | BreakMenuLaneVerb
   | BreakMenuLaneNoun
   | BreakMenuLaneLesson
-  | BreakMenuLaneFusion
   | BreakMenuLaneSovt
+  | BreakMenuLaneActing
+  | BreakMenuLaneFusion
   | BreakMenuLaneCard
   | BreakMenuLaneCard2
   | BreakMenuLaneFeed;

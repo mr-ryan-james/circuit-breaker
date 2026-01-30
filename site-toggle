@@ -7,13 +7,20 @@ set -Eeuo pipefail
 # It executes the compiled TypeScript CLI. Root/sudo is only needed for commands
 # that edit /etc/hosts (on/off/choose feed/daemon tick).
 
-NODE_BIN="/opt/homebrew/bin/node"
+NODE_BIN="${NODE_BIN:-/opt/homebrew/bin/node}"
 CLI_JS="/Users/ryanpfister/Dev/circuit-breaker/packages/cli/dist/index.js"
 
 if [[ ! -x "$NODE_BIN" ]]; then
-  echo "Missing Node binary at $NODE_BIN"
-  echo "Install Node via Homebrew, or update site-toggle wrapper to point at your node."
-  exit 1
+  # Fall back to common Homebrew locations and PATH.
+  if [[ -x "/opt/homebrew/opt/node@24/bin/node" ]]; then
+    NODE_BIN="/opt/homebrew/opt/node@24/bin/node"
+  elif command -v node >/dev/null 2>&1; then
+    NODE_BIN="$(command -v node)"
+  else
+    echo "Missing Node binary at ${NODE_BIN}"
+    echo "Install Node via Homebrew (or ensure `node` is on PATH), or export NODE_BIN=/path/to/node"
+    exit 1
+  fi
 fi
 
 if [[ ! -f "$CLI_JS" ]]; then

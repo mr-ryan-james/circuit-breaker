@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import type { CardCategory, CardLocation, CardRarity } from "../types.js";
 import { parseDelimitedWithHeader } from "./delimited.js";
 
@@ -83,7 +83,7 @@ function normalizeCardSeed(input: unknown): CardSeedDefinition {
   };
 }
 
-export function seedCardsFromFile(db: DatabaseSync, filePath: string): { inserted: number; updated: number } {
+export function seedCardsFromFile(db: SqliteDb, filePath: string): { inserted: number; updated: number } {
   const ext = path.extname(filePath).toLowerCase();
 
   let cards: unknown[];
@@ -190,7 +190,7 @@ export function seedCardsFromFile(db: DatabaseSync, filePath: string): { inserte
   return { inserted, updated };
 }
 
-export function seedCardsFromDir(db: DatabaseSync, dirPath: string): { files: number; inserted: number; updated: number } {
+export function seedCardsFromDir(db: SqliteDb, dirPath: string): { files: number; inserted: number; updated: number } {
   const files = fs
     .readdirSync(dirPath, { withFileTypes: true })
     .filter((d) => d.isFile() && (d.name.endsWith(".json") || d.name.endsWith(".csv") || d.name.endsWith(".tsv")))

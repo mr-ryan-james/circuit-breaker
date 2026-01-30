@@ -2,10 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
-import { resolveDbPath } from "../paths.js";
-import { applySchema } from "./schema.js";
-import { seedSites } from "../seed/sites.js";
-import { seedContextsAndLocations } from "../seed/contexts.js";
+
+import { applySchema, resolveDbPath, seedContextsAndLocations, seedSites } from "@circuit-breaker/core";
 
 function getUidGidForUser(username: string): { uid: number; gid: number } | null {
   try {
@@ -74,6 +72,8 @@ export function openDb(): DbOpenResult {
         `  site-toggle seed`,
     );
   }
+
+  // Ensure the always-required seed tables exist.
   seedSites(db);
   seedContextsAndLocations(db);
 
@@ -82,3 +82,4 @@ export function openDb(): DbOpenResult {
 
   return { db, dbPath };
 }
+

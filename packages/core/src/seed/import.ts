@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 
 import { addContext, addLocation } from "../db/queries.js";
 import { parseDelimitedWithHeader } from "./delimited.js";
@@ -32,11 +32,11 @@ function requireString(value: unknown, what: string): string {
   return value.trim();
 }
 
-export function importCardsFromFile(db: DatabaseSync, filePath: string): { inserted: number; updated: number } {
+export function importCardsFromFile(db: SqliteDb, filePath: string): { inserted: number; updated: number } {
   return seedCardsFromFile(db, filePath);
 }
 
-export function importLocationsFromFile(db: DatabaseSync, filePath: string): { inserted: number; updated: number } {
+export function importLocationsFromFile(db: SqliteDb, filePath: string): { inserted: number; updated: number } {
   const format = inferFormat(filePath);
   const exists = db.prepare("SELECT 1 FROM locations WHERE slug = ? LIMIT 1");
 
@@ -77,7 +77,7 @@ export function importLocationsFromFile(db: DatabaseSync, filePath: string): { i
   return { inserted, updated };
 }
 
-export function importContextsFromFile(db: DatabaseSync, filePath: string): { inserted: number; updated: number } {
+export function importContextsFromFile(db: SqliteDb, filePath: string): { inserted: number; updated: number } {
   const format = inferFormat(filePath);
   const exists = db.prepare("SELECT 1 FROM contexts WHERE slug = ? LIMIT 1");
 
@@ -118,7 +118,7 @@ export function importContextsFromFile(db: DatabaseSync, filePath: string): { in
   return { inserted, updated };
 }
 
-export function importContextLocationsFromFile(db: DatabaseSync, filePath: string): { inserted: number; skipped: number } {
+export function importContextLocationsFromFile(db: SqliteDb, filePath: string): { inserted: number; skipped: number } {
   const format = inferFormat(filePath);
 
   let inserted = 0;

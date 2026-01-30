@@ -1,4 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import type { CardRating, CardRow, CompletedVerbCard, SiteRow } from "../types.js";
 import { extractVerbInfo } from "../modules/spanish.js";
 
@@ -24,24 +24,24 @@ function parseTagsJson(tagsJson: string): string[] {
   }
 }
 
-export function getSiteBySlug(db: DatabaseSync, slug: string): SiteRow | null {
+export function getSiteBySlug(db: SqliteDb, slug: string): SiteRow | null {
   const stmt = db.prepare("SELECT id, slug, type, default_minutes FROM sites WHERE slug = ? LIMIT 1");
   const row = stmt.get(slug) as unknown as SiteRow | undefined;
   return row ?? null;
 }
 
-export function getAllSites(db: DatabaseSync): SiteRow[] {
+export function getAllSites(db: SqliteDb): SiteRow[] {
   const stmt = db.prepare("SELECT id, slug, type, default_minutes FROM sites ORDER BY slug");
   return stmt.all() as unknown as SiteRow[];
 }
 
-export function getDomainsForSiteId(db: DatabaseSync, siteId: number): string[] {
+export function getDomainsForSiteId(db: SqliteDb, siteId: number): string[] {
   const stmt = db.prepare("SELECT domain FROM domains WHERE site_id = ? ORDER BY domain");
   const rows = stmt.all(siteId) as Array<{ domain: string }>;
   return rows.map((r) => r.domain);
 }
 
-export function insertEvent(db: DatabaseSync, params: {
+export function insertEvent(db: SqliteDb, params: {
   type: string;
   eventKey?: string | null;
   siteId?: number | null;
@@ -65,19 +65,19 @@ export function insertEvent(db: DatabaseSync, params: {
   );
 }
 
-export function listLocations(db: DatabaseSync): LocationRow[] {
+export function listLocations(db: SqliteDb): LocationRow[] {
   return db
     .prepare("SELECT id, slug, name FROM locations ORDER BY slug")
     .all() as unknown as LocationRow[];
 }
 
-export function listContexts(db: DatabaseSync): ContextRow[] {
+export function listContexts(db: SqliteDb): ContextRow[] {
   return db
     .prepare("SELECT id, slug, name FROM contexts ORDER BY slug")
     .all() as unknown as ContextRow[];
 }
 
-export function addLocation(db: DatabaseSync, slug: string, name?: string | null): void {
+export function addLocation(db: SqliteDb, slug: string, name?: string | null): void {
   db.prepare(
     `INSERT INTO locations (slug, name)
      VALUES (?, ?)
@@ -85,7 +85,7 @@ export function addLocation(db: DatabaseSync, slug: string, name?: string | null
   ).run(slug, name ?? null);
 }
 
-export function addContext(db: DatabaseSync, slug: string, name?: string | null): void {
+export function addContext(db: SqliteDb, slug: string, name?: string | null): void {
   db.prepare(
     `INSERT INTO contexts (slug, name)
      VALUES (?, ?)
@@ -93,17 +93,17 @@ export function addContext(db: DatabaseSync, slug: string, name?: string | null)
   ).run(slug, name ?? null);
 }
 
-function getLocationId(db: DatabaseSync, slug: string): number | null {
+function getLocationId(db: SqliteDb, slug: string): number | null {
   const row = db.prepare("SELECT id FROM locations WHERE slug = ? LIMIT 1").get(slug) as { id: number } | undefined;
   return row?.id ?? null;
 }
 
-function getContextId(db: DatabaseSync, slug: string): number | null {
+function getContextId(db: SqliteDb, slug: string): number | null {
   const row = db.prepare("SELECT id FROM contexts WHERE slug = ? LIMIT 1").get(slug) as { id: number } | undefined;
   return row?.id ?? null;
 }
 
-export function linkContextLocation(db: DatabaseSync, contextSlug: string, locationSlug: string): void {
+export function linkContextLocation(db: SqliteDb, contextSlug: string, locationSlug: string): void {
   const contextId = getContextId(db, contextSlug);
   if (!contextId) throw new Error(`Unknown context: ${contextSlug}`);
   const locationId = getLocationId(db, locationSlug);
@@ -111,7 +111,7 @@ export function linkContextLocation(db: DatabaseSync, contextSlug: string, locat
   db.prepare("INSERT OR IGNORE INTO context_locations (context_id, location_id) VALUES (?, ?)").run(contextId, locationId);
 }
 
-export function unlinkContextLocation(db: DatabaseSync, contextSlug: string, locationSlug: string): void {
+export function unlinkContextLocation(db: SqliteDb, contextSlug: string, locationSlug: string): void {
   const contextId = getContextId(db, contextSlug);
   if (!contextId) throw new Error(`Unknown context: ${contextSlug}`);
   const locationId = getLocationId(db, locationSlug);
@@ -119,7 +119,7 @@ export function unlinkContextLocation(db: DatabaseSync, contextSlug: string, loc
   db.prepare("DELETE FROM context_locations WHERE context_id = ? AND location_id = ?").run(contextId, locationId);
 }
 
-export function getEligibleLocationSlugs(db: DatabaseSync, contextSlug: string): string[] {
+export function getEligibleLocationSlugs(db: SqliteDb, contextSlug: string): string[] {
   const rows = db
     .prepare(
       `SELECT l.slug AS slug
@@ -133,7 +133,7 @@ export function getEligibleLocationSlugs(db: DatabaseSync, contextSlug: string):
   return rows.map((r) => r.slug);
 }
 
-export function getContextLocations(db: DatabaseSync, contextSlug: string): { context: ContextRow; locations: LocationRow[] } {
+export function getContextLocations(db: SqliteDb, contextSlug: string): { context: ContextRow; locations: LocationRow[] } {
   const context = db
     .prepare("SELECT id, slug, name FROM contexts WHERE slug = ? LIMIT 1")
     .get(contextSlug) as unknown as ContextRow | undefined;
@@ -151,7 +151,7 @@ export function getContextLocations(db: DatabaseSync, contextSlug: string): { co
   return { context, locations };
 }
 
-export function setCardRating(db: DatabaseSync, cardId: number, rating: CardRating): void {
+export function setCardRating(db: SqliteDb, cardId: number, rating: CardRating): void {
   const stmt = db.prepare(
     `INSERT INTO card_ratings (card_id, rating, created_at)
      VALUES (?, ?, datetime('now'))
@@ -160,13 +160,13 @@ export function setCardRating(db: DatabaseSync, cardId: number, rating: CardRati
   stmt.run(cardId, rating);
 }
 
-export function getCardRating(db: DatabaseSync, cardId: number): CardRating | null {
+export function getCardRating(db: SqliteDb, cardId: number): CardRating | null {
   const stmt = db.prepare("SELECT rating FROM card_ratings WHERE card_id = ? LIMIT 1");
   const row = stmt.get(cardId) as { rating: CardRating } | undefined;
   return row?.rating ?? null;
 }
 
-export function getActiveCards(db: DatabaseSync, filters: {
+export function getActiveCards(db: SqliteDb, filters: {
   category?: string;
   location?: string;
   locations?: string[];
@@ -200,7 +200,7 @@ export function getActiveCards(db: DatabaseSync, filters: {
   return stmt.all(...args) as unknown as CardRow[];
 }
 
-export function getActiveCardsForContext(db: DatabaseSync, contextSlug: string, filters: {
+export function getActiveCardsForContext(db: SqliteDb, contextSlug: string, filters: {
   category?: string;
   maxMinutes?: number;
 }): CardRow[] {
@@ -235,7 +235,7 @@ export function getActiveCardsForContext(db: DatabaseSync, contextSlug: string, 
   return stmt.all(...args) as unknown as CardRow[];
 }
 
-export function getRecentServedCardIds(db: DatabaseSync, limit: number): number[] {
+export function getRecentServedCardIds(db: SqliteDb, limit: number): number[] {
   const stmt = db.prepare(
     `SELECT card_id
      FROM events
@@ -247,7 +247,7 @@ export function getRecentServedCardIds(db: DatabaseSync, limit: number): number[
   return rows.map((r) => r.card_id);
 }
 
-export function setSiteUnblockedUntil(db: DatabaseSync, siteId: number, unblockedUntilUnix: number | null): void {
+export function setSiteUnblockedUntil(db: SqliteDb, siteId: number, unblockedUntilUnix: number | null): void {
   const stmt = db.prepare(
     `INSERT INTO site_state (site_id, unblocked_until_unix, updated_at)
      VALUES (?, ?, datetime('now'))
@@ -256,7 +256,7 @@ export function setSiteUnblockedUntil(db: DatabaseSync, siteId: number, unblocke
   stmt.run(siteId, unblockedUntilUnix);
 }
 
-export function getCompletedSpanishVerbCards(db: DatabaseSync, options: { days?: number } = {}): CompletedVerbCard[] {
+export function getCompletedSpanishVerbCards(db: SqliteDb, options: { days?: number } = {}): CompletedVerbCard[] {
   const days = options.days;
   const args: Array<string | number> = [];
   const daysClause =
@@ -341,7 +341,7 @@ export function getCompletedSpanishVerbCards(db: DatabaseSync, options: { days?:
   return Array.from(byCard.values()).sort((a, b) => b.lastCompletedAt.localeCompare(a.lastCompletedAt));
 }
 
-export function getSitesWithExpiredUnblocks(db: DatabaseSync, nowUnix: number): Array<{ site_id: number }> {
+export function getSitesWithExpiredUnblocks(db: SqliteDb, nowUnix: number): Array<{ site_id: number }> {
   const stmt = db.prepare(
     `SELECT site_id
      FROM site_state
@@ -350,13 +350,13 @@ export function getSitesWithExpiredUnblocks(db: DatabaseSync, nowUnix: number): 
   return stmt.all(nowUnix) as unknown as Array<{ site_id: number }>;
 }
 
-export function getSiteState(db: DatabaseSync, siteId: number): { unblocked_until_unix: number | null } | null {
+export function getSiteState(db: SqliteDb, siteId: number): { unblocked_until_unix: number | null } | null {
   const stmt = db.prepare("SELECT unblocked_until_unix FROM site_state WHERE site_id = ? LIMIT 1");
   const row = stmt.get(siteId) as { unblocked_until_unix: number | null } | undefined;
   return row ?? null;
 }
 
-export function findMostRecentOpenBreakEventKey(db: DatabaseSync): string | null {
+export function findMostRecentOpenBreakEventKey(db: SqliteDb): string | null {
   const stmt = db.prepare(
     `SELECT event_key
      FROM events
@@ -373,7 +373,7 @@ export function findMostRecentOpenBreakEventKey(db: DatabaseSync): string | null
   return null;
 }
 
-export function getBreakServedEvent(db: DatabaseSync, eventKey: string): { meta_json: string | null } | null {
+export function getBreakServedEvent(db: SqliteDb, eventKey: string): { meta_json: string | null } | null {
   const stmt = db.prepare(
     `SELECT meta_json
      FROM events
@@ -385,12 +385,12 @@ export function getBreakServedEvent(db: DatabaseSync, eventKey: string): { meta_
   return row ?? null;
 }
 
-export function getSetting(db: DatabaseSync, key: string): string | null {
+export function getSetting(db: SqliteDb, key: string): string | null {
   const row = db.prepare("SELECT value FROM settings WHERE key = ? LIMIT 1").get(key) as { value: string } | undefined;
   return row?.value ?? null;
 }
 
-export function setSetting(db: DatabaseSync, key: string, value: string): void {
+export function setSetting(db: SqliteDb, key: string, value: string): void {
   db.prepare(
     `INSERT INTO settings (key, value, updated_at)
      VALUES (?, ?, datetime('now'))
