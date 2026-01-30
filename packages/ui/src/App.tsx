@@ -129,6 +129,7 @@ export function App() {
   const wsRef = useRef<WebSocket | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spanishAudioRef = useRef<HTMLAudioElement | null>(null);
+  const actingTimelineEndRef = useRef<HTMLDivElement | null>(null);
   const pendingEventIdRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
@@ -736,6 +737,16 @@ export function App() {
 
   const selectedTitle = useMemo(() => scripts.find((s) => s.id === selectedScriptId)?.title ?? null, [scripts, selectedScriptId]);
   const visibleTimeline = useMemo(() => timeline.slice(Math.max(0, timeline.length - 12)), [timeline]);
+  const lastVisibleTimelineKey = useMemo(
+    () => (visibleTimeline.length > 0 ? visibleTimeline[visibleTimeline.length - 1]!.key : null),
+    [visibleTimeline],
+  );
+
+  useEffect(() => {
+    // Keep the “current line” view pinned to the most recent events.
+    // This avoids the user needing to manually scroll while a scene is playing.
+    actingTimelineEndRef.current?.scrollIntoView({ block: "end" });
+  }, [lastVisibleTimelineKey]);
 
   function StatusBadge() {
     const serverOk = Boolean(status?.ok);
@@ -1000,6 +1011,7 @@ export function App() {
                           );
                         })
                       )}
+                      <div ref={actingTimelineEndRef} />
                     </div>
                   </ScrollArea>
 
