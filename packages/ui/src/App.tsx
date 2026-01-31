@@ -388,23 +388,16 @@ export function App() {
         }
 
         if (m.kind === "pause") {
-          // Temporary placeholder: dedupe by idx (only one "(your turn)" per line).
-          setTimeline((prev) => {
-            const exists = prev.some((t) => t.kind === "pause" && t.idx === m.idx);
-            if (exists) return prev;
-            const next = [
-              ...prev,
-              {
-                key: `${m.session_id}-${m.event_id}`,
-                kind: "pause" as const,
-                idx: m.idx,
-                speaker: me,
-                text: null,
-                revealed: false,
-                cue: m.cue ?? null,
-              },
-            ];
-            return next.length > timelineTailLimit ? next.slice(next.length - timelineTailLimit) : next;
+          // Replace any existing row for this idx (including a previously revealed line)
+          // so your line becomes "(your turn)" during the countdown.
+          push({
+            key: `${m.session_id}-${m.event_id}`,
+            kind: "pause",
+            idx: m.idx,
+            speaker: me,
+            text: null,
+            revealed: false,
+            cue: m.cue ?? null,
           });
           const ms = Math.max(0, Math.round((m.duration_sec ?? 0) * 1000));
           if (timerRef.current !== null) window.clearTimeout(timerRef.current);
@@ -417,20 +410,39 @@ export function App() {
         }
 
         if (m.kind === "line" && m.audio?.url) {
-          // If this is your line, remove the temporary "(your turn)" placeholder for this idx.
           const isMine = normalizeName(String(m.speaker ?? "")) === normalizeName(me);
-          if (isMine) {
-            setTimeline((prev) => prev.filter((t) => !(t.kind === "pause" && t.idx === m.idx)));
+          const hideMyText = isMine && mode !== "read_through" && !readAll;
+          if (!hideMyText) {
+            push({
+              key: `${m.session_id}-${m.event_id}`,
+              kind: "line",
+              idx: m.idx,
+              speaker: m.speaker ?? null,
+              text: String(m.text ?? ""),
+              revealed: true,
+              cue: null,
+            });
+          } else {
+            // Keep the "(your turn)" placeholder for your lines in practice mode.
+            // If we somehow didn't receive a pause event first, ensure text isn't shown.
+            setTimeline((prev) => {
+              const hasPause = prev.some((t) => t.kind === "pause" && t.idx === m.idx);
+              if (hasPause) return prev;
+              const next = [
+                ...prev.filter((t) => t.idx !== m.idx),
+                {
+                  key: `${m.session_id}-${m.event_id}-pause`,
+                  kind: "pause" as const,
+                  idx: m.idx,
+                  speaker: me,
+                  text: null,
+                  revealed: false,
+                  cue: null,
+                },
+              ];
+              return next.length > timelineTailLimit ? next.slice(next.length - timelineTailLimit) : next;
+            });
           }
-          push({
-            key: `${m.session_id}-${m.event_id}`,
-            kind: "line",
-            idx: m.idx,
-            speaker: m.speaker ?? null,
-            text: String(m.text ?? ""),
-            revealed: true,
-            cue: null,
-          });
           const audio = audioRef.current;
           if (!audio) return;
           audio.src = m.audio.url;
