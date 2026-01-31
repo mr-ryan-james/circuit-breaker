@@ -1236,6 +1236,26 @@ export async function main(): Promise<void> {
           if (session.playing) await emitNextRunLineEvent(ws, session);
           return;
         }
+
+        if (msg?.type === "run_lines.jump") {
+          const sessionId = String(msg.session_id ?? "");
+          const session = sessions.get(sessionId);
+          if (!session) return;
+
+          const rawTarget = Number(msg.target_idx ?? NaN);
+          if (!Number.isFinite(rawTarget)) return;
+
+          // Jump only moves the cursor within the already-loaded session range.
+          // It does NOT change the session's from/to boundaries or reload lines.
+          const targetIdx = clamp(session.from, session.to, rawTarget);
+          const nextPos = session.lines.findIndex((l) => l.idx >= targetIdx);
+          session.idx = nextPos >= 0 ? nextPos : session.lines.length;
+          session.pending_self_line = null;
+
+          ws.send(JSON.stringify({ type: "run_lines.session", event: "jumped", session_id: sessionId, target_idx: targetIdx }));
+          if (session.playing) await emitNextRunLineEvent(ws, session);
+          return;
+        }
       },
     },
     fetch(req) {

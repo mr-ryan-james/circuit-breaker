@@ -4,11 +4,12 @@ export type WsMessage =
   | { type: "agent.signal"; id: string; name: string; payload: unknown; created_at: string }
   | {
       type: "run_lines.session";
-      event: "started" | "ended" | "seeked" | "speed";
+      event: "started" | "ended" | "seeked" | "jumped" | "speed";
       session_id: string;
       script_id?: number;
       from?: number;
       to?: number;
+      target_idx?: number;
       speed_mult?: number;
     }
   | {

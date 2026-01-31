@@ -133,7 +133,7 @@ export function App() {
   const pendingEventIdRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
-  const timelineTailLimit = 80;
+  const timelineTailLimit = 2000;
 
   const spanishRecorderRef = useRef<{
     stream: MediaStream;
@@ -307,6 +307,21 @@ export function App() {
         return;
       }
 
+      if (m.type === "run_lines.session" && m.event === "jumped") {
+        const target = typeof m.target_idx === "number" ? m.target_idx : null;
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+        pendingEventIdRef.current = null;
+        setAudioNeedsGesture(false);
+
+        if (target !== null) {
+          setCurrentIdx(target);
+          // Hide anything after the jump target so practice stays “non-spoilery”.
+          setTimeline((prev) => prev.filter((t) => t.idx <= target));
+        }
+        return;
+      }
+
       if (m.type === "run_lines.session" && m.event === "speed") {
         if (typeof m.speed_mult === "number") setSpeedMult(m.speed_mult);
         return;
@@ -325,7 +340,9 @@ export function App() {
         setCurrentIdx(m.idx);
         const push = (item: TimelineItem) => {
           setTimeline((prev) => {
-            const next = [...prev, item];
+            // Maintain one row per script idx. This prevents duplicate rows when we jump back and replay.
+            const withoutSameIdx = prev.filter((t) => t.idx !== item.idx);
+            const next = [...withoutSameIdx, item];
             return next.length > timelineTailLimit ? next.slice(next.length - timelineTailLimit) : next;
           });
         };
@@ -732,7 +749,7 @@ export function App() {
   function replayLast(n: number) {
     if (!sessionId || currentIdx === null) return;
     const start = Math.max(fromIdx, currentIdx - n);
-    seekSession(start, toIdx);
+    jumpToIdxAndReplay(start);
   }
 
   function jumpToIdxAndReplay(targetIdx: number) {
@@ -757,15 +774,15 @@ export function App() {
     }
     setAudioNeedsGesture(false);
 
-    // Keep the range end stable, but jump the start.
-    setFromIdx(targetIdx);
-    setSeekIdx(targetIdx);
+    // Hide any future content after the target, so replay feels like “rewinding” (not skipping).
+    setTimeline((prev) => prev.filter((t) => t.idx <= targetIdx));
+    setCurrentIdx(targetIdx);
 
-    // Seek the server session to start at this idx.
-    wsSend({ type: "run_lines.seek", session_id: sessionId, from: targetIdx, to: toIdx });
+    // Jump the server cursor within the existing session range (does not change from/to).
+    wsSend({ type: "run_lines.jump", session_id: sessionId, target_idx: targetIdx });
 
     // Ensure playback continues immediately.
-    // If we were already playing, the server will emit next event automatically after seek.
+    // If we were already playing, the server will emit next event automatically after jump.
     if (!sessionPlaying) {
       setSessionPlaying(true);
       wsSend({ type: "run_lines.play", session_id: sessionId });
@@ -773,7 +790,7 @@ export function App() {
   }
 
   const selectedTitle = useMemo(() => scripts.find((s) => s.id === selectedScriptId)?.title ?? null, [scripts, selectedScriptId]);
-  const visibleTimeline = useMemo(() => timeline.slice(Math.max(0, timeline.length - 12)), [timeline]);
+  const visibleTimeline = useMemo(() => timeline, [timeline]);
   const lastVisibleTimelineKey = useMemo(
     () => (visibleTimeline.length > 0 ? visibleTimeline[visibleTimeline.length - 1]!.key : null),
     [visibleTimeline],
@@ -1098,7 +1115,7 @@ export function App() {
                               <Label>Seek idx</Label>
                               <Input type="number" value={seekIdx} onChange={(e) => setSeekIdx(Number(e.target.value))} className="w-[140px]" />
                             </div>
-                            <Button variant="outline" onClick={() => seekSession(seekIdx, toIdx)} disabled={!sessionId}>
+                            <Button variant="outline" onClick={() => jumpToIdxAndReplay(seekIdx)} disabled={!sessionId}>
                               Seek
                             </Button>
                           </div>
