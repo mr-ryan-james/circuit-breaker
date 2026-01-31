@@ -410,39 +410,20 @@ export function App() {
         }
 
         if (m.kind === "line" && m.audio?.url) {
-          const isMine = normalizeName(String(m.speaker ?? "")) === normalizeName(me);
-          const hideMyText = isMine && mode !== "read_through" && !readAll;
-          if (!hideMyText) {
-            push({
-              key: `${m.session_id}-${m.event_id}`,
-              kind: "line",
-              idx: m.idx,
-              speaker: m.speaker ?? null,
-              text: String(m.text ?? ""),
-              revealed: true,
-              cue: null,
-            });
-          } else {
-            // Keep the "(your turn)" placeholder for your lines in practice mode.
-            // If we somehow didn't receive a pause event first, ensure text isn't shown.
-            setTimeline((prev) => {
-              const hasPause = prev.some((t) => t.kind === "pause" && t.idx === m.idx);
-              if (hasPause) return prev;
-              const next = [
-                ...prev.filter((t) => t.idx !== m.idx),
-                {
-                  key: `${m.session_id}-${m.event_id}-pause`,
-                  kind: "pause" as const,
-                  idx: m.idx,
-                  speaker: me,
-                  text: null,
-                  revealed: false,
-                  cue: null,
-                },
-              ];
-              return next.length > timelineTailLimit ? next.slice(next.length - timelineTailLimit) : next;
-            });
-          }
+          // Always render the line once we get the "line" event.
+          //
+          // In practice mode, the server sends a "pause" event first for your lines; that shows "(your turn)".
+          // After the countdown, the server sends this "line" event (with audio). We replace the pause row
+          // so you can see what the line actually was after attempting it.
+          push({
+            key: `${m.session_id}-${m.event_id}`,
+            kind: "line",
+            idx: m.idx,
+            speaker: m.speaker ?? null,
+            text: String(m.text ?? ""),
+            revealed: true,
+            cue: null,
+          });
           const audio = audioRef.current;
           if (!audio) return;
           audio.src = m.audio.url;
