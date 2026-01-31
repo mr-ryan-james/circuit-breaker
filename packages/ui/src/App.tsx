@@ -735,6 +735,43 @@ export function App() {
     seekSession(start, toIdx);
   }
 
+  function jumpToIdxAndReplay(targetIdx: number) {
+    if (!sessionId) return;
+    if (wsState !== "open") return;
+
+    // Cancel any pending timers from the previous playback position.
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    pendingEventIdRef.current = null;
+
+    // Stop any currently playing audio so the seek feels immediate.
+    const audio = audioRef.current;
+    if (audio) {
+      audio.onended = null;
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {
+        // ignore
+      }
+    }
+    setAudioNeedsGesture(false);
+
+    // Keep the range end stable, but jump the start.
+    setFromIdx(targetIdx);
+    setSeekIdx(targetIdx);
+
+    // Seek the server session to start at this idx.
+    wsSend({ type: "run_lines.seek", session_id: sessionId, from: targetIdx, to: toIdx });
+
+    // Ensure playback continues immediately.
+    // If we were already playing, the server will emit next event automatically after seek.
+    if (!sessionPlaying) {
+      setSessionPlaying(true);
+      wsSend({ type: "run_lines.play", session_id: sessionId });
+    }
+  }
+
   const selectedTitle = useMemo(() => scripts.find((s) => s.id === selectedScriptId)?.title ?? null, [scripts, selectedScriptId]);
   const visibleTimeline = useMemo(() => timeline.slice(Math.max(0, timeline.length - 12)), [timeline]);
   const lastVisibleTimelineKey = useMemo(
@@ -845,12 +882,10 @@ export function App() {
                         </TableHeader>
                         <TableBody>
                           {scripts.map((s) => (
-                            <TableRow key={s.id}>
+                            <TableRow key={s.id} className="cursor-pointer" onClick={() => loadScript(s.id)}>
                               <TableCell className="font-mono text-xs">{s.id}</TableCell>
                               <TableCell>
-                                <Button variant="link" className="h-auto p-0 text-left" onClick={() => loadScript(s.id)}>
-                                  {s.title}
-                                </Button>
+                                <div className="font-medium">{s.title}</div>
                                 <div className="text-xs text-muted-foreground">
                                   {s.source_format} • {s.created_at}
                                 </div>
@@ -974,11 +1009,11 @@ export function App() {
                       ) : (
                         visibleTimeline.map((t) => {
                           const active = currentIdx === t.idx;
-                          const rowClass = cn("rounded-md px-2 py-1", active && "bg-accent");
+                          const rowClass = cn("rounded-md px-2 py-1 cursor-pointer", active && "bg-accent");
                           const showText = t.revealed && t.text;
                           if (t.kind === "direction") {
                             return (
-                              <div key={t.key} className={rowClass}>
+                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
                                 <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
                                 <span className="font-mono text-xs">[DIR] {t.text}</span>
                               </div>
@@ -986,7 +1021,7 @@ export function App() {
                           }
                           if (t.kind === "pause") {
                             return (
-                              <div key={t.key} className={rowClass}>
+                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
                                 <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
                                 <b>{me}</b>: <span className="text-muted-foreground">(your turn)</span>{" "}
                                 {t.cue ? <span className="text-muted-foreground">cue: “{t.cue} …”</span> : null}
@@ -995,7 +1030,7 @@ export function App() {
                           }
                           if (t.kind === "gap") {
                             return (
-                              <div key={t.key} className={rowClass}>
+                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
                                 <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
                                 <b>{t.speaker ?? "?"}</b>:{" "}
                                 {showText ? <span>{t.text}</span> : <span className="text-muted-foreground">(waiting…)</span>}
@@ -1003,7 +1038,7 @@ export function App() {
                             );
                           }
                           return (
-                            <div key={t.key} className={rowClass}>
+                            <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
                               <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
                               <b>{t.speaker ?? "?"}</b>:{" "}
                               {showText ? <span>{t.text}</span> : <span className="text-muted-foreground">(hidden)</span>}
