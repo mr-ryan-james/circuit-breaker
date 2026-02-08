@@ -65,6 +65,8 @@ type SpanishSessionRow = {
   card_key: string | null;
   card_prompt: string | null;
   codex_thread_id: string | null;
+  brain_name: string | null;
+  brain_thread_id: string | null;
   pending_tool_json: string | null;
 };
 
@@ -78,6 +80,15 @@ type SpanishTurnRow = {
   json: string | null;
   created_at: string;
 };
+
+type SpanishMessage = {
+  role: "tutor" | "you" | "system";
+  text: string;
+  timestamp: number;
+  speakResults?: SpanishSpeakResult[];
+};
+
+type BrainDefault = "codex" | "claude";
 
 export function App() {
   const [status, setStatus] = useState<ApiStatus | null>(null);
@@ -126,6 +137,14 @@ export function App() {
   const [spanishTranscriptTurns, setSpanishTranscriptTurns] = useState<SpanishTurnRow[]>([]);
   const [spanishTranscriptError, setSpanishTranscriptError] = useState<string | null>(null);
 
+  // Brain default, chat history, loading, audio queue
+  const [spanishBrainDefault, setSpanishBrainDefault] = useState<BrainDefault>("codex");
+  const [spanishMessages, setSpanishMessages] = useState<SpanishMessage[]>([]);
+  const [spanishLoading, setSpanishLoading] = useState(false);
+  const [spanishAudioQueue, setSpanishAudioQueue] = useState<string[]>([]);
+  const [spanishAudioMuted, setSpanishAudioMuted] = useState(false);
+  const [spanishAudioNeedsGesture, setSpanishAudioNeedsGesture] = useState(false);
+
   const wsRef = useRef<WebSocket | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spanishAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -134,6 +153,9 @@ export function App() {
   const timerRef = useRef<number | null>(null);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
   const timelineTailLimit = 2000;
+
+  const spanishChatEndRef = useRef<HTMLDivElement | null>(null);
+  const spanishRequestIdRef = useRef(0);
 
   const spanishRecorderRef = useRef<{
     stream: MediaStream;
@@ -258,8 +280,14 @@ export function App() {
     fetchStatus()
       .then((s) => setStatus(s))
       .then(async () => {
-        const res = await callAction<{ ok: boolean; scripts: ScriptRow[] }>("acting.scripts.list", { limit: 10 });
-        if (res.ok) setScripts(res.scripts);
+        const [scripts, brain] = await Promise.all([
+          callAction<{ ok: boolean; scripts: ScriptRow[] }>("acting.scripts.list", { limit: 10 }),
+          callAction<{ ok: boolean; brain: string }>("spanish.brain.get", {}),
+        ]);
+        if (scripts.ok) setScripts(scripts.scripts);
+        if (brain.ok && (brain.brain === "codex" || brain.brain === "claude")) {
+          setSpanishBrainDefault(brain.brain);
+        }
       })
       .catch(() => setStatus({ ok: false }));
   }, []);
@@ -475,6 +503,30 @@ export function App() {
     };
   }, []);
 
+  // Auto-scroll Spanish chat to bottom on new messages.
+  useEffect(() => {
+    spanishChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [spanishMessages]);
+
+  // Auto-play Spanish audio queue.
+  useEffect(() => {
+    if (spanishAudioMuted || spanishAudioQueue.length === 0) return;
+    const audio = spanishAudioRef.current;
+    if (!audio) return;
+
+    const url = spanishAudioQueue[0]!;
+    // Skip if already playing this URL.
+    if (audio.src && audio.src.endsWith(url) && !audio.paused) return;
+
+    audio.src = url;
+    audio.onended = () => {
+      setSpanishAudioQueue((q) => q.slice(1));
+    };
+    audio.play()
+      .then(() => setSpanishAudioNeedsGesture(false))
+      .catch(() => setSpanishAudioNeedsGesture(true));
+  }, [spanishAudioQueue, spanishAudioMuted]);
+
   async function loadScript(id: number): Promise<{ from: number; to: number } | null> {
     setSelectedScriptId(id);
     const chars = await callAction<{ ok: boolean; characters: CharacterRow[] }>("acting.script.characters", { script_id: id });
@@ -594,23 +646,47 @@ export function App() {
       return;
     }
 
-    const res = await callAction<any>("spanish.session.start", {
-      event_key: breakMenu.event_key,
-      lane,
-      card_id: breakChoice?.card?.id ?? undefined,
-      card_key: breakChoice?.card?.key ?? undefined,
-      card_prompt: String(breakChoice.card.prompt),
-    });
+    const reqId = ++spanishRequestIdRef.current;
+    setSpanishLoading(true);
+    setSpanishMessages([{ role: "system", text: `Session starting (${spanishBrainDefault})...`, timestamp: Date.now() }]);
+    setSpanishSpeakResults([]);
+    setSpanishPendingListen(null);
+    setSpanishAudioQueue([]);
+    setSpanishAudioNeedsGesture(false);
 
-    if (!res?.ok) {
-      setSpanishError(String(res?.error ?? "Failed to start Spanish session"));
-      return;
+    try {
+      const res = await callAction<any>("spanish.session.start", {
+        event_key: breakMenu.event_key,
+        lane,
+        card_id: breakChoice?.card?.id ?? undefined,
+        card_key: breakChoice?.card?.key ?? undefined,
+        card_prompt: String(breakChoice.card.prompt),
+      });
+
+      if (spanishRequestIdRef.current !== reqId) return; // stale
+
+      if (!res?.ok) {
+        setSpanishError(String(res?.error ?? "Failed to start Spanish session"));
+        return;
+      }
+
+      setSpanishSessionId(String(res.session_id));
+      setSpanishBrain(res.brain ?? null);
+      const speaks = Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : [];
+      setSpanishSpeakResults(speaks);
+      setSpanishPendingListen(res.pending_listen ?? null);
+
+      // Chat + audio
+      if (res.brain?.assistant_text) {
+        setSpanishMessages((prev) => [
+          ...prev,
+          { role: "tutor", text: res.brain.assistant_text, timestamp: Date.now(), speakResults: speaks },
+        ]);
+      }
+      queueSpanishAudio(speaks);
+    } finally {
+      if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
     }
-
-    setSpanishSessionId(String(res.session_id));
-    setSpanishBrain(res.brain ?? null);
-    setSpanishSpeakResults(Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : []);
-    setSpanishPendingListen(res.pending_listen ?? null);
   }
 
   async function submitSpanishAnswer() {
@@ -618,26 +694,52 @@ export function App() {
     if (!spanishSessionId) return;
     const answer = spanishAnswer.trim();
     if (!answer) return;
-    const res = await callAction<any>("spanish.session.answer", { session_id: spanishSessionId, answer });
-    if (!res?.ok) {
-      setSpanishError(String(res?.error ?? "Failed to submit answer"));
-      return;
-    }
+
+    const reqId = ++spanishRequestIdRef.current;
+    setSpanishLoading(true);
+    setSpanishMessages((prev) => [...prev, { role: "you", text: answer, timestamp: Date.now() }]);
     setSpanishAnswer("");
-    setSpanishBrain(res.brain ?? null);
-    setSpanishSpeakResults(Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : []);
-    setSpanishPendingListen(res.pending_listen ?? null);
+
+    try {
+      const res = await callAction<any>("spanish.session.answer", { session_id: spanishSessionId, answer });
+
+      if (spanishRequestIdRef.current !== reqId) return; // stale
+
+      if (!res?.ok) {
+        setSpanishError(String(res?.error ?? "Failed to submit answer"));
+        return;
+      }
+
+      setSpanishBrain(res.brain ?? null);
+      const speaks = Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : [];
+      setSpanishSpeakResults(speaks);
+      setSpanishPendingListen(res.pending_listen ?? null);
+
+      if (res.brain?.assistant_text) {
+        setSpanishMessages((prev) => [
+          ...prev,
+          { role: "tutor", text: res.brain.assistant_text, timestamp: Date.now(), speakResults: speaks },
+        ]);
+      }
+      queueSpanishAudio(speaks);
+    } finally {
+      if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
+    }
   }
 
   async function endSpanishSession(status: "completed" | "abandoned") {
     setSpanishError(null);
     if (!spanishSessionId) return;
+    ++spanishRequestIdRef.current; // invalidate any in-flight requests
     await callAction<any>("spanish.session.end", { session_id: spanishSessionId, status });
     setSpanishSessionId(null);
     setSpanishBrain(null);
     setSpanishSpeakResults([]);
     setSpanishPendingListen(null);
     setSpanishAnswer("");
+    setSpanishLoading(false);
+    setSpanishAudioQueue([]);
+    setSpanishAudioNeedsGesture(false);
   }
 
   async function uploadSpanishListenAttempt() {
@@ -652,18 +754,37 @@ export function App() {
       return;
     }
 
-    const fd = new FormData();
-    fd.append("session_id", spanishSessionId);
-    fd.append("attempt_wav", wav, "attempt.wav");
-    const resp = await fetch("/api/spanish/listen/upload", { method: "POST", headers: { "x-cb-token": t }, body: fd });
-    const data = await resp.json().catch(() => null);
-    if (!data?.ok) {
-      setSpanishError(String(data?.error ?? "listen upload failed"));
-      return;
+    const reqId = ++spanishRequestIdRef.current;
+    setSpanishLoading(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("session_id", spanishSessionId);
+      fd.append("attempt_wav", wav, "attempt.wav");
+      const resp = await fetch("/api/spanish/listen/upload", { method: "POST", headers: { "x-cb-token": t }, body: fd });
+      const data = await resp.json().catch(() => null);
+
+      if (spanishRequestIdRef.current !== reqId) return; // stale
+
+      if (!data?.ok) {
+        setSpanishError(String(data?.error ?? "listen upload failed"));
+        return;
+      }
+      setSpanishBrain(data.brain ?? null);
+      const speaks = Array.isArray(data.speak_results) ? (data.speak_results as SpanishSpeakResult[]) : [];
+      setSpanishSpeakResults(speaks);
+      setSpanishPendingListen(data.pending_listen ?? null);
+
+      if (data.brain?.assistant_text) {
+        setSpanishMessages((prev) => [
+          ...prev,
+          { role: "tutor", text: data.brain.assistant_text, timestamp: Date.now(), speakResults: speaks },
+        ]);
+      }
+      queueSpanishAudio(speaks);
+    } finally {
+      if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
     }
-    setSpanishBrain(data.brain ?? null);
-    setSpanishSpeakResults(Array.isArray(data.speak_results) ? (data.speak_results as SpanishSpeakResult[]) : []);
-    setSpanishPendingListen(data.pending_listen ?? null);
   }
 
   async function playSpanishAudio(url: string) {
@@ -674,6 +795,34 @@ export function App() {
       await a.play();
     } catch {
       // Autoplay restrictions: user may need to click play in the controls.
+    }
+  }
+
+  function queueSpanishAudio(speaks: SpanishSpeakResult[]) {
+    if (speaks.length === 0) return;
+    const urls = speaks.map((s) => s.url).filter(Boolean);
+    if (urls.length === 0) return;
+    // Allow repeats across turns (TTS caching can reuse URLs). Only avoid duplicating within the active queue.
+    setSpanishAudioQueue((prev) => {
+      const existing = new Set(prev);
+      const next = [...prev];
+      for (const url of urls) {
+        if (existing.has(url)) continue;
+        existing.add(url);
+        next.push(url);
+      }
+      return next;
+    });
+  }
+
+  async function setSpanishBrainSetting(brain: BrainDefault) {
+    setSpanishError(null);
+    const prev = spanishBrainDefault;
+    setSpanishBrainDefault(brain);
+    const res = await callAction<any>("spanish.brain.set", { brain });
+    if (!res?.ok) {
+      setSpanishBrainDefault(prev);
+      setSpanishError(String(res?.error ?? "Failed to set brain"));
     }
   }
 
@@ -1362,12 +1511,34 @@ export function App() {
           <TabsContent value="spanish">
             <Card>
               <CardHeader>
-                <CardTitle>Spanish</CardTitle>
-                <CardDescription>Runs Spanish sessions in the web UI by spawning `codex exec` on the server.</CardDescription>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle>Spanish</CardTitle>
+                    <CardDescription>AI-driven Spanish tutoring sessions.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="sp-brain" className="text-sm">Brain:</Label>
+                    <select
+                      id="sp-brain"
+                      value={spanishBrainDefault}
+                      onChange={(e) => setSpanishBrainSetting(e.target.value as BrainDefault)}
+                      disabled={Boolean(spanishSessionId)}
+                      className="h-8 w-[120px] rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                    >
+                      <option value="codex">Codex</option>
+                      <option value="claude">Claude</option>
+                    </select>
+                    {spanishSessionId ? (
+                      <span className="text-xs text-muted-foreground">(locked for session)</span>
+                    ) : null}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button onClick={startSpanishSessionFromChoice}>Start Spanish Session (from last break choice)</Button>
+                  <Button onClick={startSpanishSessionFromChoice} disabled={spanishLoading}>
+                    Start Spanish Session (from last break choice)
+                  </Button>
                   <Button variant="secondary" onClick={() => endSpanishSession("completed")} disabled={!spanishSessionId}>
                     End (completed)
                   </Button>
@@ -1386,13 +1557,45 @@ export function App() {
                   </Alert>
                 ) : null}
 
+                {/* Chat history */}
                 <div className="rounded-md border bg-muted/20">
-                  <div className="border-b px-3 py-2 text-sm font-medium">Tutor</div>
-                  <ScrollArea className="h-[220px]">
-                    <pre className="p-3 text-sm whitespace-pre-wrap">{spanishBrain?.assistant_text ?? "Start a session to begin."}</pre>
+                  <div className="border-b px-3 py-2 text-sm font-medium">Chat</div>
+                  <ScrollArea className="h-[340px]">
+                    <div className="p-3 space-y-3 text-sm">
+                      {spanishMessages.length === 0 ? (
+                        <div className="text-muted-foreground">Start a session to begin.</div>
+                      ) : (
+                        spanishMessages.map((msg, i) => (
+                          <div
+                            key={`${msg.timestamp}-${i}`}
+                            className={cn(
+                              "rounded-md px-3 py-2",
+                              msg.role === "tutor" && "bg-background border",
+                              msg.role === "you" && "bg-primary/10 border border-primary/20 ml-8",
+                              msg.role === "system" && "text-muted-foreground text-xs italic",
+                            )}
+                          >
+                            {msg.role !== "system" ? (
+                              <div className="text-xs font-medium text-muted-foreground mb-1">
+                                {msg.role === "tutor" ? "Tutor" : "You"}
+                              </div>
+                            ) : null}
+                            <pre className="whitespace-pre-wrap text-sm font-sans">{msg.text}</pre>
+                          </div>
+                        ))
+                      )}
+                      {spanishLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+                          Thinking...
+                        </div>
+                      ) : null}
+                      <div ref={spanishChatEndRef} />
+                    </div>
                   </ScrollArea>
                 </div>
 
+                {/* Answer input with Enter-to-submit */}
                 {spanishSessionId && spanishBrain?.await === "user" ? (
                   <div className="flex flex-wrap items-end gap-2">
                     <div className="flex-1 min-w-[280px]">
@@ -1402,16 +1605,70 @@ export function App() {
                         value={spanishAnswer}
                         onChange={(e) => setSpanishAnswer(e.target.value)}
                         placeholder="Type your answer..."
+                        disabled={spanishLoading}
+                        onKeyDown={(e) => {
+                          if (e.nativeEvent.isComposing) return;
+                          if (e.key === "Enter" && !e.shiftKey && spanishAnswer.trim()) {
+                            e.preventDefault();
+                            submitSpanishAnswer();
+                          }
+                        }}
                       />
                     </div>
-                    <Button onClick={submitSpanishAnswer} disabled={!spanishAnswer.trim()}>
+                    <Button onClick={submitSpanishAnswer} disabled={!spanishAnswer.trim() || spanishLoading}>
                       Submit
                     </Button>
                   </div>
                 ) : null}
 
-                {spanishSpeakResults.length > 0 ? (
-                  <Accordion type="single" collapsible>
+                {/* Pronunciation check */}
+                {spanishPendingListen ? (
+                  <Alert>
+                    <AlertTitle>Pronunciation check</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <div>
+                        Say: <span className="font-mono">{spanishPendingListen.target_text}</span>
+                      </div>
+                      {!spanishRecording ? (
+                        <Button onClick={startSpanishRecording} disabled={spanishLoading}>Record</Button>
+                      ) : (
+                        <Button onClick={uploadSpanishListenAttempt}>Stop + Upload</Button>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                {/* Audio controls */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSpanishAudioMuted((v) => !v)}
+                  >
+                    {spanishAudioMuted ? "Unmute auto-play" : "Mute auto-play"}
+                  </Button>
+                  {spanishAudioNeedsGesture ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const audio = spanishAudioRef.current;
+                        if (!audio) return;
+                        audio.play().then(() => setSpanishAudioNeedsGesture(false)).catch(() => {});
+                      }}
+                    >
+                      Enable audio
+                    </Button>
+                  ) : null}
+                  {spanishAudioQueue.length > 0 ? (
+                    <span className="text-xs text-muted-foreground">Audio queue: {spanishAudioQueue.length}</span>
+                  ) : null}
+                </div>
+                <audio ref={spanishAudioRef} controls className="w-full" />
+
+                {/* Audio debug + transcript in accordions */}
+                <Accordion type="single" collapsible>
+                  {spanishSpeakResults.length > 0 ? (
                     <AccordionItem value="audio">
                       <AccordionTrigger>Audio (debug)</AccordionTrigger>
                       <AccordionContent>
@@ -1433,28 +1690,8 @@ export function App() {
                         </div>
                       </AccordionContent>
                     </AccordionItem>
-                  </Accordion>
-                ) : null}
+                  ) : null}
 
-                {spanishPendingListen ? (
-                  <Alert>
-                    <AlertTitle>Pronunciation check</AlertTitle>
-                    <AlertDescription className="space-y-2">
-                      <div>
-                        Say: <span className="font-mono">{spanishPendingListen.target_text}</span>
-                      </div>
-                      {!spanishRecording ? (
-                        <Button onClick={startSpanishRecording}>Record</Button>
-                      ) : (
-                        <Button onClick={uploadSpanishListenAttempt}>Stop + Upload</Button>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
-
-                <audio ref={spanishAudioRef} controls className="w-full" />
-
-                <Accordion type="single" collapsible>
                   <AccordionItem value="transcript">
                     <AccordionTrigger>Transcript (debug)</AccordionTrigger>
                     <AccordionContent>
@@ -1498,7 +1735,7 @@ export function App() {
                                     <div>
                                       <div className="font-mono text-xs">{s.id}</div>
                                       <div className="text-xs text-muted-foreground">
-                                        <b>{s.status}</b> {s.lane ? `(${s.lane})` : ""} •{" "}
+                                        <b>{s.status}</b> {s.lane ? `(${s.lane})` : ""} • {s.brain_name ?? "codex"} •{" "}
                                         {new Date(s.updated_at).toLocaleString()}
                                       </div>
                                     </div>

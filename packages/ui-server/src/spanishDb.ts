@@ -4,6 +4,8 @@ import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 
 export type SpanishSessionStatus = "open" | "completed" | "abandoned";
 
+export type BrainName = "codex" | "claude";
+
 export type SpanishSessionRow = {
   id: string;
   created_at: string;
@@ -16,6 +18,8 @@ export type SpanishSessionRow = {
   card_key: string | null;
   card_prompt: string | null;
   codex_thread_id: string | null;
+  brain_name: BrainName | null;
+  brain_thread_id: string | null;
   pending_tool_json: string | null;
   meta_json: string;
 };
@@ -44,6 +48,8 @@ export function ensureSpanishSchema(db: SqliteDb): void {
       card_key TEXT,
       card_prompt TEXT,
       codex_thread_id TEXT,
+      brain_name TEXT,
+      brain_thread_id TEXT,
       pending_tool_json TEXT,
       meta_json TEXT NOT NULL DEFAULT '{}'
     );
@@ -62,14 +68,44 @@ export function ensureSpanishSchema(db: SqliteDb): void {
     );
     CREATE INDEX IF NOT EXISTS idx_spanish_turns_session_idx ON spanish_turns(session_id, idx);
   `);
+
+  // Migration: add brain_name + brain_thread_id if missing (existing DBs).
+  try {
+    const cols = db.prepare("PRAGMA table_info(spanish_sessions)").all() as Array<{ name: string }>;
+    const colNames = new Set(cols.map((c) => c.name));
+    if (!colNames.has("brain_name")) {
+      db.exec("ALTER TABLE spanish_sessions ADD COLUMN brain_name TEXT");
+    }
+    if (!colNames.has("brain_thread_id")) {
+      db.exec("ALTER TABLE spanish_sessions ADD COLUMN brain_thread_id TEXT");
+    }
+  } catch {
+    // ignore — columns already exist
+  }
+
+  // Backfill: existing sessions with codex_thread_id but no brain info.
+  try {
+    const need = db
+      .prepare("SELECT 1 AS ok FROM spanish_sessions WHERE brain_thread_id IS NULL AND codex_thread_id IS NOT NULL LIMIT 1")
+      .get() as { ok: number } | undefined;
+    if (need?.ok) {
+      db.exec(`
+        UPDATE spanish_sessions
+        SET brain_name = 'codex', brain_thread_id = codex_thread_id
+        WHERE brain_thread_id IS NULL AND codex_thread_id IS NOT NULL
+      `);
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export function insertSpanishSession(db: SqliteDb, row: Omit<SpanishSessionRow, "created_at" | "updated_at">): void {
   const ts = nowIso();
   db.prepare(
     `INSERT INTO spanish_sessions
-      (id, created_at, updated_at, status, source, event_key, lane, card_id, card_key, card_prompt, codex_thread_id, pending_tool_json, meta_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, created_at, updated_at, status, source, event_key, lane, card_id, card_key, card_prompt, codex_thread_id, brain_name, brain_thread_id, pending_tool_json, meta_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     row.id,
     ts,
@@ -82,6 +118,8 @@ export function insertSpanishSession(db: SqliteDb, row: Omit<SpanishSessionRow, 
     row.card_key,
     row.card_prompt,
     row.codex_thread_id,
+    row.brain_name,
+    row.brain_thread_id,
     row.pending_tool_json,
     row.meta_json ?? "{}",
   );
@@ -98,7 +136,7 @@ export function updateSpanishSession(
   patch: Partial<
     Pick<
       SpanishSessionRow,
-      "status" | "codex_thread_id" | "pending_tool_json" | "meta_json" | "event_key" | "lane" | "card_id" | "card_key" | "card_prompt"
+      "status" | "codex_thread_id" | "brain_name" | "brain_thread_id" | "pending_tool_json" | "meta_json" | "event_key" | "lane" | "card_id" | "card_key" | "card_prompt"
     >
   >,
 ): void {
@@ -123,6 +161,8 @@ export function updateSpanishSession(
          card_key = ?,
          card_prompt = ?,
          codex_thread_id = ?,
+         brain_name = ?,
+         brain_thread_id = ?,
          pending_tool_json = ?,
          meta_json = ?
      WHERE id = ?`,
@@ -136,6 +176,8 @@ export function updateSpanishSession(
     next.card_key,
     next.card_prompt,
     next.codex_thread_id,
+    next.brain_name,
+    next.brain_thread_id,
     next.pending_tool_json,
     next.meta_json ?? "{}",
     id,
@@ -184,12 +226,14 @@ export function listSpanishSessions(db: SqliteDb, limit = 20): Array<{
   card_key: string | null;
   card_prompt: string | null;
   codex_thread_id: string | null;
+  brain_name: BrainName | null;
+  brain_thread_id: string | null;
   pending_tool_json: string | null;
 }> {
   return db
     .prepare(
       `SELECT
-         id, created_at, updated_at, status, source, event_key, lane, card_id, card_key, card_prompt, codex_thread_id, pending_tool_json
+         id, created_at, updated_at, status, source, event_key, lane, card_id, card_key, card_prompt, codex_thread_id, brain_name, brain_thread_id, pending_tool_json
        FROM spanish_sessions
        ORDER BY updated_at DESC
        LIMIT ?`,

@@ -10,6 +10,7 @@ import {
   buildBreakMenu,
   getBreakServedEvent,
   getSetting,
+  setSetting,
   getSiteBySlug,
   insertEvent,
 } from "@circuit-breaker/core";
@@ -19,7 +20,7 @@ import { openActingDb } from "./actingDb.js";
 import { openCoreDb } from "./coreDb.js";
 import { estimatedSpeakSeconds, sanitizeTtsText, TTS_SANITIZER_VERSION } from "./sanitize.js";
 import { renderTts, resolveTtsCacheDir } from "./tts.js";
-import { runCodex } from "./codexRunner.js";
+import { createBrainRunner, type BrainResult } from "./brainRunner.js";
 import { analyzeListenAttempt } from "./listenServer.js";
 import {
   getSpanishSession,
@@ -30,7 +31,13 @@ import {
   makeSpanishId,
   nextSpanishTurnIdx,
   updateSpanishSession,
+  type BrainName,
 } from "./spanishDb.js";
+import {
+  SpanishBrainOutputSchema,
+  SpanishToolRequestSchema,
+  type SpanishBrainOutput,
+} from "./spanishBrainOutput.js";
 
 type AgentSignal = {
   id: string;
@@ -175,34 +182,8 @@ const ActionEnvelopeV1 = z.object({
   payload: z.unknown(),
 });
 
-const SpanishVoiceSchema = z.enum(["es-ES-AlvaroNeural", "es-ES-ElviraNeural", "es-MX-JorgeNeural", "es-MX-DaliaNeural"]);
-
-const SpanishToolRequestSchema = z.discriminatedUnion("tool", [
-  z.object({
-    id: z.string().min(1),
-    tool: z.literal("speak"),
-    args: z.object({
-      text: z.string().min(1).max(400),
-      voice: SpanishVoiceSchema,
-      rate: z.string().regex(/^[+-]?\d+%$/),
-    }),
-  }),
-  z.object({
-    id: z.string().min(1),
-    tool: z.literal("listen"),
-    args: z.object({
-      target_text: z.string().min(1).max(400),
-    }),
-  }),
-]);
-
-const SpanishBrainOutputSchema = z.object({
-  v: z.literal(1),
-  assistant_text: z.string().min(1).max(12_000),
-  tool_requests: z.array(SpanishToolRequestSchema).max(8),
-  await: z.enum(["user", "listen_result", "done"]),
-});
-type SpanishBrainOutput = z.infer<typeof SpanishBrainOutputSchema>;
+// SpanishBrainOutputSchema, SpanishToolRequestSchema, SpanishBrainOutput
+// imported from ./spanishBrainOutput.js
 
 function safeJsonParse(input: string): any | null {
   try {
@@ -210,6 +191,46 @@ function safeJsonParse(input: string): any | null {
   } catch {
     return null;
   }
+}
+
+function normalizeBrainName(input: unknown): BrainName {
+  return input === "claude" ? "claude" : "codex";
+}
+
+/** System prompt shared across both Codex and Claude brain runners. */
+function spanishSystemPrompt(): string {
+  return [
+    "You are a Spanish tutor running inside a local web UI. Be concise and interactive.",
+    "",
+    "Return EXACTLY ONE JSON object as your final message each turn (no markdown, no code fences).",
+    "The JSON MUST match this schema:",
+    JSON.stringify(
+      {
+        v: 1,
+        assistant_text: "string",
+        tool_requests: [
+          {
+            id: "t1",
+            tool: "speak",
+            args: { text: "string", voice: "es-ES-AlvaroNeural|es-ES-ElviraNeural|es-MX-JorgeNeural|es-MX-DaliaNeural", rate: "-25%" },
+          },
+          { id: "t2", tool: "listen", args: { target_text: "string" } },
+        ],
+        await: "user|listen_result|done",
+      },
+      null,
+      2,
+    ),
+    "",
+    "Rules:",
+    "- Use Castilian Spanish with vosotros unless the prompt suggests otherwise.",
+    "- tool_requests must always be an array (possibly empty).",
+    "- Only request tools 'speak' and 'listen'.",
+    "- When you request 'listen', set await='listen_result' and include target_text for the user to pronounce.",
+    "- When you need a typed answer, set await='user'.",
+    "",
+    "Start by asking the first question based on CARD_PROMPT.",
+  ].join("\n");
 }
 
 type RecentActingScript = {
@@ -295,6 +316,70 @@ export async function main(): Promise<void> {
         // ignore
       }
     }
+  }
+
+  /**
+   * Shared helper: parse + validate brain output, insert turns, render TTS, broadcast WS.
+   * Used by spanish.session.start, spanish.session.answer, and /api/spanish/listen/upload.
+   */
+  async function processBrainResponse(
+    db: ReturnType<typeof openCoreDb>["db"],
+    sessionId: string,
+    run: BrainResult,
+  ): Promise<
+    | { ok: true; brain: SpanishBrainOutput; speakResults: any[]; pendingListen: any | null }
+    | { ok: false; error: string; raw?: string }
+  > {
+    const raw = String(run.last_agent_message ?? "").trim();
+    const parsed = safeJsonParse(raw);
+    const brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
+    if (!brainParsed.success) {
+      insertSpanishTurn(db, {
+        session_id: sessionId,
+        idx: nextSpanishTurnIdx(db, sessionId),
+        role: "assistant",
+        kind: "brain_raw",
+        content: raw,
+      });
+      return { ok: false, error: "bad_brain_output", raw };
+    }
+
+    const brain: SpanishBrainOutput = brainParsed.data;
+    insertSpanishTurn(db, {
+      session_id: sessionId,
+      idx: nextSpanishTurnIdx(db, sessionId),
+      role: "assistant",
+      kind: "brain_output",
+      content: brain.assistant_text,
+      json: brain,
+    });
+    wsBroadcast({ type: "spanish.assistant", session_id: sessionId, brain });
+
+    const speakResults: any[] = [];
+    let pendingListen: any | null = null;
+    for (const tr of brain.tool_requests) {
+      if (tr.tool === "speak") {
+        const spoken = sanitizeTtsText(tr.args.text);
+        if (!spoken) continue;
+        const tts = await renderTts({
+          text: spoken,
+          voice: tr.args.voice,
+          rate: tr.args.rate,
+          sanitizerVersion: TTS_SANITIZER_VERSION,
+        });
+        const result = { id: tr.id, tool: "speak", audio_id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec };
+        speakResults.push(result);
+        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "tool", kind: "tool_result", json: result });
+        wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_result", tool: "speak", result });
+      }
+      if (tr.tool === "listen") {
+        pendingListen = { id: tr.id, tool: "listen", target_text: tr.args.target_text };
+        updateSpanishSession(db, sessionId, { pending_tool_json: JSON.stringify(tr) });
+        wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_pending", tool: "listen", args: pendingListen });
+      }
+    }
+
+    return { ok: true, brain, speakResults, pendingListen };
   }
 
   const actionHandlers: Record<
@@ -549,8 +634,34 @@ export async function main(): Promise<void> {
         }
       },
     },
+    "spanish.brain.get": {
+      description: "Get the default brain for new Spanish sessions.",
+      schema: z.object({}),
+      async handler() {
+        const { db } = openCoreDb();
+        try {
+          const val = normalizeBrainName(getSetting(db, "spanish_brain"));
+          return { ok: true, brain: val };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "spanish.brain.set": {
+      description: "Set the default brain for new Spanish sessions.",
+      schema: z.object({ brain: z.enum(["codex", "claude"]) }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          setSetting(db, "spanish_brain", payload.brain);
+          return { ok: true, brain: payload.brain };
+        } finally {
+          db.close();
+        }
+      },
+    },
     "spanish.session.start": {
-      description: "Start a Spanish tutoring session driven by Codex (brain).",
+      description: "Start a Spanish tutoring session driven by a brain (Codex or Claude).",
       schema: z.object({
         event_key: z.string().optional(),
         lane: z.enum(["verb", "noun", "lesson", "fusion"]).optional(),
@@ -561,6 +672,7 @@ export async function main(): Promise<void> {
       async handler(payload) {
         const { db } = openCoreDb();
         try {
+          const brainName = normalizeBrainName(getSetting(db, "spanish_brain"));
           const sessionId = makeSpanishId("sp_sess");
 
           insertSpanishSession(db, {
@@ -573,61 +685,33 @@ export async function main(): Promise<void> {
             card_key: payload.card_key ?? null,
             card_prompt: payload.card_prompt,
             codex_thread_id: null,
+            brain_name: brainName,
+            brain_thread_id: null,
             pending_tool_json: null,
             meta_json: JSON.stringify({ v: 1 }),
           });
 
-          wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId });
+          wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
 
-          const system = [
-            "You are a Spanish tutor running inside a local web UI. Be concise and interactive.",
-            "",
-            "Return EXACTLY ONE JSON object as your final message each turn (no markdown, no code fences).",
-            "The JSON MUST match this schema:",
-            JSON.stringify(
-              {
-                v: 1,
-                assistant_text: "string",
-                tool_requests: [
-                  {
-                    id: "t1",
-                    tool: "speak",
-                    args: { text: "string", voice: "es-ES-AlvaroNeural|es-ES-ElviraNeural|es-MX-JorgeNeural|es-MX-DaliaNeural", rate: "-25%" },
-                  },
-                  { id: "t2", tool: "listen", args: { target_text: "string" } },
-                ],
-                await: "user|listen_result|done",
-              },
-              null,
-              2,
-            ),
-            "",
-            "Rules:",
-            "- Use Castilian Spanish with vosotros unless the prompt suggests otherwise.",
-            "- tool_requests must always be an array (possibly empty).",
-            "- Only request tools 'speak' and 'listen'.",
-            "- When you request 'listen', set await='listen_result' and include target_text for the user to pronounce.",
-            "- When you need a typed answer, set await='user'.",
-            "",
-            "Start by asking the first question based on CARD_PROMPT.",
-          ].join("\n");
-
-          const initialPrompt = `${system}\n\nCARD_PROMPT:\n${payload.card_prompt}\n`;
+          const system = spanishSystemPrompt();
+          const userPrompt = `CARD_PROMPT:\n${payload.card_prompt}\n`;
+          const promptForLog = `${system}\n\n${userPrompt}`;
           insertSpanishTurn(db, {
             session_id: sessionId,
             idx: nextSpanishTurnIdx(db, sessionId),
             role: "system",
             kind: "prompt",
-            content: initialPrompt,
+            content: promptForLog,
           });
 
-          const logDir = path.join(stateDir, "spanish", "codex", sessionId);
+          const logDir = path.join(stateDir, "spanish", brainName, sessionId);
           fs.mkdirSync(logDir, { recursive: true });
 
-          const run = await runCodex({
+          const runner = createBrainRunner(brainName);
+          const run = await runner.run({
             cwd: repoRootFromHere(),
-            prompt: initialPrompt,
-            sandbox: "read-only",
+            prompt: userPrompt,
+            systemPrompt: system,
             timeoutMs: 120_000,
             logJsonlPath: path.join(logDir, "turn0.jsonl"),
           });
@@ -638,72 +722,38 @@ export async function main(): Promise<void> {
               idx: nextSpanishTurnIdx(db, sessionId),
               role: "assistant",
               kind: "error",
-              content: `Codex failed: ${run.error}`,
+              content: `Brain (${brainName}) failed: ${run.error}`,
               json: run,
             });
-            return { ok: false, error: "codex_failed", details: run, session_id: sessionId };
+            return { ok: false, error: "brain_failed", details: run, session_id: sessionId };
           }
 
-          updateSpanishSession(db, sessionId, { codex_thread_id: run.thread_id });
-
-          const raw = String(run.last_agent_message ?? "").trim();
-          const parsed = safeJsonParse(raw);
-          const brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
-          if (!brainParsed.success) {
-            insertSpanishTurn(db, {
-              session_id: sessionId,
-              idx: nextSpanishTurnIdx(db, sessionId),
-              role: "assistant",
-              kind: "brain_raw",
-              content: raw,
-            });
-            return { ok: false, error: "bad_brain_output", session_id: sessionId, raw };
-          }
-
-          const brain: SpanishBrainOutput = brainParsed.data;
-          insertSpanishTurn(db, {
-            session_id: sessionId,
-            idx: nextSpanishTurnIdx(db, sessionId),
-            role: "assistant",
-            kind: "brain_output",
-            content: brain.assistant_text,
-            json: brain,
+          updateSpanishSession(db, sessionId, {
+            // Keep legacy field only for Codex sessions. Claude sessions use brain_thread_id.
+            codex_thread_id: brainName === "codex" ? run.thread_id : null,
+            brain_name: brainName,
+            brain_thread_id: run.thread_id,
           });
 
-          wsBroadcast({ type: "spanish.assistant", session_id: sessionId, brain });
+          const processed = await processBrainResponse(db, sessionId, run);
+          if (!processed.ok) return { ok: false, error: processed.error, session_id: sessionId, raw: processed.raw };
 
-          const speakResults: any[] = [];
-          let pendingListen: any | null = null;
-          for (const tr of brain.tool_requests) {
-            if (tr.tool === "speak") {
-              const spoken = sanitizeTtsText(tr.args.text);
-              if (!spoken) continue;
-              const tts = await renderTts({
-                text: spoken,
-                voice: tr.args.voice,
-                rate: tr.args.rate,
-                sanitizerVersion: TTS_SANITIZER_VERSION,
-              });
-              const result = { id: tr.id, tool: "speak", audio_id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec };
-              speakResults.push(result);
-              insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "tool", kind: "tool_result", json: result });
-              wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_result", tool: "speak", result });
-            }
-            if (tr.tool === "listen") {
-              pendingListen = { id: tr.id, tool: "listen", target_text: tr.args.target_text };
-              updateSpanishSession(db, sessionId, { pending_tool_json: JSON.stringify(tr) });
-              wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_pending", tool: "listen", args: pendingListen });
-            }
-          }
-
-          return { ok: true, session_id: sessionId, thread_id: run.thread_id, brain, speak_results: speakResults, pending_listen: pendingListen };
+          return {
+            ok: true,
+            session_id: sessionId,
+            thread_id: run.thread_id,
+            brain_name: brainName,
+            brain: processed.brain,
+            speak_results: processed.speakResults,
+            pending_listen: processed.pendingListen,
+          };
         } finally {
           db.close();
         }
       },
     },
     "spanish.session.answer": {
-      description: "Submit a typed answer to an existing Spanish session (Codex resume).",
+      description: "Submit a typed answer to an existing Spanish session.",
       schema: z.object({
         session_id: z.string().min(1),
         answer: z.string().min(1).max(4000),
@@ -716,7 +766,8 @@ export async function main(): Promise<void> {
           const sess = getSpanishSession(db, payload.session_id);
           if (!sess) return { ok: false, error: "session_not_found" };
           if (sess.status !== "open") return { ok: false, error: "session_not_open", status: sess.status };
-          if (!sess.codex_thread_id) return { ok: false, error: "missing_codex_thread_id" };
+          const threadId = sess.brain_thread_id ?? sess.codex_thread_id;
+          if (!threadId) return { ok: false, error: "missing_thread_id" };
           if (sess.pending_tool_json) return { ok: false, error: "pending_listen" };
 
           insertSpanishTurn(db, {
@@ -729,14 +780,15 @@ export async function main(): Promise<void> {
           wsBroadcast({ type: "spanish.user", session_id: payload.session_id, answer: payload.answer });
 
           const followup = JSON.stringify({ kind: "user_answer", text: payload.answer });
-
-          const logDir = path.join(stateDir, "spanish", "codex", payload.session_id);
+          const brainName: BrainName = normalizeBrainName(sess.brain_name);
+          const logDir = path.join(stateDir, "spanish", brainName, payload.session_id);
           fs.mkdirSync(logDir, { recursive: true });
-          const run = await runCodex({
+
+          const runner = createBrainRunner(brainName);
+          const run = await runner.run({
             cwd: repoRootFromHere(),
-            resumeThreadId: sess.codex_thread_id,
             prompt: followup,
-            sandbox: "read-only",
+            resumeThreadId: threadId,
             timeoutMs: 120_000,
             logJsonlPath: path.join(logDir, `turn${Date.now()}.jsonl`),
           });
@@ -746,57 +798,17 @@ export async function main(): Promise<void> {
               idx: nextSpanishTurnIdx(db, payload.session_id),
               role: "assistant",
               kind: "error",
-              content: `Codex failed: ${run.error}`,
+              content: `Brain (${brainName}) failed: ${run.error}`,
               json: run,
             });
-            return { ok: false, error: "codex_failed", details: run };
+            return { ok: false, error: "brain_failed", details: run };
           }
 
-          const raw = String(run.last_agent_message ?? "").trim();
-          const parsed = safeJsonParse(raw);
-          const brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
-          if (!brainParsed.success) {
-            insertSpanishTurn(db, { session_id: payload.session_id, idx: nextSpanishTurnIdx(db, payload.session_id), role: "assistant", kind: "brain_raw", content: raw });
-            return { ok: false, error: "bad_brain_output", raw };
-          }
-
-          const brain: SpanishBrainOutput = brainParsed.data;
-          insertSpanishTurn(db, {
-            session_id: payload.session_id,
-            idx: nextSpanishTurnIdx(db, payload.session_id),
-            role: "assistant",
-            kind: "brain_output",
-            content: brain.assistant_text,
-            json: brain,
-          });
-          wsBroadcast({ type: "spanish.assistant", session_id: payload.session_id, brain });
-
-          const speakResults: any[] = [];
-          let pendingListen: any | null = null;
           updateSpanishSession(db, payload.session_id, { pending_tool_json: null });
-          for (const tr of brain.tool_requests) {
-            if (tr.tool === "speak") {
-              const spoken = sanitizeTtsText(tr.args.text);
-              if (!spoken) continue;
-              const tts = await renderTts({
-                text: spoken,
-                voice: tr.args.voice,
-                rate: tr.args.rate,
-                sanitizerVersion: TTS_SANITIZER_VERSION,
-              });
-              const result = { id: tr.id, tool: "speak", audio_id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec };
-              speakResults.push(result);
-              insertSpanishTurn(db, { session_id: payload.session_id, idx: nextSpanishTurnIdx(db, payload.session_id), role: "tool", kind: "tool_result", json: result });
-              wsBroadcast({ type: "spanish.tool", session_id: payload.session_id, event: "tool_result", tool: "speak", result });
-            }
-            if (tr.tool === "listen") {
-              pendingListen = { id: tr.id, tool: "listen", target_text: tr.args.target_text };
-              updateSpanishSession(db, payload.session_id, { pending_tool_json: JSON.stringify(tr) });
-              wsBroadcast({ type: "spanish.tool", session_id: payload.session_id, event: "tool_pending", tool: "listen", args: pendingListen });
-            }
-          }
+          const processed = await processBrainResponse(db, payload.session_id, run);
+          if (!processed.ok) return { ok: false, error: processed.error, raw: processed.raw };
 
-          return { ok: true, brain, speak_results: speakResults, pending_listen: pendingListen };
+          return { ok: true, brain: processed.brain, speak_results: processed.speakResults, pending_listen: processed.pendingListen };
         } finally {
           db.close();
           spanishBusy.delete(payload.session_id);
@@ -948,7 +960,8 @@ export async function main(): Promise<void> {
       const sess = getSpanishSession(db, sessionId);
       if (!sess) return c.json({ ok: false, error: "session_not_found" }, 404);
       if (sess.status !== "open") return c.json({ ok: false, error: "session_not_open", status: sess.status }, 400);
-      if (!sess.codex_thread_id) return c.json({ ok: false, error: "missing_codex_thread_id" }, 400);
+      const threadId = sess.brain_thread_id ?? sess.codex_thread_id;
+      if (!threadId) return c.json({ ok: false, error: "missing_thread_id" }, 400);
       if (!sess.pending_tool_json) return c.json({ ok: false, error: "no_pending_listen" }, 400);
 
       const pendingRaw = safeJsonParse(sess.pending_tool_json);
@@ -988,60 +1001,28 @@ export async function main(): Promise<void> {
       updateSpanishSession(db, sessionId, { pending_tool_json: null });
 
       const followup = JSON.stringify({ kind: "tool_result", tool: "listen", id: pending.id, result: analysis });
-      const logDir = path.join(stateDir, "spanish", "codex", sessionId);
+      const brainName: BrainName = normalizeBrainName(sess.brain_name);
+      const logDir = path.join(stateDir, "spanish", brainName, sessionId);
       fs.mkdirSync(logDir, { recursive: true });
 
-      const run = await runCodex({
+      const runner = createBrainRunner(brainName);
+      const run = await runner.run({
         cwd: repoRootFromHere(),
-        resumeThreadId: sess.codex_thread_id,
         prompt: followup,
-        sandbox: "read-only",
+        resumeThreadId: threadId,
         timeoutMs: 120_000,
         logJsonlPath: path.join(logDir, `listen-${uploadId}.jsonl`),
       });
 
       if (!run.ok) {
-        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "assistant", kind: "error", content: `Codex failed: ${run.error}`, json: run });
-        return c.json({ ok: false, error: "codex_failed", details: run }, 500);
+        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "assistant", kind: "error", content: `Brain (${brainName}) failed: ${run.error}`, json: run });
+        return c.json({ ok: false, error: "brain_failed", details: run }, 500);
       }
 
-      const raw = String(run.last_agent_message ?? "").trim();
-      const parsed = safeJsonParse(raw);
-      const brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
-      if (!brainParsed.success) {
-        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "assistant", kind: "brain_raw", content: raw });
-        return c.json({ ok: false, error: "bad_brain_output", raw }, 500);
-      }
+      const processed = await processBrainResponse(db, sessionId, run);
+      if (!processed.ok) return c.json({ ok: false, error: processed.error, raw: processed.raw }, 500);
 
-      const brain = brainParsed.data as SpanishBrainOutput;
-      insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "assistant", kind: "brain_output", content: brain.assistant_text, json: brain });
-      wsBroadcast({ type: "spanish.assistant", session_id: sessionId, brain });
-
-      const speakResults: any[] = [];
-      let pendingListen: any | null = null;
-      for (const tr of brain.tool_requests) {
-        if (tr.tool === "speak") {
-          const spoken = sanitizeTtsText(tr.args.text);
-          if (!spoken) continue;
-          const tts = await renderTts({
-            text: spoken,
-            voice: tr.args.voice,
-            rate: tr.args.rate,
-            sanitizerVersion: TTS_SANITIZER_VERSION,
-          });
-          const result = { id: tr.id, tool: "speak", audio_id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec };
-          speakResults.push(result);
-          insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "tool", kind: "tool_result", json: result });
-          wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_result", tool: "speak", result });
-        }
-        if (tr.tool === "listen") {
-          pendingListen = { id: tr.id, tool: "listen", target_text: tr.args.target_text };
-          updateSpanishSession(db, sessionId, { pending_tool_json: JSON.stringify(tr) });
-          wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_pending", tool: "listen", args: pendingListen });
-        }
-      }
-
-      return c.json({ ok: true, upload_id: uploadId, analysis, brain, speak_results: speakResults, pending_listen: pendingListen });
+      return c.json({ ok: true, upload_id: uploadId, analysis, brain: processed.brain, speak_results: processed.speakResults, pending_listen: processed.pendingListen });
     } finally {
       db.close();
       spanishBusy.delete(sessionId);
