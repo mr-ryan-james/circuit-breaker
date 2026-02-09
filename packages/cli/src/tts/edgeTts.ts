@@ -62,6 +62,7 @@ export function renderTts(params: {
   text: string;
   voice: string;
   rate: string;
+  sanitizerVersion?: string;
   refresh?: boolean;
   timeoutMs?: number;
   cacheDir?: string;
@@ -71,6 +72,7 @@ export function renderTts(params: {
   const voice = params.voice;
   const rate = params.rate;
   const refresh = params.refresh ?? false;
+  const sanitizerVersion = params.sanitizerVersion ?? "sanitize_v1";
 
   const text = normalizeTtsText(params.text);
   if (!text) throw new Error("renderTts: empty text");
@@ -80,7 +82,7 @@ export function renderTts(params: {
 
   const hash = crypto
     .createHash("sha256")
-    .update(`v1|edge-tts|${voice}|${rate}|${text}`, "utf8")
+    .update(`v1|edge-tts|${sanitizerVersion}|${voice}|${rate}|${text}`, "utf8")
     .digest("hex")
     .slice(0, 24);
 

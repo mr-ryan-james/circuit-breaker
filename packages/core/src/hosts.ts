@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { HOSTS_FILE_PATH } from "./paths.js";
 
@@ -146,7 +148,65 @@ export function readHostsFile(hostsPath: string = HOSTS_FILE_PATH): string {
 export function writeHostsFile(contents: string, hostsPath: string = HOSTS_FILE_PATH): void {
   // Always ensure essential entries are present before writing
   const safeContents = ensureEssentialEntries(contents);
-  fs.writeFileSync(hostsPath, safeContents, "utf8");
+
+  // Atomic write to avoid leaving /etc/hosts truncated if the process is interrupted.
+  // Write to a temp file in the same directory, fsync it, then rename over the original.
+  const dir = path.dirname(hostsPath);
+  const base = path.basename(hostsPath);
+  const tmpPath = path.join(dir, `.${base}.tmp.${process.pid}.${crypto.randomBytes(4).toString("hex")}`);
+
+  let st: fs.Stats | null = null;
+  try {
+    st = fs.statSync(hostsPath);
+  } catch {
+    st = null;
+  }
+
+  try {
+    fs.writeFileSync(tmpPath, safeContents, { encoding: "utf8", mode: st?.mode });
+
+    // Preserve ownership if we can (expected when running under sudo/root).
+    if (st) {
+      try {
+        fs.chownSync(tmpPath, st.uid, st.gid);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Ensure contents are flushed to disk before rename.
+    try {
+      const fd = fs.openSync(tmpPath, "r");
+      try {
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+    } catch {
+      // ignore fsync failures; rename still improves durability in most cases.
+    }
+
+    fs.renameSync(tmpPath, hostsPath);
+
+    // Best-effort fsync directory so the rename is durable.
+    try {
+      const dfd = fs.openSync(dir, "r");
+      try {
+        fs.fsyncSync(dfd);
+      } finally {
+        fs.closeSync(dfd);
+      }
+    } catch {
+      // ignore
+    }
+  } finally {
+    // Best-effort cleanup if something went wrong before rename.
+    try {
+      if (fs.existsSync(tmpPath)) fs.rmSync(tmpPath, { force: true });
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export function isDomainBlocked(hostsContents: string, domain: string): boolean {
@@ -213,4 +273,3 @@ export function flushDns(): void {
     // ignore
   }
 }
-

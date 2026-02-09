@@ -100,6 +100,179 @@ function parseTagsJson(tagsJson: string): string[] {
   }
 }
 
+function cardsDirPath(): string {
+  return path.join(repoRootFromHere(), "data", "cards");
+}
+
+type DeckCardAudit = {
+  file: string;
+  key: string | null;
+  category: string | null;
+  minutes: number | null;
+  activity: string | null;
+  active: boolean | null;
+  tags: string[];
+};
+
+function auditDeckFromDir(dirPath: string): {
+  files_scanned: number;
+  cards_scanned: number;
+  errors: Array<{ file: string; error: string }>;
+  duplicates: Array<{ key: string; count: number; files: string[] }>;
+  spanish_orphans: Array<{ file: string; key: string; tags: string[] }>;
+  inactive: Array<{ file: string; key: string; activity: string | null }>;
+  stats: {
+    total: number;
+    active: number;
+    inactive: number;
+    by_category: Record<string, number>;
+    tag_counts_top: Array<{ tag: string; count: number }>;
+  };
+} {
+  const errors: Array<{ file: string; error: string }> = [];
+  const cards: DeckCardAudit[] = [];
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const jsonFiles = entries
+    .filter((e) => e.isFile() && e.name.toLowerCase().endsWith(".json"))
+    .map((e) => e.name)
+    .sort((a, b) => a.localeCompare(b));
+
+  for (const filename of jsonFiles) {
+    const fullPath = path.join(dirPath, filename);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push({ file: filename, error: `bad_json: ${msg}` });
+      continue;
+    }
+
+    if (!Array.isArray(parsed)) {
+      errors.push({ file: filename, error: "unsupported_json_shape (expected array)" });
+      continue;
+    }
+
+    for (const raw of parsed) {
+      if (typeof raw !== "object" || raw === null) continue;
+      const rec = raw as any;
+      const key = typeof rec.key === "string" && rec.key.trim() ? rec.key.trim() : null;
+      const category = typeof rec.category === "string" && rec.category.trim() ? rec.category.trim() : null;
+      const minutes = typeof rec.minutes === "number" && Number.isFinite(rec.minutes) ? rec.minutes : null;
+      const activity = typeof rec.activity === "string" && rec.activity.trim() ? rec.activity.trim() : null;
+      const active = typeof rec.active === "boolean" ? rec.active : null;
+      const tags = Array.isArray(rec.tags) ? rec.tags.map(String).map((t: string) => t.trim()).filter(Boolean) : [];
+      cards.push({ file: filename, key, category, minutes, activity, active, tags });
+    }
+  }
+
+  const byKey = new Map<string, Set<string>>();
+  for (const c of cards) {
+    if (!c.key) continue;
+    const set = byKey.get(c.key) ?? new Set<string>();
+    set.add(c.file);
+    byKey.set(c.key, set);
+  }
+  const duplicates = Array.from(byKey.entries())
+    .filter(([, files]) => files.size > 1)
+    .map(([key, files]) => ({ key, count: files.size, files: Array.from(files.values()).sort() }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+
+  const spanishLaneTags = new Set(["verb", "noun", "lesson", "fusion"]);
+  const spanishOrphans: Array<{ file: string; key: string; tags: string[] }> = [];
+  for (const c of cards) {
+    if (!c.key) continue;
+    if (!c.tags.includes("spanish")) continue;
+    const hasLane = c.tags.some((t) => spanishLaneTags.has(t));
+    if (!hasLane) spanishOrphans.push({ file: c.file, key: c.key, tags: c.tags });
+  }
+
+  const inactive: Array<{ file: string; key: string; activity: string | null }> = [];
+  for (const c of cards) {
+    if (!c.key) continue;
+    if (c.active === false) inactive.push({ file: c.file, key: c.key, activity: c.activity });
+  }
+
+  const byCategory: Record<string, number> = {};
+  const tagCounts = new Map<string, number>();
+  let activeCount = 0;
+  let inactiveCount = 0;
+  for (const c of cards) {
+    const cat = c.category ?? "unknown";
+    byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+    if (c.active === false) inactiveCount += 1;
+    else activeCount += 1; // treat null as active for audit purposes
+    for (const t of c.tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  }
+  const tagCountsTop = Array.from(tagCounts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+    .slice(0, 30);
+
+  return {
+    files_scanned: jsonFiles.length,
+    cards_scanned: cards.length,
+    errors,
+    duplicates,
+    spanish_orphans: spanishOrphans.sort((a, b) => a.key.localeCompare(b.key)),
+    inactive,
+    stats: {
+      total: cards.length,
+      active: activeCount,
+      inactive: inactiveCount,
+      by_category: byCategory,
+      tag_counts_top: tagCountsTop,
+    },
+  };
+}
+
+function cmdDeck(args: string[], json: boolean): void {
+  const sub = args[0] ?? "audit";
+  if (isHelpToken(sub)) {
+    const usage = ["deck audit [--json]", "deck stats [--json]", "deck duplicates [--json]", "deck orphans [--json]"];
+    if (json) {
+      printJson({ ok: true, command: "deck", help: true, usage });
+      return;
+    }
+    console.log("Deck usage:");
+    for (const u of usage) console.log(`  site-toggle ${u}`);
+    return;
+  }
+
+  const audit = auditDeckFromDir(cardsDirPath());
+  if (sub === "stats") {
+    const payload = {
+      ok: true,
+      command: "deck",
+      action: "stats",
+      files_scanned: audit.files_scanned,
+      cards_scanned: audit.cards_scanned,
+      ...audit.stats,
+    };
+    if (json) printJson(payload);
+    else console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+  if (sub === "duplicates") {
+    const payload = { ok: true, command: "deck", action: "duplicates", duplicates: audit.duplicates };
+    if (json) printJson(payload);
+    else console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+  if (sub === "orphans") {
+    const payload = { ok: true, command: "deck", action: "orphans", spanish_orphans: audit.spanish_orphans };
+    if (json) printJson(payload);
+    else console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+  if (sub !== "audit") throw new Error("Usage: deck <audit|stats|duplicates|orphans>");
+
+  const payload = { ok: true, command: "deck", action: "audit", ...audit };
+  if (json) printJson(payload);
+  else console.log(JSON.stringify(payload, null, 2));
+}
+
 function parseArgs(argv: string[]): { command: string; args: string[]; json: boolean } {
   const args = [...argv];
   let json = false;
@@ -187,6 +360,7 @@ function printMainHelp(json: boolean): void {
     "stats",
     "clear-stats",
     "seed",
+    "deck",
     "suggest",
     "break",
     "choose",
@@ -572,6 +746,9 @@ async function cmdDoctor(json: boolean): Promise<void> {
     edge_tts?: boolean;
     sox?: boolean;
     afplay?: boolean;
+    fluidsynth?: boolean;
+    sf2_path?: string | null;
+    sf2_ok?: boolean;
     python3?: boolean;
     python_path?: string;
     python_torch?: boolean;
@@ -620,6 +797,12 @@ async function cmdDoctor(json: boolean): Promise<void> {
   report.edge_tts = commandExists("edge-tts");
   report.sox = commandExists("sox");
   report.afplay = commandExists("afplay");
+
+  const fluidsynthBin = (process.env["CIRCUIT_BREAKER_FLUIDSYNTH_BIN"] ?? "").trim() || "fluidsynth";
+  report.fluidsynth = commandExists(fluidsynthBin);
+  report.sf2_path = (process.env["CIRCUIT_BREAKER_SF2_PATH"] ?? "").trim() || null;
+  report.sf2_ok = report.sf2_path ? fileExistsNonEmpty(report.sf2_path) : false;
+
   let pythonPath: string | null = null;
   try {
     pythonPath = pythonExecPath();
@@ -656,6 +839,8 @@ async function cmdDoctor(json: boolean): Promise<void> {
     !report.edge_tts ||
     !report.sox ||
     !report.afplay ||
+    !report.fluidsynth ||
+    !report.sf2_ok ||
     !report.python3 ||
     !report.python_torch ||
     !report.python_transformers ||
@@ -684,6 +869,8 @@ async function cmdDoctor(json: boolean): Promise<void> {
   console.log(`edge-tts: ${report.edge_tts ? "ok" : "MISSING"}`);
   console.log(`sox: ${report.sox ? "ok" : "MISSING"}`);
   console.log(`afplay: ${report.afplay ? "ok" : "MISSING"}`);
+  console.log(`fluidsynth: ${report.fluidsynth ? "ok" : "MISSING"}${fluidsynthBin !== "fluidsynth" ? ` (${fluidsynthBin})` : ""}`);
+  console.log(`SoundFont: ${report.sf2_ok ? "ok" : "MISSING"}${report.sf2_path ? ` (${report.sf2_path})` : ""}`);
   console.log(`python3: ${report.python3 ? "ok" : "MISSING"}${report.python_path ? ` (${report.python_path})` : ""}`);
   console.log(`torch: ${report.python_torch ? "ok" : "MISSING"}`);
   console.log(`transformers: ${report.python_transformers ? "ok" : "MISSING"}`);
@@ -934,6 +1121,18 @@ function cmdSeed(json: boolean): void {
   console.log(`Files: ${result.files}`);
   console.log(`Inserted: ${result.inserted}`);
   console.log(`Updated: ${result.updated}`);
+  if (Array.isArray((result as any).duplicate_keys) && (result as any).duplicate_keys.length > 0) {
+    const dups = (result as any).duplicate_keys as Array<{ key: string; files: string[] }>;
+    console.log("");
+    console.log(`WARNING: Duplicate card keys found across files (${dups.length}).`);
+    console.log("These will upsert in file sort order; consider deduping the deck to avoid accidental overrides.");
+    for (const d of dups.slice(0, 25)) {
+      console.log(`- ${d.key}: ${d.files.join(", ")}`);
+    }
+    if (dups.length > 25) {
+      console.log(`... (+${dups.length - 25} more)`);
+    }
+  }
 }
 
 async function cmdSuggest(args: string[], json: boolean): Promise<void> {
@@ -3026,6 +3225,7 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
     text,
     voice,
     rate,
+    sanitizerVersion: "sanitize_v1",
     refresh,
     timeoutMs,
     cacheDir: speakCacheDir(),
@@ -3754,6 +3954,9 @@ async function main(): Promise<void> {
       case "seed":
         cmdSeed(json);
         return;
+      case "deck":
+        cmdDeck(args, json);
+        return;
       case "suggest":
         await cmdSuggest(args, json);
         return;
@@ -3820,7 +4023,7 @@ async function main(): Promise<void> {
       }
       default:
         throw new Error(
-          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|suggest|break|choose|rate|locations|contexts|context|modules|module|import|run-lines|speak|listen|play|ui|doctor]`,
+          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|deck|suggest|break|choose|rate|locations|contexts|context|modules|module|import|run-lines|speak|listen|play|ui|doctor]`,
         );
     }
   } catch (err) {

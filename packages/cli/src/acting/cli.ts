@@ -15,7 +15,7 @@ type JsonPrinter = (obj: unknown) => void;
 
 function commandExists(cmd: string): boolean {
   try {
-    execFileSync("command", ["-v", cmd], { stdio: "ignore" });
+    execFileSync("which", [cmd], { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -162,6 +162,7 @@ export async function cmdRunLines(args: string[], json: boolean, printJson: Json
   if (sub === "help" || sub === "--help" || sub === "-h") {
     const usage = [
       "run-lines import <file> [--format auto|colon|fountain] [--title <t>]",
+      "run-lines reimport <script_id>",
       "run-lines list",
       "run-lines show <script_id>",
       "run-lines characters <script_id>",
@@ -295,6 +296,133 @@ export async function cmdRunLines(args: string[], json: boolean, printJson: Json
     console.log(`Imported script ${scriptId}: ${ir.title}`);
     console.log(`Characters: ${ir.characters.length}, Lines: ${ir.lines.length}`);
     console.log(`Next: site-toggle run-lines practice ${scriptId} --me "Melchior" --mode practice --loop 3`);
+    return;
+  }
+
+  if (sub === "reimport") {
+    const scriptIdRaw = actionArgs[0];
+    if (!scriptIdRaw || !/^\d+$/.test(scriptIdRaw)) throw new Error("Usage: run-lines reimport <script_id>");
+    const scriptId = Number(scriptIdRaw);
+
+    const existing = db
+      .prepare("SELECT id, title, source_format, source_text, parser_version FROM scripts WHERE id = ? LIMIT 1")
+      .get(scriptId) as { id: number; title: string; source_format: string; source_text: string; parser_version: number } | undefined;
+    if (!existing) throw new Error(`Unknown script_id: ${scriptId}`);
+
+    const oldLineCount = Number(
+      (db.prepare("SELECT COUNT(*) AS n FROM script_lines WHERE script_id = ?").get(scriptId) as any)?.n ?? 0,
+    );
+    const oldCharCount = Number(
+      (db.prepare("SELECT COUNT(*) AS n FROM script_characters WHERE script_id = ?").get(scriptId) as any)?.n ?? 0,
+    );
+
+    const sanitized = sanitizeScriptSourceText(existing.source_text);
+    const ir =
+      existing.source_format === "fountain"
+        ? parseFountainScript(sanitized, existing.title)
+        : parseColonScript(sanitized, existing.title);
+
+    const newLineCount = ir.lines.length;
+    const newCharCount = ir.characters.length;
+    const maxIdx = ir.lines.reduce((m, l) => Math.max(m, Number(l.idx)), 0);
+
+    const existingChars = db
+      .prepare("SELECT normalized_name, voice, rate FROM script_characters WHERE script_id = ?")
+      .all(scriptId) as Array<{ normalized_name: string; voice: string; rate: string }>;
+    const existingCharMap = new Map(existingChars.map((c) => [c.normalized_name, { voice: c.voice, rate: c.rate }]));
+
+    const insLine = db.prepare(
+      `INSERT INTO script_lines (script_id, idx, type, speaker_normalized, text, scene_number, scene_heading)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
+    const insChar = db.prepare(
+      `INSERT INTO script_characters (script_id, name, normalized_name, voice, rate)
+       VALUES (?, ?, ?, ?, ?)`,
+    );
+
+    db.exec("BEGIN");
+    try {
+      db.prepare("UPDATE scripts SET source_text = ?, parser_version = ? WHERE id = ?").run(sanitized, ir.parser_version, scriptId);
+
+      db.prepare("DELETE FROM script_lines WHERE script_id = ?").run(scriptId);
+      for (const l of ir.lines) {
+        insLine.run(
+          scriptId,
+          l.idx,
+          l.type,
+          (l as any).speaker_normalized ?? null,
+          l.text,
+          (l as any).scene_number ?? null,
+          (l as any).scene_heading ?? null,
+        );
+      }
+
+      // Ensure characters exist; preserve voice/rate for existing normalized_name.
+      const cycle = defaultVoiceCycle();
+      for (let i = 0; i < ir.characters.length; i += 1) {
+        const c = ir.characters[i]!;
+        const found = existingCharMap.get(c.normalized_name) ?? null;
+        if (found) {
+          db.prepare("UPDATE script_characters SET name = ? WHERE script_id = ? AND normalized_name = ?").run(
+            c.name,
+            scriptId,
+            c.normalized_name,
+          );
+          continue;
+        }
+        const picked = cycle[i % cycle.length] ?? cycle[0]!;
+        try {
+          insChar.run(scriptId, c.name, c.normalized_name, picked.voice, picked.rate);
+        } catch {
+          // ignore (race or duplicate)
+        }
+      }
+
+      // Clamp saved progress so the UI doesn't point past the end.
+      if (maxIdx > 0) {
+        db.prepare(
+          `UPDATE script_progress
+           SET last_idx = CASE WHEN last_idx > ? THEN ? ELSE last_idx END,
+               updated_at = datetime('now')
+           WHERE script_id = ?`,
+        ).run(maxIdx, maxIdx, scriptId);
+      }
+
+      recordEdit(db, scriptId, "reimport", {
+        from: { parser_version: existing.parser_version, line_count: oldLineCount, character_count: oldCharCount },
+        to: { parser_version: ir.parser_version, line_count: newLineCount, character_count: newCharCount },
+      });
+
+      db.exec("COMMIT");
+    } catch (e) {
+      try {
+        db.exec("ROLLBACK");
+      } catch {
+        // ignore
+      }
+      throw e;
+    }
+
+    if (json) {
+      printJson({
+        ok: true,
+        command: "run-lines",
+        action: "reimport",
+        script_id: scriptId,
+        title: existing.title,
+        format: existing.source_format,
+        parser_version: ir.parser_version,
+        counts: {
+          old: { lines: oldLineCount, characters: oldCharCount },
+          new: { lines: newLineCount, characters: newCharCount },
+        },
+        max_idx: maxIdx,
+      });
+      return;
+    }
+    console.log(`Reimported script ${scriptId}: ${existing.title}`);
+    console.log(`Lines: ${oldLineCount} -> ${newLineCount}`);
+    console.log(`Characters: ${oldCharCount} -> ${newCharCount}`);
     return;
   }
 

@@ -15,6 +15,9 @@ function isLikelyDomainToken(raw: string): boolean {
   return /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(s);
 }
 
+// Bump this when we change speech sanitization rules in a way that should force TTS re-renders.
+export const TTS_SANITIZER_VERSION = "sanitize_v1";
+
 export function sanitizeScriptSourceText(raw: string): string {
   const normalized = raw
     .replace(/\r\n/g, "\n")

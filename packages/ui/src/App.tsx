@@ -90,6 +90,18 @@ type SpanishMessage = {
 
 type BrainDefault = "codex" | "claude";
 
+type SovtCmdStep = {
+  idx: number;
+  title: string;
+  raw_cmd: string;
+  args: string[];
+  status: "pending" | "running" | "done" | "error";
+  started_at_ms: number | null;
+  ended_at_ms: number | null;
+  result_json: string | null;
+  error: string | null;
+};
+
 export function App() {
   const [status, setStatus] = useState<ApiStatus | null>(null);
   const [scripts, setScripts] = useState<ScriptRow[]>([]);
@@ -100,8 +112,10 @@ export function App() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [wsState, setWsState] = useState<"connecting" | "open" | "closed">("connecting");
 
+  const [activeTab, setActiveTab] = useState<"break" | "acting" | "spanish" | "sovt" | "signals" | "status">("break");
+
   const [me, setMe] = useState("Melchior");
-  const [mode, setMode] = useState<"practice" | "read_through" | "speed_through">("practice");
+  const [mode, setMode] = useState<"practice" | "learn" | "read_through" | "speed_through">("practice");
   const [readAll, setReadAll] = useState(false);
   const [fromIdx, setFromIdx] = useState(1);
   const [toIdx, setToIdx] = useState(200);
@@ -124,6 +138,7 @@ export function App() {
   const [autoStartActing, setAutoStartActing] = useState(true);
   const [actingPickerScripts, setActingPickerScripts] = useState<any[] | null>(null);
   const [actingPickerOpen, setActingPickerOpen] = useState(false);
+  const [actingPickerLoadingId, setActingPickerLoadingId] = useState<number | null>(null);
 
   const [spanishSessionId, setSpanishSessionId] = useState<string | null>(null);
   const [spanishBrain, setSpanishBrain] = useState<SpanishBrain | null>(null);
@@ -132,6 +147,8 @@ export function App() {
   const [spanishPendingListen, setSpanishPendingListen] = useState<SpanishPendingListen | null>(null);
   const [spanishError, setSpanishError] = useState<string | null>(null);
   const [spanishRecording, setSpanishRecording] = useState(false);
+  const [spanishRecordingStartedAtMs, setSpanishRecordingStartedAtMs] = useState<number | null>(null);
+  const [spanishRecordingElapsedMs, setSpanishRecordingElapsedMs] = useState<number>(0);
   const [spanishSessions, setSpanishSessions] = useState<SpanishSessionRow[]>([]);
   const [spanishTranscriptSessionId, setSpanishTranscriptSessionId] = useState<string | null>(null);
   const [spanishTranscriptTurns, setSpanishTranscriptTurns] = useState<SpanishTurnRow[]>([]);
@@ -151,11 +168,18 @@ export function App() {
   const actingTimelineEndRef = useRef<HTMLDivElement | null>(null);
   const pendingEventIdRef = useRef<string | null>(null);
   const timerRef = useRef<number | null>(null);
+  const autoPlayOnNextStartRef = useRef(false);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
   const timelineTailLimit = 2000;
 
   const spanishChatEndRef = useRef<HTMLDivElement | null>(null);
   const spanishRequestIdRef = useRef(0);
+
+  const [sovtCard, setSovtCard] = useState<any | null>(null);
+  const [sovtEventKey, setSovtEventKey] = useState<string | null>(null);
+  const [sovtSteps, setSovtSteps] = useState<SovtCmdStep[]>([]);
+  const [sovtError, setSovtError] = useState<string | null>(null);
+  const [sovtCompletion, setSovtCompletion] = useState<any | null>(null);
 
   const spanishRecorderRef = useRef<{
     stream: MediaStream;
@@ -255,6 +279,8 @@ export function App() {
     proc.connect(audioCtx.destination);
     spanishRecorderRef.current = { stream, audioCtx, source, proc, chunks, sampleRate: audioCtx.sampleRate };
     setSpanishRecording(true);
+    setSpanishRecordingStartedAtMs(Date.now());
+    setSpanishRecordingElapsedMs(0);
   }
 
   async function stopSpanishRecordingToWav16k(): Promise<Blob | null> {
@@ -269,12 +295,22 @@ export function App() {
     } finally {
       spanishRecorderRef.current = null;
       setSpanishRecording(false);
+      setSpanishRecordingStartedAtMs(null);
+      setSpanishRecordingElapsedMs(0);
     }
 
     const flat = flattenFloat32(r.chunks);
     const down = downsampleFloat32(flat, r.sampleRate, 16000);
     return encodeWavPcm16(down, 16000);
   }
+
+  useEffect(() => {
+    if (!spanishRecording || !spanishRecordingStartedAtMs) return;
+    const id = window.setInterval(() => {
+      setSpanishRecordingElapsedMs(Math.max(0, Date.now() - spanishRecordingStartedAtMs));
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [spanishRecording, spanishRecordingStartedAtMs]);
 
   useEffect(() => {
     fetchStatus()
@@ -307,11 +343,16 @@ export function App() {
 
       if (m.type === "run_lines.session" && m.event === "started") {
         setSessionId(m.session_id);
-        setSessionPlaying(false);
+        const shouldAutoPlay = autoPlayOnNextStartRef.current;
+        autoPlayOnNextStartRef.current = false;
+        setSessionPlaying(shouldAutoPlay);
         setCurrentIdx(null);
         setTimeline([]);
         seenEventIdsRef.current = new Set();
         setAudioNeedsGesture(false);
+        if (shouldAutoPlay) {
+          wsRef.current?.send(JSON.stringify({ type: "run_lines.play", session_id: m.session_id }));
+        }
         return;
       }
 
@@ -461,6 +502,12 @@ export function App() {
               JSON.stringify({ type: "run_lines.ack", session_id: m.session_id, event_id: m.event_id, status: "done" }),
             );
           };
+          audio.onerror = () => {
+            // If audio fails to load/decode, don't deadlock the server's ack loop.
+            wsRef.current?.send(
+              JSON.stringify({ type: "run_lines.ack", session_id: m.session_id, event_id: m.event_id, status: "done" }),
+            );
+          };
           audio
             .play()
             .then(() => setAudioNeedsGesture(false))
@@ -544,23 +591,28 @@ export function App() {
     return null;
   }
 
-  function startSessionWith(scriptId: number, from: number, to: number) {
+  function startSessionWith(scriptId: number, from: number, to: number, opts: { autoPlay?: boolean } = {}) {
     if (!wsRef.current || wsState !== "open") return;
     setTimeline([]);
     setSessionPlaying(false);
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     timerRef.current = null;
+    autoPlayOnNextStartRef.current = Boolean(opts.autoPlay);
+
+    const rawMode = mode;
+    const revealAfter = rawMode === "learn";
     wsRef.current.send(
       JSON.stringify({
         type: "run_lines.start",
         script_id: scriptId,
         from,
         to,
-        mode,
+        mode: rawMode,
         me,
         read_all: mode === "read_through" ? true : readAll,
         pause_mult: pauseMult,
         cue_words: cueWords,
+        reveal_after: revealAfter,
         speed_mult: mode === "speed_through" ? 1.3 : speedMult,
       }),
     );
@@ -568,7 +620,7 @@ export function App() {
 
   function startSession() {
     if (!selectedScriptId) return;
-    startSessionWith(selectedScriptId, fromIdx, toIdx);
+    startSessionWith(selectedScriptId, fromIdx, toIdx, { autoPlay: true });
   }
 
   function playSession() {
@@ -594,7 +646,7 @@ export function App() {
   async function loadAndMaybeStart(scriptId: number, start: boolean): Promise<void> {
     const range = await loadScript(scriptId);
     if (!range) return;
-    if (start) startSessionWith(scriptId, range.from, range.to);
+    if (start) startSessionWith(scriptId, range.from, range.to, { autoPlay: true });
   }
 
   async function unblockAllFromUi(minutes: number) {
@@ -604,8 +656,8 @@ export function App() {
     setBreakChoice(res);
   }
 
-  async function chooseBreakLane(lane: string) {
-    if (!breakMenu) return;
+  async function chooseBreakLane(lane: string): Promise<any | null> {
+    if (!breakMenu) return null;
     const res = await callAction<any>("break.choose", { event_key: breakMenu.event_key, lane });
     setBreakChoice(res);
 
@@ -613,36 +665,33 @@ export function App() {
     if (lane === "acting" && autoStartActing && res?.ok) {
       const actingLane: any = (breakMenu.lanes as any[]).find((l) => l.type === "acting") ?? null;
       const recent = Array.isArray(actingLane?.recent_scripts) ? actingLane.recent_scripts : [];
-      if (recent.length === 0) return;
+      if (recent.length === 0) return res;
 
       // Only auto-start when the choice is unambiguous.
       if (recent.length === 1) {
         const scriptId = Number(recent[0]?.id ?? 0);
-        if (!Number.isFinite(scriptId) || scriptId <= 0) return;
+        if (!Number.isFinite(scriptId) || scriptId <= 0) return res;
         await loadAndMaybeStart(scriptId, true);
-        return;
+        setActiveTab("acting");
+        return res;
       }
 
       // Multiple recents: prompt user to pick which one to start.
       setActingPickerScripts(recent.slice(0, 5));
       setActingPickerOpen(true);
     }
+
+    return res;
   }
 
-  async function startSpanishSessionFromChoice() {
+  async function startSpanishSession(eventKey: string, lane: string, card: any): Promise<void> {
     setSpanishError(null);
-    if (!breakMenu) {
-      setSpanishError("Load a break menu first.");
-      return;
-    }
-    if (!breakChoice?.ok || !breakChoice?.card?.prompt) {
-      setSpanishError("Choose a Spanish lane (verb/noun/lesson/fusion) first.");
-      return;
-    }
-
-    const lane = String(breakChoice?.lane ?? "");
     if (!["verb", "noun", "lesson", "fusion"].includes(lane)) {
       setSpanishError(`Not a Spanish lane: ${lane}`);
+      return;
+    }
+    if (!card?.prompt) {
+      setSpanishError("Missing card prompt.");
       return;
     }
 
@@ -656,11 +705,11 @@ export function App() {
 
     try {
       const res = await callAction<any>("spanish.session.start", {
-        event_key: breakMenu.event_key,
+        event_key: eventKey,
         lane,
-        card_id: breakChoice?.card?.id ?? undefined,
-        card_key: breakChoice?.card?.key ?? undefined,
-        card_prompt: String(breakChoice.card.prompt),
+        card_id: card?.id ?? undefined,
+        card_key: card?.key ?? undefined,
+        card_prompt: String(card.prompt),
       });
 
       if (spanishRequestIdRef.current !== reqId) return; // stale
@@ -684,9 +733,131 @@ export function App() {
         ]);
       }
       queueSpanishAudio(speaks);
+
+      if (res.session_status === "completed" || res.brain?.await === "done") {
+        setSpanishMessages((prev) => [...prev, { role: "system", text: "Session completed.", timestamp: Date.now() }]);
+        resetSpanishSessionLocal();
+      }
     } finally {
       if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
     }
+  }
+
+  async function chooseBreakLaneAndStartSpanish(lane: "verb" | "noun" | "lesson" | "fusion") {
+    setSpanishError(null);
+    if (!breakMenu) {
+      setSpanishError("Load a break menu first.");
+      return;
+    }
+    const choice = await chooseBreakLane(lane);
+    if (!choice?.ok || !choice?.card?.prompt) {
+      setSpanishError(String(choice?.error ?? "Failed to choose lane"));
+      return;
+    }
+    await startSpanishSession(breakMenu.event_key, lane, choice.card);
+    setActiveTab("spanish");
+  }
+
+  async function startSpanishSessionFromChoice() {
+    setSpanishError(null);
+    if (!breakMenu) {
+      setSpanishError("Load a break menu first.");
+      return;
+    }
+    if (!breakChoice?.ok || !breakChoice?.card?.prompt) {
+      setSpanishError("Choose a Spanish lane (verb/noun/lesson/fusion) first.");
+      return;
+    }
+    const lane = String(breakChoice?.lane ?? "");
+    if (!["verb", "noun", "lesson", "fusion"].includes(lane)) {
+      setSpanishError(`Not a Spanish lane: ${lane}`);
+      return;
+    }
+    await startSpanishSession(breakMenu.event_key, lane, breakChoice.card);
+  }
+
+  function loadSovtFromCard(eventKey: string | null, card: any) {
+    setSovtError(null);
+    setSovtCompletion(null);
+    setSovtCard(card ?? null);
+    setSovtEventKey(eventKey);
+    const prompt = String(card?.prompt ?? "");
+    setSovtSteps(parseSovtCmdSteps(prompt));
+  }
+
+  async function chooseBreakLaneAndStartSovt() {
+    setSovtError(null);
+    setSovtCompletion(null);
+    if (!breakMenu) {
+      setSovtError("Load a break menu first.");
+      return;
+    }
+    const choice = await chooseBreakLane("sovt");
+    if (!choice?.ok || !choice?.card?.prompt) {
+      setSovtError(String(choice?.error ?? "Failed to choose sovt lane"));
+      return;
+    }
+    loadSovtFromCard(breakMenu.event_key, choice.card);
+    setActiveTab("sovt");
+  }
+
+  async function runSovtCmd(stepIdx: number) {
+    const step = sovtSteps.find((s) => s.idx === stepIdx) ?? null;
+    if (!step) return;
+    setSovtError(null);
+
+    setSovtSteps((prev) =>
+      prev.map((s) =>
+        s.idx === stepIdx
+          ? { ...s, status: "running", started_at_ms: Date.now(), ended_at_ms: null, error: null }
+          : s,
+      ),
+    );
+
+    try {
+      const res = await callAction<any>("sovt.play", { args: step.args });
+      if (!res?.ok) {
+        const msg = String(res?.error ?? "play_failed");
+        setSovtSteps((prev) =>
+          prev.map((s) =>
+            s.idx === stepIdx
+              ? { ...s, status: "error", ended_at_ms: Date.now(), error: msg, result_json: prettyJson(JSON.stringify(res)) }
+              : s,
+          ),
+        );
+        setSovtError(msg);
+        return;
+      }
+
+      setSovtSteps((prev) =>
+        prev.map((s) =>
+          s.idx === stepIdx
+            ? { ...s, status: "done", ended_at_ms: Date.now(), result_json: JSON.stringify(res, null, 2), error: null }
+            : s,
+        ),
+      );
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSovtSteps((prev) =>
+        prev.map((s) => (s.idx === stepIdx ? { ...s, status: "error", ended_at_ms: Date.now(), error: msg } : s)),
+      );
+      setSovtError(msg);
+    }
+  }
+
+  async function completeSovt(status: "completed" | "partial" | "abandoned") {
+    setSovtError(null);
+    if (!sovtEventKey) return setSovtError("Missing event_key (load SOVT from Break menu first).");
+    if (!sovtCard?.id) {
+      setSovtError("Choose the SOVT lane first.");
+      return;
+    }
+    const res = await callAction<any>("sovt.complete", { event_key: sovtEventKey, card_id: Number(sovtCard.id), status });
+    if (!res?.ok) {
+      setSovtError(String(res?.error ?? "Failed to complete module"));
+      return;
+    }
+    setSovtCompletion(res);
   }
 
   async function submitSpanishAnswer() {
@@ -722,16 +893,17 @@ export function App() {
         ]);
       }
       queueSpanishAudio(speaks);
+
+      if (res.session_status === "completed" || res.brain?.await === "done") {
+        setSpanishMessages((prev) => [...prev, { role: "system", text: "Session completed.", timestamp: Date.now() }]);
+        resetSpanishSessionLocal();
+      }
     } finally {
       if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
     }
   }
 
-  async function endSpanishSession(status: "completed" | "abandoned") {
-    setSpanishError(null);
-    if (!spanishSessionId) return;
-    ++spanishRequestIdRef.current; // invalidate any in-flight requests
-    await callAction<any>("spanish.session.end", { session_id: spanishSessionId, status });
+  function resetSpanishSessionLocal() {
     setSpanishSessionId(null);
     setSpanishBrain(null);
     setSpanishSpeakResults([]);
@@ -740,6 +912,14 @@ export function App() {
     setSpanishLoading(false);
     setSpanishAudioQueue([]);
     setSpanishAudioNeedsGesture(false);
+  }
+
+  async function endSpanishSession(status: "completed" | "abandoned") {
+    setSpanishError(null);
+    if (!spanishSessionId) return;
+    ++spanishRequestIdRef.current; // invalidate any in-flight requests
+    await callAction<any>("spanish.session.end", { session_id: spanishSessionId, status });
+    resetSpanishSessionLocal();
   }
 
   async function uploadSpanishListenAttempt() {
@@ -782,6 +962,11 @@ export function App() {
         ]);
       }
       queueSpanishAudio(speaks);
+
+      if (data.session_status === "completed" || data.brain?.await === "done") {
+        setSpanishMessages((prev) => [...prev, { role: "system", text: "Session completed.", timestamp: Date.now() }]);
+        resetSpanishSessionLocal();
+      }
     } finally {
       if (spanishRequestIdRef.current === reqId) setSpanishLoading(false);
     }
@@ -857,6 +1042,58 @@ export function App() {
     }
   }
 
+  function formatMmSs(ms: number): string {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function parseSovtCmdSteps(prompt: string): SovtCmdStep[] {
+    const lines = String(prompt ?? "").split("\n");
+    const out: SovtCmdStep[] = [];
+    let lastTitle = "";
+    let cmdIdx = 0;
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+
+      // Capture the most recent EXERCISE header so CMD steps have a human label.
+      if (/^EXERCISE\s+\d+/i.test(line)) {
+        lastTitle = line;
+        continue;
+      }
+
+      const m = line.match(/^CMD:\s*(.+)\s*$/i);
+      if (!m) continue;
+      const rawCmd = m[1]?.trim() ?? "";
+      if (!rawCmd) continue;
+
+      // Tokenize the command (cards are authored without tricky quoting).
+      const tokens = rawCmd.split(/\s+/).filter(Boolean);
+      // Strip leading "./site-toggle" or ".../site-toggle"
+      const stPos = tokens.findIndex((t) => t.endsWith("site-toggle") || t.includes("site-toggle"));
+      const args = stPos >= 0 ? tokens.slice(stPos + 1) : tokens;
+      if (args.length === 0) continue;
+
+      cmdIdx += 1;
+      out.push({
+        idx: cmdIdx,
+        title: lastTitle || `CMD ${cmdIdx}`,
+        raw_cmd: rawCmd,
+        args,
+        status: "pending",
+        started_at_ms: null,
+        ended_at_ms: null,
+        result_json: null,
+        error: null,
+      });
+    }
+
+    return out;
+  }
+
   async function copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -907,6 +1144,7 @@ export function App() {
     const audio = audioRef.current;
     if (audio) {
       audio.onended = null;
+      audio.onerror = null;
       audio.pause();
       try {
         audio.currentTime = 0;
@@ -990,11 +1228,12 @@ export function App() {
           <ThemeToggle />
         </div>
 
-        <Tabs defaultValue="break" className="mt-4">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="break">Break</TabsTrigger>
             <TabsTrigger value="acting">Acting</TabsTrigger>
             <TabsTrigger value="spanish">Spanish</TabsTrigger>
+            <TabsTrigger value="sovt">SOVT</TabsTrigger>
             <TabsTrigger value="signals">Signals</TabsTrigger>
             <TabsTrigger value="status">Status</TabsTrigger>
           </TabsList>
@@ -1078,6 +1317,7 @@ export function App() {
                         className="h-9 w-[200px] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <option value="practice">practice</option>
+                        <option value="learn">learn (reveal after)</option>
                         <option value="read_through">read-through</option>
                         <option value="speed_through">speed-through</option>
                       </select>
@@ -1098,7 +1338,7 @@ export function App() {
                     </div>
 
                     <Button onClick={startSession} disabled={!selectedScriptId || wsState !== "open"}>
-                      Start session
+                      Start + Play
                     </Button>
                     <Button variant="secondary" onClick={playSession} disabled={!sessionId || sessionPlaying}>
                       Play
@@ -1163,7 +1403,7 @@ export function App() {
                     <div className="p-2 text-sm">
                       {visibleTimeline.length === 0 ? (
                         <div className="p-2 text-muted-foreground">
-                          Press <b>Start session</b>, then <b>Play</b>.
+                          Press <b>Start + Play</b>.
                         </div>
                       ) : (
                         visibleTimeline.map((t) => {
@@ -1357,7 +1597,7 @@ export function App() {
                                 <CardDescription>{l.prompt}</CardDescription>
                               </CardHeader>
                               <CardContent>
-                                <Button onClick={() => chooseBreakLane("same_need")}>Choose</Button>
+                                <Button onClick={() => chooseBreakLane("same_need")}>Choose need</Button>
                               </CardContent>
                             </Card>
                           );
@@ -1373,13 +1613,16 @@ export function App() {
                               </CardHeader>
                               <CardContent>
                                 <Button variant="destructive" onClick={() => chooseBreakLane("feed")}>
-                                  Choose
+                                  Unblock (feed)
                                 </Button>
                               </CardContent>
                             </Card>
                           );
                         }
                         const card = l.card;
+                        const laneType = String(l.type ?? "");
+                        const isSpanishLane = ["verb", "noun", "lesson", "fusion"].includes(laneType);
+                        const isSovtLane = laneType === "sovt";
                         return (
                           <Card key={`${breakMenu.event_key}-${l.type}-${card?.id ?? "x"}`}>
                             <CardHeader>
@@ -1391,7 +1634,23 @@ export function App() {
                             </CardHeader>
                             <CardContent className="space-y-3">
                               <div className="flex flex-wrap items-center gap-2">
-                                <Button onClick={() => chooseBreakLane(l.type)}>Choose</Button>
+                                <Button onClick={() => chooseBreakLane(l.type)}>
+                                  {isSpanishLane ? "Choose (Spanish)" : isSovtLane ? "Choose (SOVT)" : laneType === "acting" ? "Choose (acting)" : "Choose"}
+                                </Button>
+                                {isSpanishLane ? (
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => chooseBreakLaneAndStartSpanish(laneType as any)}
+                                    disabled={spanishLoading || Boolean(spanishSessionId)}
+                                  >
+                                    Choose + Start Spanish
+                                  </Button>
+                                ) : null}
+                                {isSovtLane ? (
+                                  <Button variant="secondary" onClick={chooseBreakLaneAndStartSovt}>
+                                    Choose + Start SOVT
+                                  </Button>
+                                ) : null}
                               </div>
 
                               {l.type === "acting" && Array.isArray(l.recent_scripts) && l.recent_scripts.length > 0 ? (
@@ -1422,20 +1681,36 @@ export function App() {
                                                 <div className="flex gap-2">
                                                   <Button
                                                     variant="outline"
+                                                    disabled={actingPickerLoadingId !== null}
                                                     onClick={async () => {
-                                                      setActingPickerOpen(false);
-                                                      await loadAndMaybeStart(Number(s.id), false);
+                                                      const id = Number(s.id);
+                                                      setActingPickerLoadingId(id);
+                                                      try {
+                                                        setActingPickerOpen(false);
+                                                        await loadAndMaybeStart(id, false);
+                                                        setActiveTab("acting");
+                                                      } finally {
+                                                        setActingPickerLoadingId(null);
+                                                      }
                                                     }}
                                                   >
-                                                    Load
+                                                    {actingPickerLoadingId !== null ? "Loading..." : "Load"}
                                                   </Button>
                                                   <Button
+                                                    disabled={actingPickerLoadingId !== null}
                                                     onClick={async () => {
-                                                      setActingPickerOpen(false);
-                                                      await loadAndMaybeStart(Number(s.id), true);
+                                                      const id = Number(s.id);
+                                                      setActingPickerLoadingId(id);
+                                                      try {
+                                                        setActingPickerOpen(false);
+                                                        await loadAndMaybeStart(id, true);
+                                                        setActiveTab("acting");
+                                                      } finally {
+                                                        setActingPickerLoadingId(null);
+                                                      }
                                                     }}
                                                   >
-                                                    Load + Start
+                                                    {actingPickerLoadingId !== null ? "Starting..." : "Load + Start"}
                                                   </Button>
                                                 </div>
                                               ) : null}
@@ -1629,10 +1904,16 @@ export function App() {
                       <div>
                         Say: <span className="font-mono">{spanishPendingListen.target_text}</span>
                       </div>
+                      {spanishRecording ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                          Recording: {formatMmSs(spanishRecordingElapsedMs)}
+                        </div>
+                      ) : null}
                       {!spanishRecording ? (
                         <Button onClick={startSpanishRecording} disabled={spanishLoading}>Record</Button>
                       ) : (
-                        <Button onClick={uploadSpanishListenAttempt}>Stop + Upload</Button>
+                        <Button onClick={uploadSpanishListenAttempt}>Stop + Upload ({formatMmSs(spanishRecordingElapsedMs)})</Button>
                       )}
                     </AlertDescription>
                   </Alert>
@@ -1782,15 +2063,139 @@ export function App() {
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-              </CardContent>
-            </Card>
-          </TabsContent>
+	              </CardContent>
+	            </Card>
+	          </TabsContent>
 
-          <TabsContent value="signals">
-            <Card>
-              <CardHeader>
-                <CardTitle>Signals</CardTitle>
-                <CardDescription>Most recent signals (debug).</CardDescription>
+	          <TabsContent value="sovt">
+	            <Card>
+	              <CardHeader>
+	                <CardTitle>SOVT / Pitch</CardTitle>
+	                <CardDescription>Run SOVT card scripts in the browser (server plays audio locally via `site-toggle play`).</CardDescription>
+	              </CardHeader>
+	              <CardContent className="space-y-4">
+	                <div className="flex flex-wrap items-center gap-2">
+	                  <Button variant="secondary" onClick={chooseBreakLaneAndStartSovt} disabled={!breakMenu}>
+	                    Load from Break menu (choose + start)
+	                  </Button>
+	                  <Button variant="outline" onClick={() => completeSovt("completed")} disabled={!breakMenu || !sovtCard?.id}>
+	                    Mark completed
+	                  </Button>
+	                  <Button variant="outline" onClick={() => completeSovt("abandoned")} disabled={!breakMenu || !sovtCard?.id}>
+	                    Mark abandoned
+	                  </Button>
+	                  <div className="text-sm text-muted-foreground">
+	                    card: <span className="font-mono">{sovtCard?.id ?? "(none)"}</span>
+	                  </div>
+	                </div>
+
+	                {sovtError ? (
+	                  <Alert variant="destructive">
+	                    <AlertTitle>Error</AlertTitle>
+	                    <AlertDescription>{sovtError}</AlertDescription>
+	                  </Alert>
+	                ) : null}
+
+	                {sovtCompletion ? (
+	                  <Alert>
+	                    <AlertTitle>Completion logged</AlertTitle>
+	                    <AlertDescription>
+	                      <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">
+	                        {JSON.stringify(sovtCompletion, null, 2)}
+	                      </pre>
+	                    </AlertDescription>
+	                  </Alert>
+	                ) : null}
+
+	                {sovtCard ? (
+	                  <div className="rounded-md border p-3">
+	                    <div className="text-sm font-medium">{String(sovtCard.activity ?? "SOVT")}</div>
+	                    <div className="text-xs text-muted-foreground">
+	                      {sovtCard.minutes ?? "?"} min • {sovtCard.doneCondition ?? sovtCard.done_condition ?? ""}
+	                    </div>
+	                  </div>
+	                ) : (
+	                  <div className="text-sm text-muted-foreground">
+	                    Choose the `sovt` lane in the Break tab (or click “Choose + Start SOVT” there).
+	                  </div>
+	                )}
+
+	                <div className="flex flex-wrap items-center gap-2">
+	                  <Button
+	                    onClick={() => {
+	                      const next = sovtSteps.find((s) => s.status === "pending" || s.status === "error") ?? null;
+	                      if (next) runSovtCmd(next.idx);
+	                    }}
+	                    disabled={sovtSteps.some((s) => s.status === "running") || sovtSteps.length === 0}
+	                  >
+	                    Run next CMD
+	                  </Button>
+	                  {sovtSteps.some((s) => s.status === "running") ? (
+	                    <span className="text-sm text-muted-foreground">
+	                      <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" /> Running…
+	                    </span>
+	                  ) : null}
+	                </div>
+
+	                {sovtSteps.length === 0 ? (
+	                  <div className="text-sm text-muted-foreground">No CMD steps parsed yet.</div>
+	                ) : (
+	                  <div className="grid gap-2">
+	                    {sovtSteps.map((s) => (
+	                      <div key={s.idx} className="rounded-md border p-2">
+	                        <div className="flex flex-wrap items-center justify-between gap-2">
+	                          <div>
+	                            <div className="text-sm font-medium">
+	                              {s.idx}. {s.title}
+	                            </div>
+	                            <div className="text-xs text-muted-foreground font-mono break-all">{s.raw_cmd}</div>
+	                            <div className="text-xs text-muted-foreground">
+	                              status: <b>{s.status}</b>
+	                              {s.started_at_ms ? ` • started ${formatMmSs(Date.now() - s.started_at_ms)} ago` : ""}
+	                            </div>
+	                          </div>
+	                          <div className="flex gap-2">
+	                            <Button
+	                              size="sm"
+	                              onClick={() => runSovtCmd(s.idx)}
+	                              disabled={s.status === "running" || sovtSteps.some((x) => x.status === "running")}
+	                            >
+	                              Run
+	                            </Button>
+	                          </div>
+	                        </div>
+	                        {s.error ? (
+	                          <div className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{s.error}</div>
+	                        ) : null}
+	                        {s.result_json ? (
+	                          <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">{s.result_json}</pre>
+	                        ) : null}
+	                      </div>
+	                    ))}
+	                  </div>
+	                )}
+
+	                {sovtCard?.prompt ? (
+	                  <Accordion type="single" collapsible>
+	                    <AccordionItem value="prompt">
+	                      <AccordionTrigger>Card prompt (debug)</AccordionTrigger>
+	                      <AccordionContent>
+	                        <ScrollArea className="h-[260px] rounded-md border">
+	                          <pre className="p-3 text-xs whitespace-pre-wrap">{String(sovtCard.prompt)}</pre>
+	                        </ScrollArea>
+	                      </AccordionContent>
+	                    </AccordionItem>
+	                  </Accordion>
+	                ) : null}
+	              </CardContent>
+	            </Card>
+	          </TabsContent>
+
+	          <TabsContent value="signals">
+	            <Card>
+	              <CardHeader>
+	                <CardTitle>Signals</CardTitle>
+	                <CardDescription>Most recent signals (debug).</CardDescription>
               </CardHeader>
               <CardContent>
                 {signals.length === 0 ? (
@@ -1818,616 +2223,4 @@ export function App() {
       </div>
     </div>
   );
-
-  /* Legacy UI (kept temporarily during shadcn migration)
-  return (
-    <div style={{ fontFamily: "system-ui, sans-serif", padding: 16, maxWidth: 1100, margin: "0 auto" }}>
-      <h1>Circuit Breaker UI</h1>
-
-      <section style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8, marginBottom: 16 }}>
-        <h2>Status</h2>
-        <div>Server: {status?.ok ? "ok" : "down"}</div>
-        <div>WS: {wsState}</div>
-        <pre style={{ background: "#fafafa", padding: 12, borderRadius: 8, overflowX: "auto" }}>
-          {JSON.stringify(status, null, 2)}
-        </pre>
-      </section>
-
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16 }}>
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
-          <h2>Scripts</h2>
-          {scripts.length === 0 ? (
-            <div>No scripts found.</div>
-          ) : (
-            <ul style={{ paddingLeft: 18 }}>
-              {scripts.map((s) => (
-                <li key={s.id} style={{ marginBottom: 8 }}>
-                  <button onClick={() => loadScript(s.id)} style={{ cursor: "pointer" }}>
-                    {s.id}: {s.title}
-                  </button>
-                  <div style={{ color: "#666", fontSize: 12 }}>
-                    {s.source_format} • {s.created_at}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
-          <h2>Run Lines</h2>
-          <div style={{ marginBottom: 8, color: "#666" }}>{selectedTitle ? `Loaded: ${selectedTitle}` : "Select a script."}</div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-            <label>
-              Me{" "}
-              <input value={me} onChange={(e) => setMe(e.target.value)} style={{ width: 180 }} />
-            </label>
-            <label>
-              Mode{" "}
-              <select value={mode} onChange={(e) => setMode(e.target.value as any)}>
-                <option value="practice">practice</option>
-                <option value="read_through">read-through</option>
-                <option value="speed_through">speed-through</option>
-              </select>
-            </label>
-            <label>
-              From{" "}
-              <input type="number" value={fromIdx} onChange={(e) => setFromIdx(Number(e.target.value))} style={{ width: 90 }} />
-            </label>
-            <label>
-              To{" "}
-              <input type="number" value={toIdx} onChange={(e) => setToIdx(Number(e.target.value))} style={{ width: 90 }} />
-            </label>
-            <button onClick={startSession} disabled={!selectedScriptId || wsState !== "open"} style={{ cursor: "pointer" }}>
-              Start session
-            </button>
-            <button onClick={playSession} disabled={!sessionId || sessionPlaying} style={{ cursor: "pointer" }}>
-              Play
-            </button>
-            <button
-              onClick={() => sessionId && wsSend({ type: "run_lines.stop", session_id: sessionId })}
-              disabled={!sessionId}
-              style={{ cursor: "pointer" }}
-            >
-              Stop
-            </button>
-            <button onClick={() => seekSession(fromIdx, toIdx)} disabled={!sessionId} style={{ cursor: "pointer" }}>
-              Restart range
-            </button>
-            <button onClick={() => replayLast(10)} disabled={!sessionId || currentIdx === null} style={{ cursor: "pointer" }}>
-              Replay last 10
-            </button>
-            {mode !== "speed_through" ? (
-              <>
-                <button
-                  onClick={() => {
-                    const next = Math.max(0.5, Number((speedMult / 1.15).toFixed(2)));
-                    setSpeedMult(next);
-                    sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
-                  }}
-                  disabled={!sessionId}
-                  style={{ cursor: "pointer" }}
-                >
-                  Slower
-                </button>
-                <button
-                  onClick={() => {
-                    const next = Math.min(3.0, Number((speedMult * 1.15).toFixed(2)));
-                    setSpeedMult(next);
-                    sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
-                  }}
-                  disabled={!sessionId}
-                  style={{ cursor: "pointer" }}
-                >
-                  Faster
-                </button>
-                <div style={{ color: "#666" }}>
-                  Speed: <code>{speedMult.toFixed(2)}×</code>
-                </div>
-              </>
-            ) : (
-              <div style={{ color: "#666" }}>
-                Speed: <code>1.30×</code>
-              </div>
-            )}
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <div>
-              Session: {sessionId ?? "(none)"} • {sessionPlaying ? "playing" : "ready"} • Current idx: {currentIdx ?? "(n/a)"}
-            </div>
-            <div style={{ marginTop: 10, border: "1px solid #eee", borderRadius: 8, padding: 10, background: "#fafafa" }}>
-              {visibleTimeline.length === 0 ? (
-                <div style={{ color: "#666" }}>
-                  Press <b>Start session</b>, then <b>Play</b>.
-                </div>
-              ) : (
-                visibleTimeline.map((t) => {
-                  const active = currentIdx === t.idx;
-                  const showText = t.revealed && t.text;
-                  if (t.kind === "direction") {
-                    return (
-                      <div key={t.key} style={{ padding: "4px 6px", borderRadius: 6, background: active ? "#fff2b2" : "transparent" }}>
-                        <span style={{ color: "#666", marginRight: 6 }}>{t.idx}</span>
-                        <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>[DIR] {t.text}</span>
-                      </div>
-                    );
-                  }
-                  if (t.kind === "pause") {
-                    return (
-                      <div key={t.key} style={{ padding: "4px 6px", borderRadius: 6, background: active ? "#fff2b2" : "transparent" }}>
-                        <span style={{ color: "#666", marginRight: 6 }}>{t.idx}</span>
-                        <b>{me}</b>: <span style={{ color: "#444" }}>(your turn)</span>{" "}
-                        {t.cue ? <span style={{ color: "#666" }}>cue: “{t.cue} …”</span> : null}
-                      </div>
-                    );
-                  }
-                  if (t.kind === "gap") {
-                    return (
-                      <div key={t.key} style={{ padding: "4px 6px", borderRadius: 6, background: active ? "#fff2b2" : "transparent" }}>
-                        <span style={{ color: "#666", marginRight: 6 }}>{t.idx}</span>
-                        <b>{t.speaker ?? "?"}</b>:{" "}
-                        {showText ? <span>{t.text}</span> : <span style={{ color: "#666" }}>(waiting…)</span>}
-                      </div>
-                    );
-                  }
-                  // line
-                  return (
-                    <div key={t.key} style={{ padding: "4px 6px", borderRadius: 6, background: active ? "#fff2b2" : "transparent" }}>
-                      <span style={{ color: "#666", marginRight: 6 }}>{t.idx}</span>
-                      <b>{t.speaker ?? "?"}</b>: {showText ? <span>{t.text}</span> : <span style={{ color: "#666" }}>(hidden)</span>}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            {audioNeedsGesture ? (
-              <div style={{ marginTop: 8, padding: 10, border: "1px solid #f0d68a", background: "#fff9e6", borderRadius: 8 }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>Audio needs a click to start</div>
-                <div style={{ color: "#444", marginBottom: 8 }}>
-                  Your browser blocked autoplay. Click “Enable audio” and it will continue from the current line.
-                </div>
-                <button
-                  onClick={() => {
-                    const audio = audioRef.current;
-                    if (!audio) return;
-                    audio
-                      .play()
-                      .then(() => setAudioNeedsGesture(false))
-                      .catch(() => {});
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  Enable audio
-                </button>
-              </div>
-            ) : null}
-            <audio ref={audioRef} controls style={{ width: "100%", marginTop: 8 }} />
-          </div>
-
-          <details style={{ marginTop: 16 }}>
-            <summary style={{ cursor: "pointer" }}>Advanced / Inspect script</summary>
-            <div style={{ marginTop: 10 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-                <label>
-                  <input type="checkbox" checked={readAll} onChange={(e) => setReadAll(e.target.checked)} /> Read all (debug)
-                </label>
-                <label>
-                  Pause mult{" "}
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={pauseMult}
-                    onChange={(e) => setPauseMult(Number(e.target.value))}
-                    style={{ width: 90 }}
-                  />
-                </label>
-                <label>
-                  Cue words{" "}
-                  <input type="number" value={cueWords} onChange={(e) => setCueWords(Number(e.target.value))} style={{ width: 70 }} />
-                </label>
-                <label>
-                  Seek idx{" "}
-                  <input type="number" value={seekIdx} onChange={(e) => setSeekIdx(Number(e.target.value))} style={{ width: 90 }} />
-                </label>
-                <button onClick={() => seekSession(seekIdx, toIdx)} disabled={!sessionId} style={{ cursor: "pointer" }}>
-                  Seek
-                </button>
-              </div>
-
-              <h3 style={{ marginTop: 16 }}>Characters</h3>
-              {characters.length === 0 ? (
-                <div style={{ color: "#666" }}>No characters loaded.</div>
-              ) : (
-                <ul style={{ paddingLeft: 18, columns: 2 }}>
-                  {characters.map((c) => (
-                    <li key={c.normalized_name}>
-                      {c.name} → <code>{c.voice}</code> <code>{c.rate}</code>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <h3 style={{ marginTop: 16 }}>Full lines (debug)</h3>
-              {lines.length === 0 ? (
-                <div style={{ color: "#666" }}>No lines loaded.</div>
-              ) : (
-                <div style={{ maxHeight: 260, overflow: "auto", border: "1px solid #eee", borderRadius: 8, padding: 8 }}>
-                  {lines.map((l) => (
-                    <div key={l.idx} style={{ padding: "4px 6px", borderRadius: 6, marginBottom: 2 }}>
-                      <span style={{ color: "#666", marginRight: 6 }}>{l.idx}</span>
-                      {l.type === "dialogue" ? (
-                        <span>
-                          <b>{l.speaker_normalized ?? "?"}</b>: {l.text}
-                        </span>
-                      ) : (
-                        <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
-                          [{l.type}] {l.text}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </details>
-        </div>
-      </section>
-
-      <section style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8, marginTop: 16 }}>
-        <h2>Break Menu</h2>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-          <label>
-            Site{" "}
-            <input value={breakSite} onChange={(e) => setBreakSite(e.target.value)} style={{ width: 160 }} />
-          </label>
-          <label>
-            Minutes{" "}
-            <input
-              type="number"
-              value={breakMinutes}
-              onChange={(e) => setBreakMinutes(Number(e.target.value))}
-              style={{ width: 90 }}
-            />
-          </label>
-          <label>
-            Context{" "}
-            <input value={breakContext} onChange={(e) => setBreakContext(e.target.value)} style={{ width: 140 }} />
-          </label>
-          <button onClick={loadBreakMenu} style={{ cursor: "pointer" }}>
-            Load break menu
-          </button>
-          <button onClick={() => unblockAllFromUi(breakMinutes)} style={{ cursor: "pointer" }}>
-            Unblock ALL ({breakMinutes} min)
-          </button>
-          <label style={{ color: "#444" }}>
-            <input
-              type="checkbox"
-              checked={autoStartActing}
-              onChange={(e) => setAutoStartActing(e.target.checked)}
-              style={{ marginRight: 6 }}
-            />
-            Auto-start acting session (only if 1 scene)
-          </label>
-        </div>
-
-        {breakMenu ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ color: "#666" }}>
-              event_key: <code>{breakMenu.event_key}</code>
-            </div>
-            <ol>
-              {breakMenu.lanes.map((l: any) => {
-                if (l.type === "same_need") {
-                  return (
-                    <li key={`${breakMenu.event_key}-${l.type}`}>
-                      <b>same_need</b>: {l.prompt}{" "}
-                      <button onClick={() => chooseBreakLane("same_need")} style={{ marginLeft: 8 }}>
-                        Choose
-                      </button>
-                    </li>
-                  );
-                }
-                if (l.type === "feed") {
-                  return (
-                    <li key={`${breakMenu.event_key}-${l.type}`}>
-                      <b>feed</b>: unblock {l.site} for {l.minutes} min{" "}
-                      <button onClick={() => chooseBreakLane("feed")} style={{ marginLeft: 8 }}>
-                        Choose
-                      </button>
-                      <div style={{ color: "#666", fontSize: 12 }}>
-                        (Requires passwordless sudo for `site-toggle` to edit `/etc/hosts`.)
-                      </div>
-                    </li>
-                  );
-                }
-                const card = l.card;
-                return (
-                  <li key={`${breakMenu.event_key}-${l.type}-${card?.id ?? "x"}`}>
-                    <b>{l.type}</b>: {card?.activity ?? "(missing card)"} ({card?.minutes ?? "?"} min) —{" "}
-                    {card?.doneCondition ?? card?.done_condition ?? ""}
-                    <button onClick={() => chooseBreakLane(l.type)} style={{ marginLeft: 8 }}>
-                      Choose
-                    </button>
-                    {l.type === "acting" && Array.isArray(l.recent_scripts) && l.recent_scripts.length > 0 ? (
-                      <div style={{ marginTop: 6, color: "#444" }}>
-                        <div style={{ fontWeight: 600 }}>Recent scenes</div>
-                        <ul style={{ marginTop: 4 }}>
-                          {l.recent_scripts.slice(0, 5).map((s: any) => {
-                            const isPickerActive = actingPickerOpen && Array.isArray(actingPickerScripts) && actingPickerScripts.some((p) => p?.id === s?.id);
-                            return (
-                              <li key={s.id} style={{ marginBottom: 6 }}>
-                                <span style={{ marginRight: 8 }}>
-                                  [{s.id}] {s.title} • {s.character_count} chars • {s.dialogue_lines} lines
-                                </span>
-                                {isPickerActive ? (
-                                  <>
-                                    <button
-                                      onClick={async () => {
-                                        setActingPickerOpen(false);
-                                        await loadAndMaybeStart(Number(s.id), false);
-                                      }}
-                                      style={{ cursor: "pointer", marginRight: 8 }}
-                                    >
-                                      Load
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        setActingPickerOpen(false);
-                                        await loadAndMaybeStart(Number(s.id), true);
-                                      }}
-                                      style={{ cursor: "pointer" }}
-                                    >
-                                      Load + Start session
-                                    </button>
-                                  </>
-                                ) : null}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        {actingPickerOpen && l.recent_scripts.length > 1 ? (
-                          <div style={{ marginTop: 8, padding: 10, border: "1px solid #e4e4e4", borderRadius: 8 }}>
-                            Multiple recent scenes found — pick one above (Load / Load + Start session).
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        ) : (
-          <div style={{ marginTop: 12, color: "#666" }}>No break menu loaded.</div>
-        )}
-
-        {breakChoice ? (
-          <div style={{ marginTop: 12 }}>
-            <h3>Choice result</h3>
-            {breakChoice?.ok && breakChoice?.card?.prompt ? (
-              <div style={{ marginBottom: 10, padding: 12, border: "1px solid #e4e4e4", borderRadius: 8, background: "#fafafa" }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Run this with an AI agent</div>
-                <div style={{ color: "#444", marginBottom: 10 }}>
-                  The web UI can run Spanish sessions now (see “Spanish (Codex brain)” below). If you prefer an external agent runner, use the
-                  prompt below.
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-                  <button
-                    onClick={() => copyToClipboard(String(breakChoice.card.prompt))}
-                    style={{ cursor: "pointer" }}
-                  >
-                    Copy prompt
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await copyToClipboard(String(breakChoice.card.prompt));
-                      await sendChoiceToAgent(breakChoice);
-                    }}
-                    style={{ cursor: "pointer" }}
-                  >
-                    Send to agent (and copy)
-                  </button>
-                </div>
-                <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{String(breakChoice.card.prompt)}</pre>
-              </div>
-            ) : null}
-            <pre style={{ background: "#fafafa", padding: 12, borderRadius: 8, overflowX: "auto" }}>
-              {JSON.stringify(breakChoice, null, 2)}
-            </pre>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8, marginTop: 16 }}>
-        <h2>Spanish (Codex brain)</h2>
-        <div style={{ color: "#444", marginBottom: 10 }}>
-          This runs Spanish sessions inside the web UI by spawning <code>codex exec</code> on the server and keeping the same Codex thread id
-          across turns.
-        </div>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          <button onClick={startSpanishSessionFromChoice} style={{ cursor: "pointer" }}>
-            Start Spanish Session (from last break choice)
-          </button>
-          <button onClick={() => endSpanishSession("completed")} disabled={!spanishSessionId} style={{ cursor: "pointer" }}>
-            End (completed)
-          </button>
-          <button onClick={() => endSpanishSession("abandoned")} disabled={!spanishSessionId} style={{ cursor: "pointer" }}>
-            End (abandoned)
-          </button>
-          <span style={{ color: "#666" }}>
-            session: <code>{spanishSessionId ?? "(none)"}</code>
-          </span>
-        </div>
-
-        {spanishError ? (
-          <div style={{ marginTop: 10, padding: 10, border: "1px solid #f2c2c2", background: "#fff4f4", borderRadius: 8 }}>
-            <b>Error:</b> {spanishError}
-          </div>
-        ) : null}
-
-        <div style={{ marginTop: 10, padding: 12, border: "1px solid #eee", borderRadius: 8, background: "#fafafa" }}>
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Tutor</div>
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{spanishBrain?.assistant_text ?? "Start a session to begin."}</pre>
-        </div>
-
-        {spanishSessionId && spanishBrain?.await === "user" ? (
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <input
-              value={spanishAnswer}
-              onChange={(e) => setSpanishAnswer(e.target.value)}
-              placeholder="Type your answer..."
-              style={{ flex: "1 1 420px", padding: 8 }}
-            />
-            <button onClick={submitSpanishAnswer} disabled={!spanishAnswer.trim()} style={{ cursor: "pointer" }}>
-              Submit
-            </button>
-          </div>
-        ) : null}
-
-        {spanishSpeakResults.length > 0 ? (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>Audio</div>
-            <ul style={{ paddingLeft: 18, marginTop: 6 }}>
-              {spanishSpeakResults.map((r) => (
-                <li key={`${r.id}-${r.audio_id}`} style={{ marginBottom: 6 }}>
-                  <code>{r.id}</code> → <code>{r.audio_id}</code> ({r.duration_sec.toFixed(2)}s){" "}
-                  <button onClick={() => playSpanishAudio(r.url)} style={{ marginLeft: 8, cursor: "pointer" }}>
-                    Play
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {spanishPendingListen ? (
-          <div style={{ marginTop: 12, padding: 12, border: "1px solid #f0d68a", background: "#fff9e6", borderRadius: 8 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>Pronunciation check</div>
-            <div style={{ marginBottom: 10 }}>
-              Say: <code>{spanishPendingListen.target_text}</code>
-            </div>
-
-            {!spanishRecording ? (
-              <button onClick={startSpanishRecording} style={{ cursor: "pointer" }}>
-                Record
-              </button>
-            ) : (
-              <button onClick={uploadSpanishListenAttempt} style={{ cursor: "pointer" }}>
-                Stop + Upload
-              </button>
-            )}
-          </div>
-        ) : null}
-
-        <audio ref={spanishAudioRef} controls style={{ width: "100%", marginTop: 8 }} />
-
-        <details style={{ marginTop: 14 }}>
-          <summary style={{ cursor: "pointer" }}>Transcript (debug)</summary>
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 10 }}>
-              <button onClick={refreshSpanishSessions} style={{ cursor: "pointer" }}>
-                Refresh sessions
-              </button>
-              <button
-                onClick={() => {
-                  if (spanishSessionId) loadSpanishTranscript(spanishSessionId);
-                }}
-                disabled={!spanishSessionId}
-                style={{ cursor: "pointer" }}
-              >
-                Load current session transcript
-              </button>
-              {spanishTranscriptSessionId ? (
-                <span style={{ color: "#666" }}>
-                  viewing: <code>{spanishTranscriptSessionId}</code>
-                </span>
-              ) : null}
-            </div>
-
-            {spanishTranscriptError ? (
-              <div style={{ marginBottom: 10, padding: 10, border: "1px solid #f2c2c2", background: "#fff4f4", borderRadius: 8 }}>
-                <b>Error:</b> {spanishTranscriptError}
-              </div>
-            ) : null}
-
-            {spanishSessions.length === 0 ? (
-              <div style={{ color: "#666", marginBottom: 10 }}>No sessions loaded yet.</div>
-            ) : (
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Recent sessions</div>
-                <ul style={{ paddingLeft: 18, marginTop: 0 }}>
-                  {spanishSessions.map((s) => (
-                    <li key={s.id} style={{ marginBottom: 6 }}>
-                      <code>{s.id}</code> — <b>{s.status}</b> {s.lane ? `(${s.lane})` : ""}{" "}
-                      <span style={{ color: "#666" }}>{new Date(s.updated_at).toLocaleString()}</span>{" "}
-                      <button onClick={() => loadSpanishTranscript(s.id)} style={{ marginLeft: 8, cursor: "pointer" }}>
-                        View transcript
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {spanishTranscriptTurns.length > 0 ? (
-              <div style={{ border: "1px solid #eee", borderRadius: 8, overflow: "hidden" }}>
-                <div style={{ background: "#fafafa", padding: 10, borderBottom: "1px solid #eee", fontWeight: 700 }}>
-                  Turns ({spanishTranscriptTurns.length})
-                </div>
-                <div style={{ maxHeight: 420, overflow: "auto", padding: 10 }}>
-                  {spanishTranscriptTurns.map((t) => {
-                    const jsonPretty = prettyJson(t.json);
-                    return (
-                      <div key={t.id} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #f0f0f0" }}>
-                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                          <span style={{ color: "#666" }}>#{t.idx}</span>
-                          <b>{t.role}</b>
-                          <span style={{ color: "#444" }}>{t.kind}</span>
-                          <span style={{ color: "#666" }}>{new Date(t.created_at).toLocaleString()}</span>
-                        </div>
-                        {t.content ? (
-                          <pre style={{ margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{t.content}</pre>
-                        ) : null}
-                        {jsonPretty ? (
-                          <pre style={{ margin: "6px 0 0", whiteSpace: "pre-wrap", color: "#444", background: "#fafafa", padding: 10, borderRadius: 8 }}>
-                            {jsonPretty}
-                          </pre>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div style={{ color: "#666" }}>No transcript loaded.</div>
-            )}
-          </div>
-        </details>
-      </section>
-
-      <section style={{ padding: 12, border: "1px solid #ddd", borderRadius: 8, marginTop: 16 }}>
-        <h2>Signals</h2>
-        {signals.length === 0 ? (
-          <div>No signals yet.</div>
-        ) : (
-          <ul style={{ paddingLeft: 18 }}>
-            {signals.slice().reverse().slice(0, 20).map((s) => (
-              <li key={s.id} style={{ marginBottom: 8 }}>
-                <div>
-                  <b>{s.name}</b> <span style={{ color: "#666" }}>{s.created_at}</span>
-                </div>
-                <pre style={{ background: "#fafafa", padding: 8, borderRadius: 8, overflowX: "auto" }}>
-                  {JSON.stringify(s.payload, null, 2)}
-                </pre>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
-  );
-  */
 }

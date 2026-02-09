@@ -1272,42 +1272,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.apoyar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "APOYAR (to support) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb APOYAR (to support/lean on). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.apreciar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "APRECIAR (to appreciate) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb APRECIAR (to appreciate/value). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.aprender.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "APRENDER (to learn) - Regular -ER verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb APRENDER (to learn). It's a regular -ER verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-er"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.apresurar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1329,30 +1293,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "stem-e-ie"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.aprobar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "APROBAR (to approve) - Stem-changing o→ue. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb APROBAR (to approve/pass an exam). Stem-changing o→ue: apruebo, apruebas, aprueba, aprobamos, aprobáis, aprueban. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "stem-o-ue"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.aprovechar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "APROVECHAR (to take advantage) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb APROVECHAR (to take advantage of/make use of). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
     "active": true
   },
   {
@@ -1446,30 +1386,6 @@
     "activity": "ARRASAR (to devastate) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb ARRASAR (to devastate/sweep). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.arrastrar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ARRASTRAR (to drag) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ARRASTRAR (to drag). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.arreglar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ARREGLAR (to fix/arrange) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ARREGLAR (to fix/arrange). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
@@ -1572,18 +1488,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.asegurar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ASEGURAR (to ensure/insure) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ASEGURAR (to ensure/insure). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.asentar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1644,30 +1548,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.asistir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ASISTIR (to attend) - Regular -IR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ASISTIR (to attend). It's a regular -IR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ir"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.asociar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ASOCIAR (to associate) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ASOCIAR (to associate). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.asomar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1704,36 +1584,12 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.asumir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ASUMIR (to assume) - Regular -IR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ASUMIR (to assume/take on). It's a regular -IR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ir"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.asustar.v1",
     "category": "learning",
     "minutes": 5,
     "activity": "ASUSTAR (to scare) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb ASUSTAR (to scare/frighten). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.atacar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ATACAR (to attack) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ATACAR (to attack). It's a regular -AR verb (note: c→qu before e in preterite: ataqué). Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
@@ -1764,18 +1620,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.atender.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ATENDER (to attend to) - Stem-changing e→ie. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ATENDER (to attend to/serve). Stem-changing e→ie: atiendo, atiendes, atiende, atendemos, atendéis, atienden. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "stem-e-ie"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.aterrizar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1797,18 +1641,6 @@
     "location": "any",
     "rarity": "uncommon",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.atraer.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ATRAER (to attract) - Irregular like traer. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ATRAER (to attract). Irregular like traer: present yo is atraigo, preterite has j-stem (atraje, atrajiste...). Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "irregular"],
     "active": true
   },
   {
@@ -1836,30 +1668,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.atravesar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ATRAVESAR (to cross) - Stem-changing e→ie. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ATRAVESAR (to cross/go through). Stem-changing e→ie: atravieso, atraviesas, atraviesa, atravesamos, atravesáis, atraviesan. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "stem-e-ie"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.atreverse.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "ATREVERSE (to dare) - Regular -ER verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb ATREVERSE (to dare). It's a regular -ER reflexive verb: me atrevo, te atreves, se atreve... Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-er", "reflexive"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.atribuir.v1",
     "category": "learning",
     "minutes": 5,
@@ -1878,18 +1686,6 @@
     "activity": "ATROPELLAR (to run over) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb ATROPELLAR (to run over/knock down). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.aumentar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "AUMENTAR (to increase) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb AUMENTAR (to increase). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
@@ -1920,30 +1716,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.avanzar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "AVANZAR (to advance) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb AVANZAR (to advance). It's a regular -AR verb (note: z→c before e in preterite: avancé). Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.averiguar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "AVERIGUAR (to find out) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb AVERIGUAR (to find out). It's a regular -AR verb (note: gu→gü before e: averigüé). Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.avisar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1962,30 +1734,6 @@
     "activity": "AYUNAR (to fast) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb AYUNAR (to fast). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.bailar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "BAILAR (to dance) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb BAILAR (to dance). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.bajar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "BAJAR (to go down) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb BAJAR (to go down/lower). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
@@ -2052,18 +1800,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.bastar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "BASTAR (to be enough) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb BASTAR (to be enough/suffice). It's a regular -AR verb. Often used impersonally: basta (it's enough). Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.batir.v1",
     "category": "learning",
     "minutes": 5,
@@ -2085,18 +1821,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.beber.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "BEBER (to drink) - Regular -ER verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb BEBER (to drink). It's a regular -ER verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-er"],
     "active": true
   },
   {
@@ -2202,18 +1926,6 @@
     "activity": "BOTAR (to bounce/throw away) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb BOTAR (to bounce/throw away). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.brillar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "BRILLAR (to shine) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb BRILLAR (to shine). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],

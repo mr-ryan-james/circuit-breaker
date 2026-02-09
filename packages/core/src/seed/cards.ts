@@ -17,6 +17,73 @@ export interface CardSeedDefinition {
   active?: boolean;
 }
 
+function loadRawCardsFromFile(filePath: string): unknown[] {
+  const ext = path.extname(filePath).toLowerCase();
+
+  if (ext === ".json") {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const json = JSON.parse(raw) as unknown;
+    return Array.isArray(json) ? json : [json];
+  }
+
+  if (ext === ".csv" || ext === ".tsv") {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const delimiter = ext === ".csv" ? "," : "\t";
+    const table = parseDelimitedWithHeader(raw, delimiter);
+
+    const headerIndex = new Map<string, number>();
+    for (let i = 0; i < table.headers.length; i += 1) {
+      headerIndex.set(table.headers[i]!.trim().toLowerCase(), i);
+    }
+
+    const cell = (row: string[], key: string): string | undefined => {
+      const idx = headerIndex.get(key.toLowerCase());
+      if (idx === undefined) return undefined;
+      return row[idx];
+    };
+
+    const cardsFromCsv: unknown[] = [];
+    for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+      const row = table.rows[rowIndex]!;
+      const key = (cell(row, "key") ?? "").trim();
+      if (!key) continue;
+
+      const category = (cell(row, "category") ?? "").trim();
+      const minutesRaw = (cell(row, "minutes") ?? "").trim();
+      const minutes = Number(minutesRaw);
+      if (!Number.isFinite(minutes)) {
+        throw new Error(`Invalid minutes for ${key} (row ${rowIndex + 2}): ${minutesRaw}`);
+      }
+      const activity = (cell(row, "activity") ?? "").trim();
+      const doneCondition =
+        (cell(row, "done_condition") ?? cell(row, "done") ?? cell(row, "doneCondition") ?? cell(row, "donecondition") ?? "").trim();
+      const prompt = (cell(row, "prompt") ?? "").trim();
+      const location = (cell(row, "location") ?? "").trim();
+      const rarity = (cell(row, "rarity") ?? "").trim();
+      const tags = parseTagsCell(cell(row, "tags") ?? cell(row, "tags_json"));
+
+      const active = parseActiveCell(cell(row, "active"));
+
+      cardsFromCsv.push({
+        key,
+        category,
+        minutes,
+        activity,
+        done_condition: doneCondition,
+        prompt: prompt.length > 0 ? prompt : undefined,
+        location,
+        rarity,
+        tags,
+        active,
+      });
+    }
+
+    return cardsFromCsv;
+  }
+
+  throw new Error(`Unsupported cards file type: ${ext || "(no extension)"} (expected .json/.csv/.tsv)`);
+}
+
 function parseTagsCell(raw: string | undefined): string[] {
   const v = (raw ?? "").trim();
   if (v.length === 0) return [];
@@ -84,69 +151,7 @@ function normalizeCardSeed(input: unknown): CardSeedDefinition {
 }
 
 export function seedCardsFromFile(db: SqliteDb, filePath: string): { inserted: number; updated: number } {
-  const ext = path.extname(filePath).toLowerCase();
-
-  let cards: unknown[];
-  if (ext === ".json") {
-    const raw = fs.readFileSync(filePath, "utf8");
-    const json = JSON.parse(raw) as unknown;
-    cards = Array.isArray(json) ? json : [json];
-  } else if (ext === ".csv" || ext === ".tsv") {
-    const raw = fs.readFileSync(filePath, "utf8");
-    const delimiter = ext === ".csv" ? "," : "\t";
-    const table = parseDelimitedWithHeader(raw, delimiter);
-
-    const headerIndex = new Map<string, number>();
-    for (let i = 0; i < table.headers.length; i += 1) {
-      headerIndex.set(table.headers[i]!.trim().toLowerCase(), i);
-    }
-
-    const cell = (row: string[], key: string): string | undefined => {
-      const idx = headerIndex.get(key.toLowerCase());
-      if (idx === undefined) return undefined;
-      return row[idx];
-    };
-
-    const cardsFromCsv: unknown[] = [];
-    for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-      const row = table.rows[rowIndex]!;
-      const key = (cell(row, "key") ?? "").trim();
-      if (!key) continue;
-
-      const category = (cell(row, "category") ?? "").trim();
-      const minutesRaw = (cell(row, "minutes") ?? "").trim();
-      const minutes = Number(minutesRaw);
-      if (!Number.isFinite(minutes)) {
-        throw new Error(`Invalid minutes for ${key} (row ${rowIndex + 2}): ${minutesRaw}`);
-      }
-      const activity = (cell(row, "activity") ?? "").trim();
-      const doneCondition =
-        (cell(row, "done_condition") ?? cell(row, "done") ?? cell(row, "doneCondition") ?? cell(row, "donecondition") ?? "").trim();
-      const prompt = (cell(row, "prompt") ?? "").trim();
-      const location = (cell(row, "location") ?? "").trim();
-      const rarity = (cell(row, "rarity") ?? "").trim();
-      const tags = parseTagsCell(cell(row, "tags") ?? cell(row, "tags_json"));
-
-      const active = parseActiveCell(cell(row, "active"));
-
-      cardsFromCsv.push({
-        key,
-        category,
-        minutes,
-        activity,
-        done_condition: doneCondition,
-        prompt: prompt.length > 0 ? prompt : undefined,
-        location,
-        rarity,
-        tags,
-        active,
-      });
-    }
-
-    cards = cardsFromCsv;
-  } else {
-    throw new Error(`Unsupported cards file type: ${ext || "(no extension)"} (expected .json/.csv/.tsv)`);
-  }
+  const cards = loadRawCardsFromFile(filePath);
 
   const upsert = db.prepare(
     `INSERT INTO cards (key, category, minutes, activity, done_condition, prompt, location, rarity, tags_json, active)
@@ -190,12 +195,35 @@ export function seedCardsFromFile(db: SqliteDb, filePath: string): { inserted: n
   return { inserted, updated };
 }
 
-export function seedCardsFromDir(db: SqliteDb, dirPath: string): { files: number; inserted: number; updated: number } {
+export function seedCardsFromDir(db: SqliteDb, dirPath: string): {
+  files: number;
+  inserted: number;
+  updated: number;
+  duplicate_keys: Array<{ key: string; files: string[] }>;
+} {
   const files = fs
     .readdirSync(dirPath, { withFileTypes: true })
     .filter((d) => d.isFile() && (d.name.endsWith(".json") || d.name.endsWith(".csv") || d.name.endsWith(".tsv")))
     .map((d) => path.join(dirPath, d.name))
     .sort();
+
+  // Pre-scan for duplicate keys across files. We still seed (upsert) so the system works,
+  // but duplicates are almost always accidental and should be cleaned up.
+  const keyToFiles = new Map<string, Set<string>>();
+  for (const file of files) {
+    const rawCards = loadRawCardsFromFile(file);
+    for (const c of rawCards) {
+      const def = normalizeCardSeed(c);
+      const set = keyToFiles.get(def.key) ?? new Set<string>();
+      set.add(path.basename(file));
+      keyToFiles.set(def.key, set);
+    }
+  }
+
+  const duplicate_keys = Array.from(keyToFiles.entries())
+    .filter(([, set]) => set.size > 1)
+    .map(([key, set]) => ({ key, files: Array.from(set).sort() }))
+    .sort((a, b) => a.key.localeCompare(b.key));
 
   let inserted = 0;
   let updated = 0;
@@ -205,5 +233,5 @@ export function seedCardsFromDir(db: SqliteDb, dirPath: string): { files: number
     updated += res.updated;
   }
 
-  return { files: files.length, inserted, updated };
+  return { files: files.length, inserted, updated, duplicate_keys };
 }

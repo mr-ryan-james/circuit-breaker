@@ -51,8 +51,17 @@ type WsClient = {
   close: () => void;
 };
 
+// Bun's websocket `ws.data` is typed as `unknown` by default. We keep a stable
+// per-connection id in a WeakMap so we can clean up in-memory sessions on close.
+const wsIds = new WeakMap<any, string>();
+
 type RunLinesSession = {
   id: string;
+  owner_ws_id: string;
+  created_at_ms: number;
+  last_activity_ms: number;
+  play_started_ms: number | null;
+  last_emitted_idx: number | null;
   script_id: number;
   from: number;
   to: number;
@@ -167,6 +176,30 @@ function runSiteToggleWithSudo(args: string[]): { ok: true; result: any } | { ok
   }
 }
 
+async function runSiteToggle(args: string[]): Promise<{ ok: true; result: any } | { ok: false; error: string; details?: any }> {
+  const st = siteTogglePath();
+  const proc = Bun.spawn([st, ...args], { cwd: repoRootFromHere(), stdout: "pipe", stderr: "pipe" });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text().catch(() => ""),
+    new Response(proc.stderr).text().catch(() => ""),
+    proc.exited,
+  ]);
+
+  if (exitCode !== 0) {
+    return {
+      ok: false,
+      error: "site_toggle_failed",
+      details: { exit_code: exitCode, stdout: stdout.slice(0, 2000), stderr: stderr.slice(0, 2000) },
+    };
+  }
+
+  try {
+    return { ok: true, result: JSON.parse(stdout) };
+  } catch {
+    return { ok: false, error: "site_toggle_bad_json", details: { stdout: stdout.slice(0, 2000), stderr: stderr.slice(0, 2000) } };
+  }
+}
+
 function normalizeMeName(raw: string): string {
   return raw
     .trim()
@@ -186,11 +219,39 @@ const ActionEnvelopeV1 = z.object({
 // imported from ./spanishBrainOutput.js
 
 function safeJsonParse(input: string): any | null {
-  try {
-    return JSON.parse(input);
-  } catch {
-    return null;
+  const raw = String(input ?? "").trim();
+  if (!raw) return null;
+
+  const tryParse = (s: string): any | null => {
+    try {
+      return JSON.parse(s);
+    } catch {
+      return null;
+    }
+  };
+
+  // Fast path: already-valid JSON.
+  const direct = tryParse(raw);
+  if (direct !== null) return direct;
+
+  // Common failure mode: model wraps the object in markdown code fences.
+  const fence = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fence && fence[1]) {
+    const inner = fence[1].trim();
+    const parsed = tryParse(inner);
+    if (parsed !== null) return parsed;
   }
+
+  // Last resort: parse the substring between the first '{' and last '}'.
+  const first = raw.indexOf("{");
+  const last = raw.lastIndexOf("}");
+  if (first >= 0 && last > first) {
+    const slice = raw.slice(first, last + 1);
+    const parsed = tryParse(slice);
+    if (parsed !== null) return parsed;
+  }
+
+  return null;
 }
 
 function normalizeBrainName(input: unknown): BrainName {
@@ -198,7 +259,49 @@ function normalizeBrainName(input: unknown): BrainName {
 }
 
 /** System prompt shared across both Codex and Claude brain runners. */
-function spanishSystemPrompt(): string {
+function spanishSystemPrompt(lane: string | null | undefined): string {
+  const laneLabel = lane ? lane.trim() : "";
+  const laneGuidance = (() => {
+    if (laneLabel === "verb") {
+      return [
+        "Lane-specific guidance (verb):",
+        "- Run a conjugation drill. One tense at a time (presente -> indefinido -> imperfecto).",
+        "- Ask for all 6 persons each tense (yo, tú, él/ella, nosotros, vosotros, ellos/ellas).",
+        "- Use Castilian Spanish with vosotros.",
+        "- If you track progress, use phase like: 'presente' | 'indefinido' | 'imperfecto' | 'review18'.",
+      ].join("\n");
+    }
+    if (laneLabel === "noun") {
+      return [
+        "Lane-specific guidance (noun):",
+        "- Run a vocabulary drill focused on article/gender, plural, and short example sentences.",
+        "- Use Castilian Spanish with vosotros.",
+        "- If you track progress, use phase like: 'article' | 'plural' | 'sentences'.",
+      ].join("\n");
+    }
+    if (laneLabel === "lesson") {
+      return [
+        "Lane-specific guidance (lesson):",
+        "- Follow the card prompt's phases. Keep explanations concise and interactive.",
+        "- If the prompt is a structured lesson: teach -> examples -> quiz.",
+        "- During a quiz, include score {correct,total} and question_number (1-indexed).",
+        "- Use phase like: 'teach' | 'examples' | 'quiz'.",
+      ].join("\n");
+    }
+    if (laneLabel === "fusion") {
+      return [
+        "Lane-specific guidance (fusion):",
+        "- Ask 7 quick questions that combine today's verb + noun + B1/B2 concept from the card prompt.",
+        "- Track score {correct,total} and question_number (1..7) as you go.",
+        "- Use phase like: 'fusion'.",
+      ].join("\n");
+    }
+    return [
+      "Lane-specific guidance:",
+      "- Lane not specified. Follow CARD_PROMPT and keep it interactive (one question at a time).",
+    ].join("\n");
+  })();
+
   return [
     "You are a Spanish tutor running inside a local web UI. Be concise and interactive.",
     "",
@@ -208,6 +311,10 @@ function spanishSystemPrompt(): string {
       {
         v: 1,
         assistant_text: "string",
+        // Optional progress fields (include when useful, especially during scored quizzes).
+        score: { correct: 3, total: 15 },
+        phase: "quiz",
+        question_number: 3,
         tool_requests: [
           {
             id: "t1",
@@ -228,6 +335,9 @@ function spanishSystemPrompt(): string {
     "- Only request tools 'speak' and 'listen'.",
     "- When you request 'listen', set await='listen_result' and include target_text for the user to pronounce.",
     "- When you need a typed answer, set await='user'.",
+    "",
+    `Lane: ${laneLabel || "(unknown)"}`,
+    laneGuidance,
     "",
     "Start by asking the first question based on CARD_PROMPT.",
   ].join("\n");
@@ -307,6 +417,52 @@ export async function main(): Promise<void> {
   const sessions = new Map<string, RunLinesSession>();
   const spanishBusy = new Set<string>();
 
+  const RUN_LINES_SESSION_TTL_MS = 30 * 60 * 1000;
+
+  function recordRunLinesPracticeEvent(session: RunLinesSession, outcome: "completed" | "stopped" | "disconnected" | "expired"): void {
+    // This is best-effort: practice history is nice-to-have and should never crash the server.
+    try {
+      const now = Date.now();
+      const started = session.play_started_ms ?? session.created_at_ms;
+      const durationMs = Math.max(0, now - started);
+      const loopsCompleted = outcome === "completed" ? 1 : 0;
+      const lastIdx = session.last_emitted_idx ?? session.from;
+
+      const { db } = openActingDb();
+      try {
+        db.prepare(
+          `INSERT INTO script_practice_events
+             (script_id, me_normalized, mode, read_all, from_idx, to_idx, loops_completed, last_idx, duration_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).run(
+          session.script_id,
+          session.me_norm,
+          session.mode,
+          session.read_all ? 1 : 0,
+          session.from,
+          session.to,
+          loopsCompleted,
+          lastIdx,
+          durationMs,
+        );
+      } finally {
+        db.close();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Cleanup sweep for abandoned WS run-lines sessions (browser refresh, laptop sleep, etc.).
+  setInterval(() => {
+    const now = Date.now();
+    for (const [id, s] of sessions) {
+      if (now - s.last_activity_ms <= RUN_LINES_SESSION_TTL_MS) continue;
+      sessions.delete(id);
+      recordRunLinesPracticeEvent(s, "expired");
+    }
+  }, 60_000);
+
   function wsBroadcast(msg: any): void {
     const data = JSON.stringify(msg);
     for (const ws of wsClients) {
@@ -327,7 +483,7 @@ export async function main(): Promise<void> {
     sessionId: string,
     run: BrainResult,
   ): Promise<
-    | { ok: true; brain: SpanishBrainOutput; speakResults: any[]; pendingListen: any | null }
+    | { ok: true; brain: SpanishBrainOutput; speakResults: any[]; pendingListen: any | null; session_status: "open" | "completed" }
     | { ok: false; error: string; raw?: string }
   > {
     const raw = String(run.last_agent_message ?? "").trim();
@@ -361,16 +517,40 @@ export async function main(): Promise<void> {
       if (tr.tool === "speak") {
         const spoken = sanitizeTtsText(tr.args.text);
         if (!spoken) continue;
-        const tts = await renderTts({
-          text: spoken,
-          voice: tr.args.voice,
-          rate: tr.args.rate,
-          sanitizerVersion: TTS_SANITIZER_VERSION,
-        });
-        const result = { id: tr.id, tool: "speak", audio_id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec };
-        speakResults.push(result);
-        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "tool", kind: "tool_result", json: result });
-        wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_result", tool: "speak", result });
+        try {
+          const tts = await renderTts({
+            text: spoken,
+            voice: tr.args.voice,
+            rate: tr.args.rate,
+            sanitizerVersion: TTS_SANITIZER_VERSION,
+          });
+          const result = {
+            id: tr.id,
+            tool: "speak",
+            audio_id: tts.audio_id,
+            url: `/api/audio/${tts.audio_id}`,
+            duration_sec: tts.duration_sec,
+          };
+          speakResults.push(result);
+          insertSpanishTurn(db, {
+            session_id: sessionId,
+            idx: nextSpanishTurnIdx(db, sessionId),
+            role: "tool",
+            kind: "tool_result",
+            json: result,
+          });
+          wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_result", tool: "speak", result });
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          insertSpanishTurn(db, {
+            session_id: sessionId,
+            idx: nextSpanishTurnIdx(db, sessionId),
+            role: "system",
+            kind: "error",
+            content: `speak failed: ${msg}`.slice(0, 4000),
+          });
+          wsBroadcast({ type: "spanish.tool", session_id: sessionId, event: "tool_error", tool: "speak", error: msg });
+        }
       }
       if (tr.tool === "listen") {
         pendingListen = { id: tr.id, tool: "listen", target_text: tr.args.target_text };
@@ -379,7 +559,24 @@ export async function main(): Promise<void> {
       }
     }
 
-    return { ok: true, brain, speakResults, pendingListen };
+    // If the brain indicates it's done, auto-close the session as "completed".
+    // UI clients treat this as a terminal state and should clear local input state.
+    let sessionStatus: "open" | "completed" = "open";
+    if (brain.await === "done") {
+      sessionStatus = "completed";
+      updateSpanishSession(db, sessionId, { status: "completed", pending_tool_json: null });
+      insertSpanishTurn(db, {
+        session_id: sessionId,
+        idx: nextSpanishTurnIdx(db, sessionId),
+        role: "system",
+        kind: "session_end",
+        content: null,
+        json: { status: "completed", auto: true },
+      });
+      wsBroadcast({ type: "spanish.session", event: "ended", session_id: sessionId, status: "completed" });
+    }
+
+    return { ok: true, brain, speakResults, pendingListen, session_status: sessionStatus };
   }
 
   const actionHandlers: Record<
@@ -693,7 +890,7 @@ export async function main(): Promise<void> {
 
           wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
 
-          const system = spanishSystemPrompt();
+          const system = spanishSystemPrompt(payload.lane ?? null);
           const userPrompt = `CARD_PROMPT:\n${payload.card_prompt}\n`;
           const promptForLog = `${system}\n\n${userPrompt}`;
           insertSpanishTurn(db, {
@@ -746,6 +943,7 @@ export async function main(): Promise<void> {
             brain: processed.brain,
             speak_results: processed.speakResults,
             pending_listen: processed.pendingListen,
+            session_status: processed.session_status,
           };
         } finally {
           db.close();
@@ -808,7 +1006,13 @@ export async function main(): Promise<void> {
           const processed = await processBrainResponse(db, payload.session_id, run);
           if (!processed.ok) return { ok: false, error: processed.error, raw: processed.raw };
 
-          return { ok: true, brain: processed.brain, speak_results: processed.speakResults, pending_listen: processed.pendingListen };
+          return {
+            ok: true,
+            brain: processed.brain,
+            speak_results: processed.speakResults,
+            pending_listen: processed.pendingListen,
+            session_status: processed.session_status,
+          };
         } finally {
           db.close();
           spanishBusy.delete(payload.session_id);
@@ -892,17 +1096,66 @@ export async function main(): Promise<void> {
         return res.result;
       },
     },
+    "sovt.play": {
+      description: "Run a `site-toggle play ... --json` command (non-sudo). Used by the browser SOVT runner.",
+      schema: z.object({ args: z.array(z.string().min(1)).min(1).max(64) }),
+      async handler(payload) {
+        const args = payload.args.map(String);
+        if (args[0] !== "play") return { ok: false, error: "only_play_supported" };
+        const finalArgs = args.includes("--json") ? args : [...args, "--json"];
+        const res = await runSiteToggle(finalArgs);
+        if (!res.ok) return { ok: false, error: res.error, details: res.details };
+        return res.result;
+      },
+    },
+    "sovt.complete": {
+      description: "Mark a chosen SOVT card as completed/partial/abandoned (module tracking).",
+      schema: z.object({
+        event_key: z.string().min(1),
+        card_id: z.number().int().positive(),
+        status: z.enum(["completed", "partial", "abandoned"]),
+        parts: z.array(z.string()).optional(),
+        note: z.string().optional(),
+      }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          insertEvent(db, {
+            type: "practice_completed",
+            eventKey: payload.event_key,
+            cardId: payload.card_id,
+            metaJson: JSON.stringify({
+              module_slug: "sovt",
+              status: payload.status,
+              parts: payload.parts ?? [],
+              note: payload.note ?? null,
+            }),
+          });
+          return {
+            ok: true,
+            module: { slug: "sovt", name: "SOVT / Pitch" },
+            action: "complete",
+            session: { event_key: payload.event_key, card_id: payload.card_id, status: payload.status },
+          };
+        } finally {
+          db.close();
+        }
+      },
+    },
   };
 
   const app = new Hono();
   let runtimePort = 0;
 
   app.get("/api/status", (c) => {
+    // Token is required for /api/action and /ws, but we avoid returning it in the JSON body
+    // so it doesn't end up in debug prints / logs by accident.
+    c.header("x-cb-token", token);
+    c.header("cache-control", "no-store");
     return c.json({
       ok: true,
       pid: process.pid,
       started_at: startedAt,
-      token,
       port: runtimePort,
       ui_url: runtimePort ? `http://127.0.0.1:${runtimePort}/` : null,
       ws_url: runtimePort ? `ws://127.0.0.1:${runtimePort}/ws` : null,
@@ -1022,7 +1275,15 @@ export async function main(): Promise<void> {
       const processed = await processBrainResponse(db, sessionId, run);
       if (!processed.ok) return c.json({ ok: false, error: processed.error, raw: processed.raw }, 500);
 
-      return c.json({ ok: true, upload_id: uploadId, analysis, brain: processed.brain, speak_results: processed.speakResults, pending_listen: processed.pendingListen });
+      return c.json({
+        ok: true,
+        upload_id: uploadId,
+        analysis,
+        brain: processed.brain,
+        speak_results: processed.speakResults,
+        pending_listen: processed.pendingListen,
+        session_status: processed.session_status,
+      });
     } finally {
       db.close();
       spanishBusy.delete(sessionId);
@@ -1067,17 +1328,31 @@ export async function main(): Promise<void> {
   }
 
   let server: ReturnType<typeof Bun.serve>;
-  server = Bun.serve({
-    hostname: "127.0.0.1",
-    port: desiredPort ?? 33291,
-    websocket: {
-      open(ws) {
-        wsClients.add(ws);
-        ws.send(JSON.stringify({ type: "server.state", now: new Date().toISOString() }));
-        ws.send(JSON.stringify({ type: "agent.signals.snapshot", signals }));
-      },
-      close(ws) {
-        wsClients.delete(ws);
+	  server = Bun.serve({
+	    hostname: "127.0.0.1",
+	    port: desiredPort ?? 33291,
+	      websocket: {
+	      open(ws) {
+	        // Assign a stable ID for cleanup of per-WS run-lines sessions.
+	        wsIds.set(ws, makeId("ws"));
+
+	        wsClients.add(ws);
+	        ws.send(JSON.stringify({ type: "server.state", now: new Date().toISOString() }));
+	        ws.send(JSON.stringify({ type: "agent.signals.snapshot", signals }));
+	      },
+	      close(ws) {
+	        wsClients.delete(ws);
+
+	        const wsId = wsIds.get(ws) ?? null;
+	        wsIds.delete(ws);
+	        if (!wsId) return;
+
+	        // Cleanup any in-memory run-lines sessions owned by this connection.
+	        for (const [id, s] of sessions) {
+	          if (s.owner_ws_id !== wsId) continue;
+	          sessions.delete(id);
+          recordRunLinesPracticeEvent(s, "disconnected");
+        }
       },
       async message(ws, message) {
         const text = typeof message === "string" ? message : new TextDecoder().decode(message);
@@ -1093,13 +1368,15 @@ export async function main(): Promise<void> {
           const scriptId = Number(msg.script_id);
           const from = Number(msg.from ?? 0);
           const to = Number(msg.to ?? 1_000_000);
-          const me = typeof msg.me === "string" ? msg.me : "";
-          const meNorm = normalizeMeName(me);
+	          const me = typeof msg.me === "string" ? msg.me : "";
+	          const meNorm = normalizeMeName(me);
+	          const nowMs = Date.now();
+	          const wsId = wsIds.get(ws) ?? "ws_unknown";
 
-          const { db } = openActingDb();
-          const lines = db
-            .prepare(
-              `SELECT idx, type, speaker_normalized, text
+	          const { db } = openActingDb();
+	          const lines = db
+	            .prepare(
+	              `SELECT idx, type, speaker_normalized, text
                FROM script_lines
                WHERE script_id = ? AND idx BETWEEN ? AND ?
                ORDER BY idx`,
@@ -1118,12 +1395,22 @@ export async function main(): Promise<void> {
               : rawMode === "boss"
                 ? "speed_through"
                 : rawMode === "learn"
-                  ? "read_through"
+                  ? "practice"
                   : "practice";
 
           const speedFromMode = parsedMode === "speed_through" ? 1.3 : 1.0;
+          const revealAfter =
+            typeof msg.reveal_after === "boolean"
+              ? msg.reveal_after
+              : // Back-compat: older UI clients didn't send reveal_after; previous behavior always revealed.
+                rawMode === "practice" || rawMode === "learn";
           const session: RunLinesSession = {
             id: sessionId,
+            owner_ws_id: wsId,
+            created_at_ms: nowMs,
+            last_activity_ms: nowMs,
+            play_started_ms: null,
+            last_emitted_idx: null,
             script_id: scriptId,
             from,
             to,
@@ -1134,7 +1421,7 @@ export async function main(): Promise<void> {
             pause_min_sec: Number(msg.pause_min_sec ?? 1.0),
             pause_max_sec: Number(msg.pause_max_sec ?? 12.0),
             cue_words: Number(msg.cue_words ?? 0),
-            reveal_after: Boolean(msg.reveal_after),
+            reveal_after: revealAfter,
             speed_mult: Number(msg.speed_mult ?? speedFromMode),
             playing: false,
             pending_self_line: null,
@@ -1156,7 +1443,13 @@ export async function main(): Promise<void> {
           const session = sessions.get(sessionId);
           if (!session) return;
           session.playing = true;
-          await emitNextRunLineEvent(ws, session);
+          session.last_activity_ms = Date.now();
+          if (session.play_started_ms === null) session.play_started_ms = Date.now();
+          const res = await emitNextRunLineEvent(ws, session);
+          if (res.ended) {
+            sessions.delete(sessionId);
+            recordRunLinesPracticeEvent(session, "completed");
+          }
           return;
         }
 
@@ -1165,7 +1458,12 @@ export async function main(): Promise<void> {
           const session = sessions.get(sessionId);
           if (!session) return;
           if (!session.playing) return;
-          await emitNextRunLineEvent(ws, session);
+          session.last_activity_ms = Date.now();
+          const res = await emitNextRunLineEvent(ws, session);
+          if (res.ended) {
+            sessions.delete(sessionId);
+            recordRunLinesPracticeEvent(session, "completed");
+          }
           return;
         }
 
@@ -1174,6 +1472,7 @@ export async function main(): Promise<void> {
           const session = sessions.get(sessionId);
           if (!session) return;
           sessions.delete(sessionId);
+          recordRunLinesPracticeEvent(session, "stopped");
           ws.send(JSON.stringify({ type: "run_lines.session", event: "ended", session_id: sessionId }));
           return;
         }
@@ -1184,6 +1483,7 @@ export async function main(): Promise<void> {
           if (!session) return;
           const speed = Number(msg.speed_mult ?? 1.0);
           session.speed_mult = Number.isFinite(speed) && speed > 0 ? speed : 1.0;
+          session.last_activity_ms = Date.now();
           ws.send(JSON.stringify({ type: "run_lines.session", event: "speed", session_id: sessionId, speed_mult: session.speed_mult }));
           return;
         }
@@ -1212,9 +1512,17 @@ export async function main(): Promise<void> {
           session.idx = 0;
           session.pending_self_line = null;
           session.event_seq = 0;
+          session.last_activity_ms = Date.now();
+          session.last_emitted_idx = null;
 
           ws.send(JSON.stringify({ type: "run_lines.session", event: "seeked", session_id: sessionId, from, to }));
-          if (session.playing) await emitNextRunLineEvent(ws, session);
+          if (session.playing) {
+            const res = await emitNextRunLineEvent(ws, session);
+            if (res.ended) {
+              sessions.delete(sessionId);
+              recordRunLinesPracticeEvent(session, "completed");
+            }
+          }
           return;
         }
 
@@ -1232,9 +1540,16 @@ export async function main(): Promise<void> {
           const nextPos = session.lines.findIndex((l) => l.idx >= targetIdx);
           session.idx = nextPos >= 0 ? nextPos : session.lines.length;
           session.pending_self_line = null;
+          session.last_activity_ms = Date.now();
 
           ws.send(JSON.stringify({ type: "run_lines.session", event: "jumped", session_id: sessionId, target_idx: targetIdx }));
-          if (session.playing) await emitNextRunLineEvent(ws, session);
+          if (session.playing) {
+            const res = await emitNextRunLineEvent(ws, session);
+            if (res.ended) {
+              sessions.delete(sessionId);
+              recordRunLinesPracticeEvent(session, "completed");
+            }
+          }
           return;
         }
       },
@@ -1277,10 +1592,47 @@ export async function main(): Promise<void> {
   console.log(`[ui-server] listening on http://127.0.0.1:${runtimePort}/  (dev=${dev})`);
 }
 
-async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<void> {
+function prefetchNextRunLineTts(session: RunLinesSession): void {
+  // Best-effort: if this fails, we still render on-demand.
+  try {
+    const startIdx = Math.max(0, session.idx);
+    for (let i = startIdx; i < session.lines.length; i += 1) {
+      const l = session.lines[i];
+      if (!l) continue;
+      if (l.type !== "dialogue") continue;
+
+      const speaker = (l.speaker_normalized ?? "").trim();
+      const spoken = sanitizeTtsText(l.text);
+      if (!spoken) continue;
+
+	      const isMe = !session.read_all && speaker && speaker === session.me_norm;
+	      const needsAudio =
+	        session.mode === "read_through"
+	          ? true
+	          : isMe
+	            ? session.reveal_after
+	            : session.mode !== "speed_through";
+	      if (!needsAudio) continue;
+
+      const ch = session.characters.find((c) => c.normalized_name === speaker) ?? null;
+      const voice = ch?.voice ?? "en-US-GuyNeural";
+      const rate = ch?.rate ?? "+0%";
+
+      void renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION }).catch(() => {});
+      return;
+    }
+  } catch {
+    // ignore
+  }
+}
+
+async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<{ ended: boolean }> {
+  session.last_activity_ms = Date.now();
+
   if (session.pending_self_line) {
     const p = session.pending_self_line;
     session.pending_self_line = null;
+    session.last_emitted_idx = p.idx;
     ws.send(
       JSON.stringify({
         type: "run_lines.event",
@@ -1294,7 +1646,8 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
         playback_rate: clamp(0.5, 3.0, session.speed_mult),
       }),
     );
-    return;
+    prefetchNextRunLineTts(session);
+    return { ended: false };
   }
 
   while (session.idx < session.lines.length) {
@@ -1303,6 +1656,7 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
     if (!l) continue;
 
     if (l.type !== "dialogue") {
+      session.last_emitted_idx = l.idx;
       ws.send(
         JSON.stringify({
           type: "run_lines.event",
@@ -1313,7 +1667,7 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
           text: l.text,
         }),
       );
-      return;
+      return { ended: false };
     }
 
     const speaker = (l.speaker_normalized ?? "").trim();
@@ -1323,8 +1677,10 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
     const speed = clamp(0.5, 3.0, session.speed_mult);
     const isMe = !session.read_all && speaker && speaker === session.me_norm;
 
+    // Silent mode: don't render TTS for other characters; just wait.
     if (session.mode === "speed_through" && !isMe) {
       const gapSec = clamp(session.pause_min_sec, session.pause_max_sec, estimatedSpeakSeconds(spoken) / speed);
+      session.last_emitted_idx = l.idx;
       ws.send(
         JSON.stringify({
           type: "run_lines.event",
@@ -1337,23 +1693,42 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
           duration_sec: gapSec,
         }),
       );
-      return;
+      return { ended: false };
     }
 
     const ch = session.characters.find((c) => c.normalized_name === speaker) ?? null;
     const voice = ch?.voice ?? "en-US-GuyNeural";
     const rate = ch?.rate ?? "+0%";
-    const tts = await renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
 
     if (isMe && session.mode !== "read_through") {
-      const pauseSec = clamp(session.pause_min_sec, session.pause_max_sec, (tts.duration_sec * session.pause_mult) / speed);
-      session.pending_self_line = {
-        idx: l.idx,
-        speaker: speaker || null,
-        text: l.text,
-        audio_id: tts.audio_id,
-        duration_sec: tts.duration_sec,
-      };
+      // Your line: pause for you to speak it. Optionally reveal after.
+      let baseSeconds = estimatedSpeakSeconds(spoken);
+      let tts: Awaited<ReturnType<typeof renderTts>> | null = null;
+      if (session.reveal_after) {
+        try {
+          tts = await renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
+          baseSeconds = tts.duration_sec;
+        } catch {
+          // If reveal fails, degrade to practice pause (no reveal).
+          tts = null;
+          baseSeconds = estimatedSpeakSeconds(spoken);
+        }
+      }
+
+      const pauseSec = clamp(session.pause_min_sec, session.pause_max_sec, (baseSeconds * session.pause_mult) / speed);
+      if (tts && session.reveal_after) {
+        session.pending_self_line = {
+          idx: l.idx,
+          speaker: speaker || null,
+          text: l.text,
+          audio_id: tts.audio_id,
+          duration_sec: tts.duration_sec,
+        };
+      } else {
+        session.pending_self_line = null;
+      }
+
+      session.last_emitted_idx = l.idx;
       ws.send(
         JSON.stringify({
           type: "run_lines.event",
@@ -1365,26 +1740,51 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
           cue: session.cue_words > 0 ? cuePrefixWords(spoken, session.cue_words) : null,
         }),
       );
-      return;
+      prefetchNextRunLineTts(session);
+      return { ended: false };
     }
 
-    ws.send(
-      JSON.stringify({
-        type: "run_lines.event",
-        session_id: session.id,
-        event_id: makeEventId(session),
-        kind: "line",
-        idx: l.idx,
-        speaker: speaker || null,
-        text: l.text,
-        audio: { id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec },
-        playback_rate: speed,
-      }),
-    );
-    return;
+    // Other characters (or read-through): speak via TTS. If it fails, degrade to a timed gap.
+    try {
+      const tts = await renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
+      session.last_emitted_idx = l.idx;
+      ws.send(
+        JSON.stringify({
+          type: "run_lines.event",
+          session_id: session.id,
+          event_id: makeEventId(session),
+          kind: "line",
+          idx: l.idx,
+          speaker: speaker || null,
+          text: l.text,
+          audio: { id: tts.audio_id, url: `/api/audio/${tts.audio_id}`, duration_sec: tts.duration_sec },
+          playback_rate: speed,
+        }),
+      );
+      prefetchNextRunLineTts(session);
+      return { ended: false };
+    } catch {
+      const gapSec = clamp(session.pause_min_sec, session.pause_max_sec, estimatedSpeakSeconds(spoken) / speed);
+      session.last_emitted_idx = l.idx;
+      ws.send(
+        JSON.stringify({
+          type: "run_lines.event",
+          session_id: session.id,
+          event_id: makeEventId(session),
+          kind: "gap",
+          idx: l.idx,
+          speaker: speaker || null,
+          text: l.text,
+          duration_sec: gapSec,
+        }),
+      );
+      return { ended: false };
+    }
   }
 
+  session.playing = false;
   ws.send(JSON.stringify({ type: "run_lines.session", event: "ended", session_id: session.id }));
+  return { ended: true };
 }
 
 function clamp(min: number, max: number, value: number): number {

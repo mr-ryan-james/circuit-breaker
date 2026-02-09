@@ -5,7 +5,6 @@ export type ApiStatus = {
   ui_url?: string | null;
   ws_url?: string | null;
   started_at?: string;
-  token?: string;
   sudo_site_toggle_ok?: boolean;
 };
 
@@ -16,17 +15,19 @@ export function getToken(): string | null {
 }
 
 export async function fetchStatus(): Promise<ApiStatus> {
-  const res = await fetch("/api/status");
+  const res = await fetch("/api/status", { cache: "no-store" });
   const data = (await res.json()) as ApiStatus;
-  token = data.token ?? null;
+
+  // Token is provided via response header (not JSON) to reduce accidental logging.
+  token = res.headers.get("x-cb-token") ?? null;
   return data;
 }
 
 async function ensureToken(): Promise<string> {
   if (token) return token;
   const s = await fetchStatus();
-  if (!s.token) throw new Error("Missing token (server did not provide one)");
-  return s.token;
+  if (!token) throw new Error("Missing token (server did not provide one)");
+  return token;
 }
 
 export async function callAction<T = any>(action: string, payload: unknown): Promise<T> {

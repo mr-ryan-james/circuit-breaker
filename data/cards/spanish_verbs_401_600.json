@@ -612,18 +612,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.olvidar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "OLVIDAR (to forget) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb OLVIDAR (to forget). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.omitir.v1",
     "category": "learning",
     "minutes": 5,
@@ -786,18 +774,6 @@
     "activity": "PARODIAR (to parody) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb PARODIAR (to parody). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.participar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "PARTICIPAR (to participate) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb PARTICIPAR (to participate). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],

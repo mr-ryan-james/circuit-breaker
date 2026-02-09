@@ -8,7 +8,7 @@
     "prompt": "Teach me the difference between -AR and -ER/-IR endings in the Preterite (Indefinido) tense. Focus specifically on why 'tirar' becomes 'tiró' but 'comer' becomes 'comió'. Then, quiz me with 10 mixed sentences where I have to choose the correct -ó vs -ió ending based on the infinitive. Use Castilian Spanish.",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "grammar", "conjugation", "drill"],
+    "tags": ["spanish", "grammar", "conjugation", "drill", "lesson"],
     "active": true
   }
 ]

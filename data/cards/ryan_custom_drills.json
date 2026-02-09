@@ -8,7 +8,7 @@
     "prompt": "Quiz me on the difference between the Preterite (Indefinido) and Imperfect (Imperfecto) tenses in Spanish. Mix -AR, -ER, and -IR verbs. Total: 15 questions. Use a mix of fill-in-the-blank sentences and translation tasks. Focus on triggers like 'ayer', 'siempre', 'mientras', and 'de repente'. Correct my answers and explain the logic for each choice. Use Castilian Spanish with vosotros.",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "grammar", "advanced", "drill"],
+    "tags": ["spanish", "grammar", "advanced", "drill", "lesson"],
     "active": true
   }
 ]

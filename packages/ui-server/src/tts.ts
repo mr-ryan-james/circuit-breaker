@@ -8,6 +8,10 @@ function clamp(min: number, max: number, value: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// In-memory duration cache to avoid shelling out to sox repeatedly for the same cached file.
+// MP3s are content-addressed and immutable, so caching is safe for the server lifetime.
+const durationSecCache = new Map<string, number>();
+
 export function normalizeTtsText(input: string): string {
   return input.normalize("NFC").replace(/\s+/g, " ").trim();
 }
@@ -33,6 +37,9 @@ function fileExistsNonEmpty(filePath: string): boolean {
 }
 
 export function getAudioDurationSeconds(audioPath: string): number {
+  const cached = durationSecCache.get(audioPath);
+  if (cached !== undefined) return cached;
+
   const proc = Bun.spawnSync(["sox", "--i", "-D", audioPath], { stdout: "pipe", stderr: "pipe" });
   if (proc.exitCode !== 0) {
     throw new Error(`sox failed: ${new TextDecoder().decode(proc.stderr)}`);
@@ -40,6 +47,7 @@ export function getAudioDurationSeconds(audioPath: string): number {
   const out = new TextDecoder().decode(proc.stdout).trim();
   const seconds = Number(out);
   if (!Number.isFinite(seconds) || seconds <= 0) throw new Error(`Invalid sox duration output: ${JSON.stringify(out)}`);
+  durationSecCache.set(audioPath, seconds);
   return seconds;
 }
 

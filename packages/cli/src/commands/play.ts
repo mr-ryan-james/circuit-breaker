@@ -265,7 +265,8 @@ function generateGlideTokens(
   end: string,
   durationSeconds: number,
   beatsPerNote: number,
-  bpm: number
+  bpm: number,
+  curve: "linear" | "exp"
 ): MidiToken[] {
   const startMidi = parseNoteToMidi(start);
   const endMidi = parseNoteToMidi(end);
@@ -274,7 +275,8 @@ function generateGlideTokens(
 
   const steps = Math.max(1, Math.abs(endMidi - startMidi));
   const totalBeats = (durationSeconds * bpm) / 60;
-  const perNoteBeats = Math.max(beatsPerNote, totalBeats / (steps + 1));
+  const noteCount = steps + 1;
+  const perNoteBeats = Math.max(beatsPerNote, totalBeats / noteCount);
 
   const direction = endMidi >= startMidi ? 1 : -1;
   const notes: number[] = [];
@@ -282,7 +284,22 @@ function generateGlideTokens(
     notes.push(startMidi + i * direction);
   }
 
-  return notes.map((midi) => ({ type: "note", midi, beats: perNoteBeats }));
+  if (curve === "linear") {
+    return notes.map((midi) => ({ type: "note", midi, beats: perNoteBeats }));
+  }
+
+  // exp: ease-out timing (shorter beats at the start, longer at the end).
+  // This still preserves the overall duration behavior from perNoteBeats (which already clamps to beatsPerNote).
+  const alpha = 2.2;
+  const weights = notes.map((_, i) => {
+    const t = noteCount <= 1 ? 1 : i / (noteCount - 1);
+    return Math.exp(alpha * t);
+  });
+  const sum = weights.reduce((acc, w) => acc + w, 0) || 1;
+  const total = perNoteBeats * noteCount;
+
+  const beats = weights.map((w) => Math.max(beatsPerNote, (total * w) / sum));
+  return notes.map((midi, i) => ({ type: "note", midi, beats: beats[i] ?? perNoteBeats }));
 }
 
 function generateTransposeTokens(
@@ -566,7 +583,7 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   } else if (subcommand === "glide") {
     const start = cleanArgs[0] || "C3";
     const end = cleanArgs[1] || "C4";
-    tokens = generateGlideTokens(start, end, glideSeconds, noteBeats, bpm);
+    tokens = generateGlideTokens(start, end, glideSeconds, noteBeats, bpm, glideCurve);
     cacheKeyBase = `glide|${start}|${end}|${glideSeconds}|${glideCurve}`;
   } else if (subcommand === "transpose") {
     const root = cleanArgs[0] || "A2";

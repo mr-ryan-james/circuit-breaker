@@ -30,6 +30,14 @@ export const SpanishBrainOutputSchema = z.object({
   v: z.literal(1),
   assistant_text: z.string().min(1).max(12_000),
   tool_requests: z.array(SpanishToolRequestSchema).max(8),
+  score: z
+    .object({
+      correct: z.number().int().nonnegative(),
+      total: z.number().int().positive(),
+    })
+    .optional(),
+  phase: z.string().min(1).max(80).optional(),
+  question_number: z.number().int().positive().optional(),
   await: z.enum(["user", "listen_result", "done"]),
 });
 
@@ -93,6 +101,17 @@ export const SpanishBrainOutputJsonSchema = {
         ],
       },
     },
+    score: {
+      type: "object" as const,
+      required: ["correct", "total"],
+      additionalProperties: false,
+      properties: {
+        correct: { type: "integer" as const, minimum: 0 },
+        total: { type: "integer" as const, minimum: 1 },
+      },
+    },
+    phase: { type: "string" as const, minLength: 1, maxLength: 80 },
+    question_number: { type: "integer" as const, minimum: 1 },
     await: { type: "string" as const, enum: ["user", "listen_result", "done"] },
   },
 };

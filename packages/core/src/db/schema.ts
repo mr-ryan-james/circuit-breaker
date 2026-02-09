@@ -4,6 +4,8 @@ export function applySchema(db: SqliteDb): void {
   // NOTE: Keep this idempotent. We can add migrations later via PRAGMA user_version if needed.
   db.exec(`
     PRAGMA journal_mode = WAL;
+    -- Avoid transient SQLITE_BUSY errors under light concurrent usage (UI server + CLI).
+    PRAGMA busy_timeout = 5000;
     PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS sites (

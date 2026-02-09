@@ -111,16 +111,22 @@ export function buildBreakMenu(options: BuildBreakMenuOptions): BreakMenu {
   // - spanish noun
   // - B1/B2 spanish lesson/quiz
   // - SOVT / pitch practice
-  const physical = pickOneOrFallback({ category: "physical" }, {});
+  // Never fall back across category; a non-physical card labeled "physical" breaks the menu semantics.
+  const physical = pickOneOrFallback({ category: "physical" }, { category: "physical" });
   const verb = pickOneOrFallback({ tagsAll: ["spanish", "verb"] }, { tagsAny: ["verb"] });
   const noun = pickOneOrFallback({ tagsAll: ["spanish", "noun"] }, { tagsAny: ["noun"] });
-  const lesson = pickOneOrFallback({ tagsAll: ["spanish", "lesson", "b1b2"] }, { tagsAll: ["lesson", "b1b2"] });
+  const lesson = pickOneOrFallback({ tagsAll: ["spanish", "lesson"] }, { tagsAny: ["lesson"] });
   const sovt = pickOneOrFallback({ tagsAll: ["sovt"] }, { tagsAll: ["sovt"] }, 15);
   const acting = pickOneOrFallback({ tagsAll: ["acting"] }, { tagsAny: ["acting"] }, 15);
 
   const hasVerb = !!verb && verb.tags.includes("spanish") && verb.tags.includes("verb");
   const hasNoun = !!noun && noun.tags.includes("spanish") && noun.tags.includes("noun");
-  const hasLesson = !!lesson && lesson.tags.includes("spanish") && lesson.tags.includes("lesson") && lesson.tags.includes("b1b2");
+  const hasLesson =
+    !!lesson &&
+    lesson.tags.includes("spanish") &&
+    lesson.tags.includes("lesson") &&
+    lesson.tags.includes("b1b2") &&
+    Boolean(extractLessonTeach(lesson?.prompt ?? null));
 
   // Keep the break menu at <= 8 options. Acting occupies the "optional" slot and displaces fusion.
   const fusionTemplate = !acting && hasVerb && hasNoun && hasLesson ? pickOne({ tagsAll: ["spanish", "fusion"] }, 0) : null;

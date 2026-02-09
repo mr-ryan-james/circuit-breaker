@@ -41,6 +41,15 @@ function ensureOwnershipForSudoUser(dbPath: string): void {
   } catch {
     // ignore
   }
+
+  // WAL mode creates sidecar files; keep them user-owned too.
+  for (const sidecar of [`${dbPath}-wal`, `${dbPath}-shm`]) {
+    try {
+      if (fs.existsSync(sidecar)) fs.chownSync(sidecar, ids.uid, ids.gid);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export function resolveActingDbPath(): string {

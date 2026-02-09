@@ -1560,42 +1560,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.trabajar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "TRABAJAR (to work) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb TRABAJAR (to work). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.traducir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "TRADUCIR (to translate) - Irregular -zco + j-preterite. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb TRADUCIR (to translate). Irregular: present yo is traduzco, preterite has j-stem (traduje, tradujiste...). Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "irregular-zco", "irregular"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.traer.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "TRAER (to bring) - Irregular. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb TRAER (to bring). Irregular: present yo is traigo, preterite has j-stem (traje, trajiste...). Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "irregular"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.tragar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1716,18 +1680,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.tratar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "TRATAR (to treat/try) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb TRATAR (to treat/try/deal with). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.trepar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1812,48 +1764,12 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.unir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "UNIR (to unite/join) - Regular -IR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb UNIR (to unite/join). It's a regular -IR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ir"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.untar.v1",
     "category": "learning",
     "minutes": 5,
     "activity": "UNTAR (to spread/smear) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb UNTAR (to spread/smear). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.usar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "USAR (to use) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb USAR (to use). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.utilizar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "UTILIZAR (to utilize) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb UTILIZAR (to utilize/use). It's a regular -AR verb (note: z→c before e in preterite: utilicé). Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
@@ -1881,18 +1797,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.valer.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VALER (to be worth) - Irregular. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VALER (to be worth/cost). Irregular: present yo is valgo, future/conditional stem is valdr-. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "irregular"],
     "active": true
   },
   {
@@ -1932,18 +1836,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.vender.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VENDER (to sell) - Regular -ER verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VENDER (to sell). It's a regular -ER verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-er"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.venerar.v1",
     "category": "learning",
     "minutes": 5,
@@ -1965,18 +1857,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.venir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VENIR (to come) - Highly irregular. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VENIR (to come). Highly irregular: present vengo, vienes, viene, venimos, venís, vienen. Preterite vine, viniste, vino... Future/conditional stem vendr-. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "irregular"],
     "active": true
   },
   {
@@ -2013,18 +1893,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "stem-e-i"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.viajar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VIAJAR (to travel) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VIAJAR (to travel). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
     "active": true
   },
   {
@@ -2076,18 +1944,6 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.visitar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VISITAR (to visit) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VISITAR (to visit). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.visualizar.v1",
     "category": "learning",
     "minutes": 5,
@@ -2097,18 +1953,6 @@
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.vivir.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VIVIR (to live) - Regular -IR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VIVIR (to live). It's a regular -IR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ir"],
     "active": true
   },
   {
@@ -2136,36 +1980,12 @@
     "active": true
   },
   {
-    "key": "learning.spanish.verb.volver.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VOLVER (to return) - Stem-changing o→ue. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VOLVER (to return). Stem-changing o→ue: vuelvo, vuelves, vuelve, volvemos, volvéis, vuelven. Note: irregular past participle vuelto. Test me on presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "stem-o-ue"],
-    "active": true
-  },
-  {
     "key": "learning.spanish.verb.vomitar.v1",
     "category": "learning",
     "minutes": 5,
     "activity": "VOMITAR (to vomit) - Regular -AR verb. Practice all forms.",
     "done_condition": "when you've practiced conjugations for 5 minutes",
     "prompt": "Quiz me on the Spanish verb VOMITAR (to vomit). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
-    "location": "any",
-    "rarity": "common",
-    "tags": ["spanish", "conjugation", "verb", "regular-ar"],
-    "active": true
-  },
-  {
-    "key": "learning.spanish.verb.votar.v1",
-    "category": "learning",
-    "minutes": 5,
-    "activity": "VOTAR (to vote) - Regular -AR verb. Practice all forms.",
-    "done_condition": "when you've practiced conjugations for 5 minutes",
-    "prompt": "Quiz me on the Spanish verb VOTAR (to vote). It's a regular -AR verb. Test me on all 6 conjugations for presente, indefinido, imperfecto. Use Castilian Spanish with vosotros. One tense at a time, correct my mistakes.",
     "location": "any",
     "rarity": "common",
     "tags": ["spanish", "conjugation", "verb", "regular-ar"],

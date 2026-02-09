@@ -43,6 +43,15 @@ function ensureOwnershipForUser(dbPath: string): void {
   } catch {
     // ignore
   }
+
+  // WAL mode creates sidecar files; if they stay root-owned, non-sudo commands can fail later.
+  for (const sidecar of [`${dbPath}-wal`, `${dbPath}-shm`]) {
+    try {
+      if (fs.existsSync(sidecar)) fs.chownSync(sidecar, ids.uid, ids.gid);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export interface DbOpenResult {
@@ -82,4 +91,3 @@ export function openDb(): DbOpenResult {
 
   return { db, dbPath };
 }
-

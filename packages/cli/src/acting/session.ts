@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 
 import { renderTts } from "../tts/edgeTts.js";
-import { sanitizeTtsText } from "./sanitize.js";
+import { sanitizeTtsText, TTS_SANITIZER_VERSION } from "./sanitize.js";
 import { normalizeMeName } from "./names.js";
 import type { ScriptLineType } from "./types.js";
 
@@ -114,7 +114,7 @@ export async function runLinesSession(params: {
           const meChar = charByNorm.get(meNorm);
           const voice = meChar?.voice || params.voiceFallback.voice;
           const rate = meChar?.rate || params.voiceFallback.rate;
-          const res = renderTts({ text, voice, rate });
+          const res = renderTts({ text, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
           revealMp3 = res.mp3Path;
         }
 
@@ -131,7 +131,7 @@ export async function runLinesSession(params: {
       const ch = speaker ? charByNorm.get(speaker) : null;
       const voice = ch?.voice || params.voiceFallback.voice;
       const rate = ch?.rate || params.voiceFallback.rate;
-      const res = renderTts({ text, voice, rate });
+      const res = renderTts({ text, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
       playMp3Blocking(res.mp3Path);
     }
 

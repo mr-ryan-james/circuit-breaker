@@ -7,7 +7,7 @@
     "done_condition": "when you finish one page of exercises",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "grammar", "A2B1", "textbook"],
+    "tags": ["spanish", "grammar", "A2B1", "textbook", "lesson"],
     "active": true
   },
   {
@@ -18,7 +18,7 @@
     "done_condition": "when you've read the full teoría section of one unit",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "grammar", "A2B1", "textbook", "reading"],
+    "tags": ["spanish", "grammar", "A2B1", "textbook", "reading", "lesson"],
     "active": true
   },
   {
@@ -29,7 +29,7 @@
     "done_condition": "when you've redone and checked 5 exercises",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "grammar", "A2B1", "textbook", "review"],
+    "tags": ["spanish", "grammar", "A2B1", "textbook", "review", "lesson"],
     "active": true
   },
   {
@@ -40,7 +40,7 @@
     "done_condition": "when you finish two pages of exercises",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "grammar", "A2B1", "textbook"],
+    "tags": ["spanish", "grammar", "A2B1", "textbook", "lesson"],
     "active": true
   },
   {
@@ -51,7 +51,7 @@
     "done_condition": "when you've named 10 objects (looking up unknowns)",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "vocabulary", "A2B1"],
+    "tags": ["spanish", "vocabulary", "A2B1", "noun"],
     "active": true
   },
   {
@@ -62,7 +62,7 @@
     "done_condition": "when you've written 5 new words with definitions",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "vocabulary", "A2B1"],
+    "tags": ["spanish", "vocabulary", "A2B1", "noun"],
     "active": true
   },
   {
@@ -73,7 +73,7 @@
     "done_condition": "when you've reviewed 10 cards",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "vocabulary", "A2B1", "flashcards"],
+    "tags": ["spanish", "vocabulary", "A2B1", "flashcards", "noun"],
     "active": true
   },
   {
@@ -84,7 +84,7 @@
     "done_condition": "when you've reviewed 25 cards",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "vocabulary", "A2B1", "flashcards"],
+    "tags": ["spanish", "vocabulary", "A2B1", "flashcards", "noun"],
     "active": true
   },
   {
@@ -95,7 +95,7 @@
     "done_condition": "when you've watched for 5 minutes",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "listening", "A2B1", "comprehensible_input"],
+    "tags": ["spanish", "listening", "A2B1", "comprehensible_input", "lesson"],
     "active": true
   },
   {
@@ -106,7 +106,7 @@
     "done_condition": "when you've watched for 10 minutes",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "listening", "A2B1", "comprehensible_input"],
+    "tags": ["spanish", "listening", "A2B1", "comprehensible_input", "lesson"],
     "active": true
   },
   {
@@ -117,7 +117,7 @@
     "done_condition": "when the segment ends",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "listening", "A2B1", "news", "podcast"],
+    "tags": ["spanish", "listening", "A2B1", "news", "podcast", "lesson"],
     "active": true
   },
   {
@@ -128,7 +128,7 @@
     "done_condition": "when you've listened twice (once without, once with lyrics)",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "listening", "A2B1", "music"],
+    "tags": ["spanish", "listening", "A2B1", "music", "lesson"],
     "active": true
   },
   {
@@ -139,7 +139,7 @@
     "done_condition": "when you've read the article and looked up 3 words",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "reading", "A2B1", "news"],
+    "tags": ["spanish", "reading", "A2B1", "news", "lesson"],
     "active": true
   },
   {
@@ -150,7 +150,7 @@
     "done_condition": "when you've read 5 posts in Spanish",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "reading", "A2B1", "social_media"],
+    "tags": ["spanish", "reading", "A2B1", "social_media", "lesson"],
     "active": true
   },
   {
@@ -161,7 +161,7 @@
     "done_condition": "when you've written 3 sentences",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "writing", "A2B1"],
+    "tags": ["spanish", "writing", "A2B1", "lesson"],
     "active": true
   },
   {
@@ -172,7 +172,7 @@
     "done_condition": "when you've written 4-5 sentences about yesterday",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "writing", "A2B1", "past_tense"],
+    "tags": ["spanish", "writing", "A2B1", "past_tense", "lesson"],
     "active": true
   },
   {
@@ -183,7 +183,7 @@
     "done_condition": "when you've written 5 descriptive sentences",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "writing", "A2B1", "description"],
+    "tags": ["spanish", "writing", "A2B1", "description", "lesson"],
     "active": true
   },
   {
@@ -194,7 +194,7 @@
     "done_condition": "when you've spoken for 1+ minute about your work",
     "location": "home",
     "rarity": "uncommon",
-    "tags": ["spanish", "speaking", "A2B1"],
+    "tags": ["spanish", "speaking", "A2B1", "lesson"],
     "active": true
   },
   {
@@ -205,7 +205,7 @@
     "done_condition": "when you've shadowed for 3+ minutes",
     "location": "home",
     "rarity": "rare",
-    "tags": ["spanish", "speaking", "A2B1", "pronunciation"],
+    "tags": ["spanish", "speaking", "A2B1", "pronunciation", "lesson"],
     "active": true
   },
   {
@@ -216,7 +216,7 @@
     "done_condition": "when you've counted to 100 and described 3 things",
     "location": "home",
     "rarity": "common",
-    "tags": ["spanish", "speaking", "A2B1", "numbers"],
+    "tags": ["spanish", "speaking", "A2B1", "numbers", "lesson"],
     "active": true
   },
   {
@@ -227,7 +227,7 @@
     "done_condition": "when you've done 10 minutes of active Pimsleur practice",
     "location": "home",
     "rarity": "common",
-    "tags": ["spanish", "listening", "speaking", "A2B1", "pimsleur"],
+    "tags": ["spanish", "listening", "speaking", "A2B1", "pimsleur", "lesson"],
     "active": true
   },
   {
@@ -238,7 +238,7 @@
     "done_condition": "when you complete the review session",
     "location": "home",
     "rarity": "common",
-    "tags": ["spanish", "listening", "speaking", "A2B1", "pimsleur", "review"],
+    "tags": ["spanish", "listening", "speaking", "A2B1", "pimsleur", "review", "lesson"],
     "active": true
   },
   {
@@ -249,7 +249,7 @@
     "done_condition": "when you've exchanged 5 messages in Spanish",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "writing", "conversation", "A2B1"],
+    "tags": ["spanish", "writing", "conversation", "A2B1", "lesson"],
     "active": true
   },
   {
@@ -260,7 +260,7 @@
     "done_condition": "when you've written 12 conjugations (6 present + 6 preterite)",
     "location": "any",
     "rarity": "common",
-    "tags": ["spanish", "grammar", "A2B1", "conjugation"],
+    "tags": ["spanish", "grammar", "A2B1", "conjugation", "lesson", "verb"],
     "active": true
   },
   {
@@ -271,7 +271,7 @@
     "done_condition": "when you've written 10 sentences total (5 ser, 5 estar)",
     "location": "any",
     "rarity": "uncommon",
-    "tags": ["spanish", "grammar", "A2B1", "ser_estar"],
+    "tags": ["spanish", "grammar", "A2B1", "ser_estar", "lesson"],
     "active": true
   }
 ]
