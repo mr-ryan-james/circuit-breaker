@@ -83,7 +83,7 @@ export async function renderTts(params: {
 
     const timeoutMs = params.timeoutMs ?? computeEdgeTtsTimeoutMs(text);
 
-    const child = Bun.spawn(["edge-tts", "--voice", voice, "--text", text, "--rate", rate, "--write-media", tmpMp3], {
+    const child = Bun.spawn(["edge-tts", "--voice", voice, "--text", text, `--rate=${rate}`, "--write-media", tmpMp3], {
       stdout: "pipe",
       stderr: "pipe",
     });
