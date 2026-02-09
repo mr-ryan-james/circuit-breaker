@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Python venv
+.venv/
+
 # Build output
 dist/
 packages/*/dist/
