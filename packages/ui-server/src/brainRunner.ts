@@ -1,6 +1,7 @@
 import type { BrainName } from "./spanishDb.js";
 import { runCodex } from "./codexRunner.js";
 import { runClaude } from "./claudeRunner.js";
+import { runMock } from "./mockRunner.js";
 
 export type BrainResult = {
   ok: boolean;
@@ -28,6 +29,16 @@ export type BrainRunner = {
 };
 
 export function createBrainRunner(name: BrainName): BrainRunner {
+  const mode = process.env["CIRCUIT_BREAKER_BRAIN_MODE"]?.trim();
+  if (mode === "mock") {
+    return {
+      name,
+      async run(opts) {
+        return runMock(opts);
+      },
+    };
+  }
+
   if (name === "claude") {
     return {
       name: "claude",

@@ -49,3 +49,8 @@ firebase-debug.log
 # Expert prompts
 *_expert_prompt.md
 *_expert_prompt.sh
+
+# Local scratch / planning docs
+.plan
+PLAN.md
+sovt-designer-report.md

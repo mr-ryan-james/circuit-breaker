@@ -728,6 +728,107 @@ export async function main(): Promise<void> {
     return { ok: true, brain, speakResults, pendingListen, session_status: sessionStatus };
   }
 
+  async function startSpanishSessionFromCardPrompt(
+    db: ReturnType<typeof openCoreDb>["db"],
+    args: {
+      source: "break_menu" | "srs_due";
+      event_key: string | null;
+      lane: string | null;
+      card_id: number | null;
+      card_key: string | null;
+      card_prompt: string;
+    },
+  ): Promise<
+    | {
+        ok: true;
+        session_id: string;
+        thread_id: string | null;
+        brain_name: BrainName;
+        brain: SpanishBrainOutput;
+        speak_results: any[];
+        pending_listen: any | null;
+        session_status: "open" | "completed";
+      }
+    | { ok: false; error: string; details?: any; session_id?: string; raw?: string }
+  > {
+    const brainName = normalizeBrainName(getSetting(db, "spanish_brain"));
+    const sessionId = makeSpanishId("sp_sess");
+
+    insertSpanishSession(db, {
+      id: sessionId,
+      status: "open",
+      source: args.source,
+      event_key: args.event_key,
+      lane: args.lane,
+      card_id: args.card_id,
+      card_key: args.card_key,
+      card_prompt: args.card_prompt,
+      codex_thread_id: null,
+      brain_name: brainName,
+      brain_thread_id: null,
+      pending_tool_json: null,
+      meta_json: JSON.stringify({ v: 1 }),
+    });
+
+    wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
+
+    const system = spanishSystemPrompt(args.lane);
+    const userPrompt = `CARD_PROMPT:\n${args.card_prompt}\n`;
+    const promptForLog = `${system}\n\n${userPrompt}`;
+    insertSpanishTurn(db, {
+      session_id: sessionId,
+      idx: nextSpanishTurnIdx(db, sessionId),
+      role: "system",
+      kind: "prompt",
+      content: promptForLog,
+    });
+
+    const logDir = path.join(stateDir, "spanish", brainName, sessionId);
+    fs.mkdirSync(logDir, { recursive: true });
+
+    const runner = createBrainRunner(brainName);
+    const run = await runner.run({
+      cwd: repoRootFromHere(),
+      prompt: userPrompt,
+      systemPrompt: system,
+      timeoutMs: 120_000,
+      logJsonlPath: path.join(logDir, "turn0.jsonl"),
+    });
+
+    if (!run.ok) {
+      insertSpanishTurn(db, {
+        session_id: sessionId,
+        idx: nextSpanishTurnIdx(db, sessionId),
+        role: "assistant",
+        kind: "error",
+        content: `Brain (${brainName}) failed: ${run.error}`,
+        json: run,
+      });
+      return { ok: false, error: "brain_failed", details: run, session_id: sessionId };
+    }
+
+    updateSpanishSession(db, sessionId, {
+      // Keep legacy field only for Codex sessions. Claude sessions use brain_thread_id.
+      codex_thread_id: brainName === "codex" ? run.thread_id : null,
+      brain_name: brainName,
+      brain_thread_id: run.thread_id,
+    });
+
+    const processed = await processBrainResponse(db, sessionId, run);
+    if (!processed.ok) return { ok: false, error: processed.error, session_id: sessionId, raw: processed.raw };
+
+    return {
+      ok: true,
+      session_id: sessionId,
+      thread_id: run.thread_id,
+      brain_name: brainName,
+      brain: processed.brain,
+      speak_results: processed.speakResults,
+      pending_listen: processed.pendingListen,
+      session_status: processed.session_status,
+    };
+  }
+
   const actionHandlers: Record<
     string,
     {
@@ -1041,77 +1142,18 @@ export async function main(): Promise<void> {
 
           const cardPrompt = String(row.prompt ?? "").trim();
           if (!cardPrompt) return { ok: false, error: "missing_card_prompt", card_id: row.id, card_key: row.key };
-
-          const brainName = normalizeBrainName(getSetting(db, "spanish_brain"));
-          const sessionId = makeSpanishId("sp_sess");
-
-          insertSpanishSession(db, {
-            id: sessionId,
-            status: "open",
+          const started = await startSpanishSessionFromCardPrompt(db, {
             source: "srs_due",
             event_key: null,
             lane: payload.lane,
             card_id: row.id,
             card_key: row.key,
             card_prompt: cardPrompt,
-            codex_thread_id: null,
-            brain_name: brainName,
-            brain_thread_id: null,
-            pending_tool_json: null,
-            meta_json: JSON.stringify({ v: 1 }),
           });
-
-          wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
-
-          const system = spanishSystemPrompt(payload.lane);
-          const userPrompt = `CARD_PROMPT:\n${cardPrompt}\n`;
-          const promptForLog = `${system}\n\n${userPrompt}`;
-          insertSpanishTurn(db, {
-            session_id: sessionId,
-            idx: nextSpanishTurnIdx(db, sessionId),
-            role: "system",
-            kind: "prompt",
-            content: promptForLog,
-          });
-
-          const logDir = path.join(stateDir, "spanish", brainName, sessionId);
-          fs.mkdirSync(logDir, { recursive: true });
-
-          const runner = createBrainRunner(brainName);
-          const run = await runner.run({
-            cwd: repoRootFromHere(),
-            prompt: userPrompt,
-            systemPrompt: system,
-            timeoutMs: 120_000,
-            logJsonlPath: path.join(logDir, "turn0.jsonl"),
-          });
-
-          if (!run.ok) {
-            insertSpanishTurn(db, {
-              session_id: sessionId,
-              idx: nextSpanishTurnIdx(db, sessionId),
-              role: "assistant",
-              kind: "error",
-              content: `Brain (${brainName}) failed: ${run.error}`,
-              json: run,
-            });
-            return { ok: false, error: "brain_failed", details: run, session_id: sessionId };
-          }
-
-          updateSpanishSession(db, sessionId, {
-            codex_thread_id: brainName === "codex" ? run.thread_id : null,
-            brain_name: brainName,
-            brain_thread_id: run.thread_id,
-          });
-
-          const processed = await processBrainResponse(db, sessionId, run);
-          if (!processed.ok) return { ok: false, error: processed.error, session_id: sessionId, raw: processed.raw };
+          if (!started.ok) return started;
 
           return {
-            ok: true,
-            session_id: sessionId,
-            thread_id: run.thread_id,
-            brain_name: brainName,
+            ...started,
             picked: {
               card_id: due.card_id,
               card_key: due.card_key,
@@ -1119,10 +1161,6 @@ export async function main(): Promise<void> {
               box: due.box,
               due_at_unix: due.due_at_unix,
             },
-            brain: processed.brain,
-            speak_results: processed.speakResults,
-            pending_listen: processed.pendingListen,
-            session_status: processed.session_status,
           };
         } finally {
           db.close();
@@ -1141,82 +1179,14 @@ export async function main(): Promise<void> {
       async handler(payload) {
         const { db } = openCoreDb();
         try {
-          const brainName = normalizeBrainName(getSetting(db, "spanish_brain"));
-          const sessionId = makeSpanishId("sp_sess");
-
-          insertSpanishSession(db, {
-            id: sessionId,
-            status: "open",
+          return await startSpanishSessionFromCardPrompt(db, {
             source: "break_menu",
             event_key: payload.event_key ?? null,
             lane: payload.lane ?? null,
             card_id: payload.card_id ?? null,
             card_key: payload.card_key ?? null,
             card_prompt: payload.card_prompt,
-            codex_thread_id: null,
-            brain_name: brainName,
-            brain_thread_id: null,
-            pending_tool_json: null,
-            meta_json: JSON.stringify({ v: 1 }),
           });
-
-          wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
-
-          const system = spanishSystemPrompt(payload.lane ?? null);
-          const userPrompt = `CARD_PROMPT:\n${payload.card_prompt}\n`;
-          const promptForLog = `${system}\n\n${userPrompt}`;
-          insertSpanishTurn(db, {
-            session_id: sessionId,
-            idx: nextSpanishTurnIdx(db, sessionId),
-            role: "system",
-            kind: "prompt",
-            content: promptForLog,
-          });
-
-          const logDir = path.join(stateDir, "spanish", brainName, sessionId);
-          fs.mkdirSync(logDir, { recursive: true });
-
-          const runner = createBrainRunner(brainName);
-          const run = await runner.run({
-            cwd: repoRootFromHere(),
-            prompt: userPrompt,
-            systemPrompt: system,
-            timeoutMs: 120_000,
-            logJsonlPath: path.join(logDir, "turn0.jsonl"),
-          });
-
-          if (!run.ok) {
-            insertSpanishTurn(db, {
-              session_id: sessionId,
-              idx: nextSpanishTurnIdx(db, sessionId),
-              role: "assistant",
-              kind: "error",
-              content: `Brain (${brainName}) failed: ${run.error}`,
-              json: run,
-            });
-            return { ok: false, error: "brain_failed", details: run, session_id: sessionId };
-          }
-
-          updateSpanishSession(db, sessionId, {
-            // Keep legacy field only for Codex sessions. Claude sessions use brain_thread_id.
-            codex_thread_id: brainName === "codex" ? run.thread_id : null,
-            brain_name: brainName,
-            brain_thread_id: run.thread_id,
-          });
-
-          const processed = await processBrainResponse(db, sessionId, run);
-          if (!processed.ok) return { ok: false, error: processed.error, session_id: sessionId, raw: processed.raw };
-
-          return {
-            ok: true,
-            session_id: sessionId,
-            thread_id: run.thread_id,
-            brain_name: brainName,
-            brain: processed.brain,
-            speak_results: processed.speakResults,
-            pending_listen: processed.pendingListen,
-            session_status: processed.session_status,
-          };
         } finally {
           db.close();
         }

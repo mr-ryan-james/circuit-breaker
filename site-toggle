@@ -8,7 +8,8 @@ set -Eeuo pipefail
 # that edit /etc/hosts (on/off/choose feed/daemon tick).
 
 NODE_BIN="${NODE_BIN:-/opt/homebrew/bin/node}"
-CLI_JS="/Users/ryanpfister/Dev/circuit-breaker/packages/cli/dist/index.js"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CLI_JS="${SCRIPT_DIR}/packages/cli/dist/index.js"
 
 if [[ ! -x "$NODE_BIN" ]]; then
   # Fall back to common Homebrew locations and PATH.
