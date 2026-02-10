@@ -3,104 +3,32 @@ import { callAction, fetchStatus, getToken, type ApiStatus } from "./api/client"
 import { connectWs, type WsMessage } from "./ws/client";
 
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { loadInitialUiState, persistUiState, replaceUrlFromUiState, type UiTab } from "@/lib/uiState";
+import { ActingTab } from "@/tabs/ActingTab";
+import { BreakTab } from "@/tabs/BreakTab";
+import { SignalsTab } from "@/tabs/SignalsTab";
+import { SovtTab } from "@/tabs/SovtTab";
+import { SpanishTab } from "@/tabs/SpanishTab";
+import { StatusTab } from "@/tabs/StatusTab";
 
-type ScriptRow = { id: number; title: string; source_format: string; created_at: string };
-type CharacterRow = { normalized_name: string; name: string; voice: string; rate: string };
-type LineRow = { idx: number; type: string; speaker_normalized: string | null; text: string; scene_number: number | null; scene_heading: string | null };
-
-type Signal = { id: string; name: string; payload: unknown; created_at: string };
-
-type TimelineItem = {
-  key: string;
-  kind: "direction" | "line" | "gap" | "pause";
-  idx: number;
-  speaker: string | null;
-  text: string | null;
-  revealed: boolean;
-  cue: string | null;
-};
-
-type BreakMenuLane =
-  | { type: "same_need"; prompt: string }
-  | { type: "feed"; site: string; minutes: number; command: string }
-  | { type: string; card?: any; recent_scripts?: any[] };
-
-type BreakMenu = {
-  event_key: string;
-  site: string;
-  lanes: BreakMenuLane[];
-};
-
-type SpanishBrain = {
-  v: 1;
-  assistant_text: string;
-  tool_requests: Array<any>;
-  await: "user" | "listen_result" | "done";
-};
-
-type SpanishSpeakResult = { id: string; tool: "speak"; audio_id: string; url: string; duration_sec: number };
-type SpanishPendingListen = { id: string; tool: "listen"; target_text: string };
-
-type SpanishSessionRow = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  status: "open" | "completed" | "abandoned";
-  source: string;
-  event_key: string | null;
-  lane: string | null;
-  card_id: number | null;
-  card_key: string | null;
-  card_prompt: string | null;
-  codex_thread_id: string | null;
-  brain_name: string | null;
-  brain_thread_id: string | null;
-  pending_tool_json: string | null;
-};
-
-type SpanishTurnRow = {
-  id: string;
-  session_id: string;
-  idx: number;
-  role: string;
-  kind: string;
-  content: string | null;
-  json: string | null;
-  created_at: string;
-};
-
-type SpanishMessage = {
-  role: "tutor" | "you" | "system";
-  text: string;
-  timestamp: number;
-  speakResults?: SpanishSpeakResult[];
-};
-
-type BrainDefault = "codex" | "claude";
-
-type SovtCmdStep = {
-  idx: number;
-  title: string;
-  raw_cmd: string;
-  args: string[];
-  status: "pending" | "running" | "done" | "error";
-  started_at_ms: number | null;
-  ended_at_ms: number | null;
-  result_json: string | null;
-  error: string | null;
-};
+import type {
+  BrainDefault,
+  BreakMenu,
+  CharacterRow,
+  LineRow,
+  ScriptRow,
+  Signal,
+  SovtCmdStep,
+  SpanishBrain,
+  SpanishMessage,
+  SpanishPendingListen,
+  SpanishSessionRow,
+  SpanishSpeakResult,
+  SpanishTurnRow,
+  TimelineItem,
+} from "@/app/types";
 
 export function App() {
   const [status, setStatus] = useState<ApiStatus | null>(null);
@@ -112,7 +40,9 @@ export function App() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [wsState, setWsState] = useState<"connecting" | "open" | "closed">("connecting");
 
-  const [activeTab, setActiveTab] = useState<"break" | "acting" | "spanish" | "sovt" | "signals" | "status">("break");
+  const uiDefaults = { v: 1 as const, tab: "break" as UiTab, breakSite: "reddit", breakMinutes: 10, breakContext: "home" };
+
+  const [activeTab, setActiveTab] = useState<UiTab>(() => loadInitialUiState(uiDefaults).tab ?? "break");
 
   const [me, setMe] = useState("Melchior");
   const [mode, setMode] = useState<"practice" | "learn" | "read_through" | "speed_through">("practice");
@@ -130,9 +60,9 @@ export function App() {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [audioNeedsGesture, setAudioNeedsGesture] = useState(false);
 
-  const [breakSite, setBreakSite] = useState("reddit");
-  const [breakMinutes, setBreakMinutes] = useState<number>(10);
-  const [breakContext, setBreakContext] = useState<string>("home");
+  const [breakSite, setBreakSite] = useState(() => loadInitialUiState(uiDefaults).breakSite ?? "reddit");
+  const [breakMinutes, setBreakMinutes] = useState<number>(() => loadInitialUiState(uiDefaults).breakMinutes ?? 10);
+  const [breakContext, setBreakContext] = useState<string>(() => loadInitialUiState(uiDefaults).breakContext ?? "home");
   const [breakMenu, setBreakMenu] = useState<BreakMenu | null>(null);
   const [breakChoice, setBreakChoice] = useState<any | null>(null);
   const [autoStartActing, setAutoStartActing] = useState(true);
@@ -327,6 +257,14 @@ export function App() {
       })
       .catch(() => setStatus({ ok: false }));
   }, []);
+
+  // Deep-link + state restore (query params + localStorage).
+  // Precedence: URL params > localStorage > defaults. On change, we persist and update the URL.
+  useEffect(() => {
+    const st = { v: 1 as const, tab: activeTab, breakSite, breakMinutes, breakContext };
+    persistUiState(st);
+    replaceUrlFromUiState(st);
+  }, [activeTab, breakSite, breakMinutes, breakContext]);
 
   useEffect(() => {
     let disposed = false;
@@ -1239,985 +1177,157 @@ export function App() {
           </TabsList>
 
           <TabsContent value="status">
-            <Card>
-              <CardHeader>
-                <CardTitle>Status</CardTitle>
-                <CardDescription>Server + WS + token (debug is collapsed by default).</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="debug">
-                    <AccordionTrigger>Raw status JSON</AccordionTrigger>
-                    <AccordionContent>
-                      <ScrollArea className="h-[260px] rounded-md border">
-                        <pre className="p-3 text-xs">{JSON.stringify(status, null, 2)}</pre>
-                      </ScrollArea>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
+            <StatusTab status={status} />
           </TabsContent>
 
           <TabsContent value="acting">
-            <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Scripts</CardTitle>
-                  <CardDescription>Click a script to load.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {scripts.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No scripts found.</div>
-                  ) : (
-                    <ScrollArea className="h-[520px] rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[64px]">ID</TableHead>
-                            <TableHead>Title</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {scripts.map((s) => (
-                            <TableRow key={s.id} className="cursor-pointer" onClick={() => loadScript(s.id)}>
-                              <TableCell className="font-mono text-xs">{s.id}</TableCell>
-                              <TableCell>
-                                <div className="font-medium">{s.title}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {s.source_format} • {s.created_at}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Run Lines</CardTitle>
-                  <CardDescription>{selectedTitle ? `Loaded: ${selectedTitle}` : "Select a script."}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="me">Me</Label>
-                      <Input id="me" value={me} onChange={(e) => setMe(e.target.value)} className="w-[220px]" />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="mode">Mode</Label>
-                      <select
-                        id="mode"
-                        value={mode}
-                        onChange={(e) => setMode(e.target.value as any)}
-                        className="h-9 w-[200px] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <option value="practice">practice</option>
-                        <option value="learn">learn (reveal after)</option>
-                        <option value="read_through">read-through</option>
-                        <option value="speed_through">speed-through</option>
-                      </select>
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="from">From</Label>
-                      <Input
-                        id="from"
-                        type="number"
-                        value={fromIdx}
-                        onChange={(e) => setFromIdx(Number(e.target.value))}
-                        className="w-[120px]"
-                      />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="to">To</Label>
-                      <Input id="to" type="number" value={toIdx} onChange={(e) => setToIdx(Number(e.target.value))} className="w-[120px]" />
-                    </div>
-
-                    <Button onClick={startSession} disabled={!selectedScriptId || wsState !== "open"}>
-                      Start + Play
-                    </Button>
-                    <Button variant="secondary" onClick={playSession} disabled={!sessionId || sessionPlaying}>
-                      Play
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => sessionId && wsSend({ type: "run_lines.stop", session_id: sessionId })}
-                      disabled={!sessionId}
-                    >
-                      Stop
-                    </Button>
-                    <Button variant="outline" onClick={() => seekSession(fromIdx, toIdx)} disabled={!sessionId}>
-                      Restart range
-                    </Button>
-                    <Button variant="outline" onClick={() => replayLast(10)} disabled={!sessionId || currentIdx === null}>
-                      Replay last 10
-                    </Button>
-
-                    {mode !== "speed_through" ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const next = Math.max(0.5, Number((speedMult / 1.15).toFixed(2)));
-                            setSpeedMult(next);
-                            sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
-                          }}
-                          disabled={!sessionId}
-                        >
-                          Slower
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const next = Math.min(3.0, Number((speedMult * 1.15).toFixed(2)));
-                            setSpeedMult(next);
-                            sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
-                          }}
-                          disabled={!sessionId}
-                        >
-                          Faster
-                        </Button>
-                        <div className="text-sm text-muted-foreground">
-                          Speed: <span className="font-mono">{speedMult.toFixed(2)}×</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        Speed: <span className="font-mono">1.30×</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  <div className="text-sm text-muted-foreground">
-                    Session: <span className="font-mono">{sessionId ?? "(none)"}</span> •{" "}
-                    {sessionPlaying ? "playing" : "ready"} • Current idx: <span className="font-mono">{currentIdx ?? "(n/a)"}</span>
-                  </div>
-
-                  <ScrollArea className="h-[260px] rounded-md border bg-muted/20">
-                    <div className="p-2 text-sm">
-                      {visibleTimeline.length === 0 ? (
-                        <div className="p-2 text-muted-foreground">
-                          Press <b>Start + Play</b>.
-                        </div>
-                      ) : (
-                        visibleTimeline.map((t) => {
-                          const active = currentIdx === t.idx;
-                          const rowClass = cn("rounded-md px-2 py-1 cursor-pointer", active && "bg-accent");
-                          const showText = t.revealed && t.text;
-                          if (t.kind === "direction") {
-                            return (
-                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
-                                <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
-                                <span className="font-mono text-xs">[DIR] {t.text}</span>
-                              </div>
-                            );
-                          }
-                          if (t.kind === "pause") {
-                            return (
-                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
-                                <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
-                                <b>{me}</b>: <span className="text-muted-foreground">(your turn)</span>{" "}
-                                {t.cue ? <span className="text-muted-foreground">cue: “{t.cue} …”</span> : null}
-                              </div>
-                            );
-                          }
-                          if (t.kind === "gap") {
-                            return (
-                              <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
-                                <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
-                                <b>{t.speaker ?? "?"}</b>:{" "}
-                                {showText ? <span>{t.text}</span> : <span className="text-muted-foreground">(waiting…)</span>}
-                              </div>
-                            );
-                          }
-                          return (
-                            <div key={t.key} className={rowClass} onClick={() => jumpToIdxAndReplay(t.idx)}>
-                              <span className="mr-2 font-mono text-xs text-muted-foreground">{t.idx}</span>
-                              <b>{t.speaker ?? "?"}</b>:{" "}
-                              {showText ? <span>{t.text}</span> : <span className="text-muted-foreground">(hidden)</span>}
-                            </div>
-                          );
-                        })
-                      )}
-                      <div ref={actingTimelineEndRef} />
-                    </div>
-                  </ScrollArea>
-
-                  {audioNeedsGesture ? (
-                    <Alert>
-                      <AlertTitle>Audio needs a click</AlertTitle>
-                      <AlertDescription className="space-y-2">
-                        <p>Your browser blocked autoplay. Click “Enable audio” to continue.</p>
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            const audio = audioRef.current;
-                            if (!audio) return;
-                            audio.play().then(() => setAudioNeedsGesture(false)).catch(() => {});
-                          }}
-                        >
-                          Enable audio
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  ) : null}
-                  <audio ref={audioRef} controls className="w-full" />
-
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="advanced">
-                      <AccordionTrigger>Advanced / Debug</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="grid gap-4">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <Switch checked={readAll} onCheckedChange={(v) => setReadAll(Boolean(v))} />
-                              <span className="text-sm">Read all (debug)</span>
-                            </div>
-                            <div className="grid gap-1.5">
-                              <Label>Pause mult</Label>
-                              <Input
-                                type="number"
-                                step="0.05"
-                                value={pauseMult}
-                                onChange={(e) => setPauseMult(Number(e.target.value))}
-                                className="w-[140px]"
-                              />
-                            </div>
-                            <div className="grid gap-1.5">
-                              <Label>Cue words</Label>
-                              <Input type="number" value={cueWords} onChange={(e) => setCueWords(Number(e.target.value))} className="w-[140px]" />
-                            </div>
-                            <div className="grid gap-1.5">
-                              <Label>Seek idx</Label>
-                              <Input type="number" value={seekIdx} onChange={(e) => setSeekIdx(Number(e.target.value))} className="w-[140px]" />
-                            </div>
-                            <Button variant="outline" onClick={() => jumpToIdxAndReplay(seekIdx)} disabled={!sessionId}>
-                              Seek
-                            </Button>
-                          </div>
-
-                          <div>
-                            <div className="text-sm font-medium">Characters</div>
-                            {characters.length === 0 ? (
-                              <div className="text-sm text-muted-foreground">No characters loaded.</div>
-                            ) : (
-                              <div className="mt-2 columns-2 gap-6 text-sm">
-                                {characters.map((c) => (
-                                  <div key={c.normalized_name} className="break-inside-avoid">
-                                    {c.name} → <span className="font-mono text-xs">{c.voice}</span>{" "}
-                                    <span className="font-mono text-xs">{c.rate}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <div className="text-sm font-medium">Full lines (debug)</div>
-                            {lines.length === 0 ? (
-                              <div className="text-sm text-muted-foreground">No lines loaded.</div>
-                            ) : (
-                              <ScrollArea className="mt-2 h-[260px] rounded-md border">
-                                <div className="p-2 text-sm">
-                                  {lines.map((l) => (
-                                    <div key={l.idx} className="rounded-md px-2 py-1">
-                                      <span className="mr-2 font-mono text-xs text-muted-foreground">{l.idx}</span>
-                                      {l.type === "dialogue" ? (
-                                        <span>
-                                          <b>{l.speaker_normalized ?? "?"}</b>: {l.text}
-                                        </span>
-                                      ) : (
-                                        <span className="font-mono text-xs">
-                                          [{l.type}] {l.text}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                            )}
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </CardContent>
-              </Card>
-            </div>
+            <ActingTab
+              scripts={scripts}
+              selectedScriptId={selectedScriptId}
+              selectedTitle={selectedTitle}
+              wsState={wsState}
+              me={me}
+              setMe={setMe}
+              mode={mode}
+              setMode={setMode}
+              readAll={readAll}
+              setReadAll={setReadAll}
+              fromIdx={fromIdx}
+              setFromIdx={setFromIdx}
+              toIdx={toIdx}
+              setToIdx={setToIdx}
+              pauseMult={pauseMult}
+              setPauseMult={setPauseMult}
+              cueWords={cueWords}
+              setCueWords={setCueWords}
+              speedMult={speedMult}
+              setSpeedMult={setSpeedMult}
+              seekIdx={seekIdx}
+              setSeekIdx={setSeekIdx}
+              sessionId={sessionId}
+              sessionPlaying={sessionPlaying}
+              currentIdx={currentIdx}
+              timeline={visibleTimeline}
+              actingTimelineEndRef={actingTimelineEndRef}
+              characters={characters}
+              lines={lines}
+              audioNeedsGesture={audioNeedsGesture}
+              onEnableAudio={() => {
+                const audio = audioRef.current;
+                if (!audio) return;
+                audio.play().then(() => setAudioNeedsGesture(false)).catch(() => {});
+              }}
+              audioRef={audioRef}
+              onLoadScript={(id) => void loadScript(id)}
+              onStart={startSession}
+              onPlay={playSession}
+              onStop={() => {
+                if (!sessionId) return;
+                wsSend({ type: "run_lines.stop", session_id: sessionId });
+              }}
+              onRestartRange={() => seekSession(fromIdx, toIdx)}
+              onReplayLast={replayLast}
+              onSlower={() => {
+                const next = Math.max(0.5, Number((speedMult / 1.15).toFixed(2)));
+                setSpeedMult(next);
+                sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
+              }}
+              onFaster={() => {
+                const next = Math.min(3.0, Number((speedMult * 1.15).toFixed(2)));
+                setSpeedMult(next);
+                sessionId && wsSend({ type: "run_lines.set_speed", session_id: sessionId, speed_mult: next });
+              }}
+              onSeek={() => jumpToIdxAndReplay(seekIdx)}
+              onJumpToIdxAndReplay={jumpToIdxAndReplay}
+            />
           </TabsContent>
 
           <TabsContent value="break">
-            <Card>
-              <CardHeader>
-                <CardTitle>Break Menu</CardTitle>
-                <CardDescription>Load a menu, choose a lane, and keep debug behind collapsible panels.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="grid gap-1.5">
-                    <Label>Site</Label>
-                    <Input value={breakSite} onChange={(e) => setBreakSite(e.target.value)} className="w-[200px]" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label>Minutes</Label>
-                    <Input type="number" value={breakMinutes} onChange={(e) => setBreakMinutes(Number(e.target.value))} className="w-[140px]" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label>Context</Label>
-                    <Input value={breakContext} onChange={(e) => setBreakContext(e.target.value)} className="w-[200px]" />
-                  </div>
-                  <Button onClick={loadBreakMenu}>Load break menu</Button>
-                  <Button variant="destructive" onClick={() => unblockAllFromUi(breakMinutes)}>
-                    Unblock ALL ({breakMinutes} min)
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={autoStartActing} onCheckedChange={(v) => setAutoStartActing(Boolean(v))} />
-                    <span className="text-sm">Auto-start acting (only if 1 scene)</span>
-                  </div>
-                </div>
-
-                {breakMenu ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
-                      event_key: <span className="font-mono">{breakMenu.event_key}</span>
-                    </div>
-                    <div className="grid gap-2">
-                      {breakMenu.lanes.map((l: any) => {
-                        if (l.type === "same_need") {
-                          return (
-                            <Card key={`${breakMenu.event_key}-${l.type}`}>
-                              <CardHeader>
-                                <CardTitle className="text-base">same_need</CardTitle>
-                                <CardDescription>{l.prompt}</CardDescription>
-                              </CardHeader>
-                              <CardContent>
-                                <Button onClick={() => chooseBreakLane("same_need")}>Choose need</Button>
-                              </CardContent>
-                            </Card>
-                          );
-                        }
-                        if (l.type === "feed") {
-                          return (
-                            <Card key={`${breakMenu.event_key}-${l.type}`}>
-                              <CardHeader>
-                                <CardTitle className="text-base">feed</CardTitle>
-                                <CardDescription>
-                                  Unblock <b>{l.site}</b> for <b>{l.minutes}</b> minutes (requires passwordless sudo).
-                                </CardDescription>
-                              </CardHeader>
-                              <CardContent>
-                                <Button variant="destructive" onClick={() => chooseBreakLane("feed")}>
-                                  Unblock (feed)
-                                </Button>
-                              </CardContent>
-                            </Card>
-                          );
-                        }
-                        const card = l.card;
-                        const laneType = String(l.type ?? "");
-                        const isSpanishLane = ["verb", "noun", "lesson", "fusion"].includes(laneType);
-                        const isSovtLane = laneType === "sovt";
-                        return (
-                          <Card key={`${breakMenu.event_key}-${l.type}-${card?.id ?? "x"}`}>
-                            <CardHeader>
-                              <CardTitle className="text-base">{l.type}</CardTitle>
-                              <CardDescription>
-                                {card?.activity ?? "(missing card)"} • {card?.minutes ?? "?"} min •{" "}
-                                {card?.doneCondition ?? card?.done_condition ?? ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Button onClick={() => chooseBreakLane(l.type)}>
-                                  {isSpanishLane ? "Choose (Spanish)" : isSovtLane ? "Choose (SOVT)" : laneType === "acting" ? "Choose (acting)" : "Choose"}
-                                </Button>
-                                {isSpanishLane ? (
-                                  <Button
-                                    variant="secondary"
-                                    onClick={() => chooseBreakLaneAndStartSpanish(laneType as any)}
-                                    disabled={spanishLoading || Boolean(spanishSessionId)}
-                                  >
-                                    Choose + Start Spanish
-                                  </Button>
-                                ) : null}
-                                {isSovtLane ? (
-                                  <Button variant="secondary" onClick={chooseBreakLaneAndStartSovt}>
-                                    Choose + Start SOVT
-                                  </Button>
-                                ) : null}
-                              </div>
-
-                              {l.type === "acting" && Array.isArray(l.recent_scripts) && l.recent_scripts.length > 0 ? (
-                                <Accordion type="single" collapsible>
-                                  <AccordionItem value="recent">
-                                    <AccordionTrigger>Recent scenes</AccordionTrigger>
-                                    <AccordionContent>
-                                      <div className="space-y-2 text-sm">
-                                        {l.recent_scripts.slice(0, 5).map((s: any) => {
-                                          const isPickerActive =
-                                            actingPickerOpen &&
-                                            Array.isArray(actingPickerScripts) &&
-                                            actingPickerScripts.some((p) => p?.id === s?.id);
-                                          return (
-                                            <div
-                                              key={s.id}
-                                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2"
-                                            >
-                                              <div>
-                                                <div className="font-medium">
-                                                  [{s.id}] {s.title}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                  {s.character_count} chars • {s.dialogue_lines} lines
-                                                </div>
-                                              </div>
-                                              {isPickerActive ? (
-                                                <div className="flex gap-2">
-                                                  <Button
-                                                    variant="outline"
-                                                    disabled={actingPickerLoadingId !== null}
-                                                    onClick={async () => {
-                                                      const id = Number(s.id);
-                                                      setActingPickerLoadingId(id);
-                                                      try {
-                                                        setActingPickerOpen(false);
-                                                        await loadAndMaybeStart(id, false);
-                                                        setActiveTab("acting");
-                                                      } finally {
-                                                        setActingPickerLoadingId(null);
-                                                      }
-                                                    }}
-                                                  >
-                                                    {actingPickerLoadingId !== null ? "Loading..." : "Load"}
-                                                  </Button>
-                                                  <Button
-                                                    disabled={actingPickerLoadingId !== null}
-                                                    onClick={async () => {
-                                                      const id = Number(s.id);
-                                                      setActingPickerLoadingId(id);
-                                                      try {
-                                                        setActingPickerOpen(false);
-                                                        await loadAndMaybeStart(id, true);
-                                                        setActiveTab("acting");
-                                                      } finally {
-                                                        setActingPickerLoadingId(null);
-                                                      }
-                                                    }}
-                                                  >
-                                                    {actingPickerLoadingId !== null ? "Starting..." : "Load + Start"}
-                                                  </Button>
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                          );
-                                        })}
-                                        {actingPickerOpen && l.recent_scripts.length > 1 ? (
-                                          <Alert>
-                                            <AlertTitle>Pick a scene</AlertTitle>
-                                            <AlertDescription>Multiple recent scenes found — choose one above.</AlertDescription>
-                                          </Alert>
-                                        ) : null}
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                </Accordion>
-                              ) : null}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No break menu loaded.</div>
-                )}
-
-                {breakChoice ? (
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value="choice">
-                      <AccordionTrigger>Choice result</AccordionTrigger>
-                      <AccordionContent>
-                        {breakChoice?.ok && breakChoice?.card?.prompt ? (
-                          <Card>
-                            <CardHeader>
-                              <CardTitle className="text-base">Prompt</CardTitle>
-                              <CardDescription>
-                                The web UI can run Spanish sessions now. If you prefer an external agent runner, use the prompt below.
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              <div className="flex flex-wrap gap-2">
-                                <Button variant="secondary" onClick={() => copyToClipboard(String(breakChoice.card.prompt))}>
-                                  Copy prompt
-                                </Button>
-                                <Button
-                                  onClick={async () => {
-                                    await copyToClipboard(String(breakChoice.card.prompt));
-                                    await sendChoiceToAgent(breakChoice);
-                                  }}
-                                >
-                                  Send to agent (and copy)
-                                </Button>
-                              </div>
-                              <ScrollArea className="h-[220px] rounded-md border">
-                                <pre className="p-3 text-xs whitespace-pre-wrap">{String(breakChoice.card.prompt)}</pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        ) : null}
-                        <Separator className="my-3" />
-                        <ScrollArea className="h-[240px] rounded-md border">
-                          <pre className="p-3 text-xs">{JSON.stringify(breakChoice, null, 2)}</pre>
-                        </ScrollArea>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                ) : null}
-              </CardContent>
-            </Card>
+            <BreakTab
+              breakSite={breakSite}
+              setBreakSite={setBreakSite}
+              breakMinutes={breakMinutes}
+              setBreakMinutes={setBreakMinutes}
+              breakContext={breakContext}
+              setBreakContext={setBreakContext}
+              autoStartActing={autoStartActing}
+              setAutoStartActing={setAutoStartActing}
+              breakMenu={breakMenu}
+              breakChoice={breakChoice}
+              loadBreakMenu={() => void loadBreakMenu()}
+              unblockAllFromUi={(m) => void unblockAllFromUi(m)}
+              chooseBreakLane={(lane) => void chooseBreakLane(lane)}
+              chooseBreakLaneAndStartSpanish={(lane) => void chooseBreakLaneAndStartSpanish(lane)}
+              chooseBreakLaneAndStartSovt={() => void chooseBreakLaneAndStartSovt()}
+              spanishLoading={spanishLoading}
+              spanishSessionId={spanishSessionId}
+              actingPickerOpen={actingPickerOpen}
+              actingPickerScripts={actingPickerScripts}
+              actingPickerLoadingId={actingPickerLoadingId}
+              setActingPickerOpen={setActingPickerOpen}
+              setActingPickerLoadingId={setActingPickerLoadingId}
+              loadAndMaybeStart={loadAndMaybeStart}
+              switchToActingTab={() => setActiveTab("acting")}
+              copyToClipboard={copyToClipboard}
+              sendChoiceToAgent={sendChoiceToAgent}
+            />
           </TabsContent>
 
           <TabsContent value="spanish">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <CardTitle>Spanish</CardTitle>
-                    <CardDescription>AI-driven Spanish tutoring sessions.</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="sp-brain" className="text-sm">Brain:</Label>
-                    <select
-                      id="sp-brain"
-                      value={spanishBrainDefault}
-                      onChange={(e) => setSpanishBrainSetting(e.target.value as BrainDefault)}
-                      disabled={Boolean(spanishSessionId)}
-                      className="h-8 w-[120px] rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                    >
-                      <option value="codex">Codex</option>
-                      <option value="claude">Claude</option>
-                    </select>
-                    {spanishSessionId ? (
-                      <span className="text-xs text-muted-foreground">(locked for session)</span>
-                    ) : null}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button onClick={startSpanishSessionFromChoice} disabled={spanishLoading}>
-                    Start Spanish Session (from last break choice)
-                  </Button>
-                  <Button variant="secondary" onClick={() => endSpanishSession("completed")} disabled={!spanishSessionId}>
-                    End (completed)
-                  </Button>
-                  <Button variant="outline" onClick={() => endSpanishSession("abandoned")} disabled={!spanishSessionId}>
-                    End (abandoned)
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    session: <span className="font-mono">{spanishSessionId ?? "(none)"}</span>
-                  </div>
-                </div>
+            <SpanishTab
+              spanishBrainDefault={spanishBrainDefault}
+              setSpanishBrainSetting={setSpanishBrainSetting}
+              spanishSessionId={spanishSessionId}
+              spanishBrain={spanishBrain}
+              spanishLoading={spanishLoading}
+              spanishError={spanishError}
+              spanishMessages={spanishMessages}
+              spanishChatEndRef={spanishChatEndRef}
+              startSpanishSessionFromChoice={() => void startSpanishSessionFromChoice()}
+              endSpanishSession={(s) => void endSpanishSession(s)}
+              spanishAnswer={spanishAnswer}
+              setSpanishAnswer={setSpanishAnswer}
+              submitSpanishAnswer={() => void submitSpanishAnswer()}
+              spanishPendingListen={spanishPendingListen}
+              spanishRecording={spanishRecording}
+              spanishRecordingElapsedMs={spanishRecordingElapsedMs}
+              startSpanishRecording={() => void startSpanishRecording()}
+              uploadSpanishListenAttempt={() => void uploadSpanishListenAttempt()}
+              spanishSpeakResults={spanishSpeakResults}
+              spanishAudioQueueLen={spanishAudioQueue.length}
+              spanishAudioMuted={spanishAudioMuted}
+              toggleSpanishAudioMuted={() => setSpanishAudioMuted((v) => !v)}
+              spanishAudioNeedsGesture={spanishAudioNeedsGesture}
+              enableSpanishAudio={() => {
+                const audio = spanishAudioRef.current;
+                if (!audio) return;
+                audio.play().then(() => setSpanishAudioNeedsGesture(false)).catch(() => {});
+              }}
+              spanishAudioRef={spanishAudioRef}
+              refreshSpanishSessions={() => void refreshSpanishSessions()}
+              loadSpanishTranscript={(id) => void loadSpanishTranscript(id)}
+              spanishSessions={spanishSessions}
+              spanishTranscriptSessionId={spanishTranscriptSessionId}
+              spanishTranscriptTurns={spanishTranscriptTurns}
+              spanishTranscriptError={spanishTranscriptError}
+            />
+          </TabsContent>
 
-                {spanishError ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{spanishError}</AlertDescription>
-                  </Alert>
-                ) : null}
+          <TabsContent value="sovt">
+            <SovtTab
+              breakMenuLoaded={Boolean(breakMenu)}
+              sovtCard={sovtCard}
+              sovtError={sovtError}
+              sovtCompletion={sovtCompletion}
+              sovtSteps={sovtSteps}
+              chooseBreakLaneAndStartSovt={() => void chooseBreakLaneAndStartSovt()}
+              runSovtCmd={(idx) => runSovtCmd(idx)}
+              completeSovt={(s) => void completeSovt(s)}
+            />
+          </TabsContent>
 
-                {/* Chat history */}
-                <div className="rounded-md border bg-muted/20">
-                  <div className="border-b px-3 py-2 text-sm font-medium">Chat</div>
-                  <ScrollArea className="h-[340px]">
-                    <div className="p-3 space-y-3 text-sm">
-                      {spanishMessages.length === 0 ? (
-                        <div className="text-muted-foreground">Start a session to begin.</div>
-                      ) : (
-                        spanishMessages.map((msg, i) => (
-                          <div
-                            key={`${msg.timestamp}-${i}`}
-                            className={cn(
-                              "rounded-md px-3 py-2",
-                              msg.role === "tutor" && "bg-background border",
-                              msg.role === "you" && "bg-primary/10 border border-primary/20 ml-8",
-                              msg.role === "system" && "text-muted-foreground text-xs italic",
-                            )}
-                          >
-                            {msg.role !== "system" ? (
-                              <div className="text-xs font-medium text-muted-foreground mb-1">
-                                {msg.role === "tutor" ? "Tutor" : "You"}
-                              </div>
-                            ) : null}
-                            <pre className="whitespace-pre-wrap text-sm font-sans">{msg.text}</pre>
-                          </div>
-                        ))
-                      )}
-                      {spanishLoading ? (
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
-                          Thinking...
-                        </div>
-                      ) : null}
-                      <div ref={spanishChatEndRef} />
-                    </div>
-                  </ScrollArea>
-                </div>
-
-                {/* Answer input with Enter-to-submit */}
-                {spanishSessionId && spanishBrain?.await === "user" ? (
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex-1 min-w-[280px]">
-                      <Label htmlFor="sp-answer">Your answer</Label>
-                      <Input
-                        id="sp-answer"
-                        value={spanishAnswer}
-                        onChange={(e) => setSpanishAnswer(e.target.value)}
-                        placeholder="Type your answer..."
-                        disabled={spanishLoading}
-                        onKeyDown={(e) => {
-                          if (e.nativeEvent.isComposing) return;
-                          if (e.key === "Enter" && !e.shiftKey && spanishAnswer.trim()) {
-                            e.preventDefault();
-                            submitSpanishAnswer();
-                          }
-                        }}
-                      />
-                    </div>
-                    <Button onClick={submitSpanishAnswer} disabled={!spanishAnswer.trim() || spanishLoading}>
-                      Submit
-                    </Button>
-                  </div>
-                ) : null}
-
-                {/* Pronunciation check */}
-                {spanishPendingListen ? (
-                  <Alert>
-                    <AlertTitle>Pronunciation check</AlertTitle>
-                    <AlertDescription className="space-y-2">
-                      <div>
-                        Say: <span className="font-mono">{spanishPendingListen.target_text}</span>
-                      </div>
-                      {spanishRecording ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                          Recording: {formatMmSs(spanishRecordingElapsedMs)}
-                        </div>
-                      ) : null}
-                      {!spanishRecording ? (
-                        <Button onClick={startSpanishRecording} disabled={spanishLoading}>Record</Button>
-                      ) : (
-                        <Button onClick={uploadSpanishListenAttempt}>Stop + Upload ({formatMmSs(spanishRecordingElapsedMs)})</Button>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
-
-                {/* Audio controls */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSpanishAudioMuted((v) => !v)}
-                  >
-                    {spanishAudioMuted ? "Unmute auto-play" : "Mute auto-play"}
-                  </Button>
-                  {spanishAudioNeedsGesture ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        const audio = spanishAudioRef.current;
-                        if (!audio) return;
-                        audio.play().then(() => setSpanishAudioNeedsGesture(false)).catch(() => {});
-                      }}
-                    >
-                      Enable audio
-                    </Button>
-                  ) : null}
-                  {spanishAudioQueue.length > 0 ? (
-                    <span className="text-xs text-muted-foreground">Audio queue: {spanishAudioQueue.length}</span>
-                  ) : null}
-                </div>
-                <audio ref={spanishAudioRef} controls className="w-full" />
-
-                {/* Audio debug + transcript in accordions */}
-                <Accordion type="single" collapsible>
-                  {spanishSpeakResults.length > 0 ? (
-                    <AccordionItem value="audio">
-                      <AccordionTrigger>Audio (debug)</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-2 text-sm">
-                          {spanishSpeakResults.map((r) => (
-                            <div
-                              key={`${r.id}-${r.audio_id}`}
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2"
-                            >
-                              <div className="text-xs">
-                                <span className="font-mono">{r.id}</span> → <span className="font-mono">{r.audio_id}</span>{" "}
-                                <span className="text-muted-foreground">({r.duration_sec.toFixed(2)}s)</span>
-                              </div>
-                              <Button variant="outline" size="sm" onClick={() => playSpanishAudio(r.url)}>
-                                Play
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ) : null}
-
-                  <AccordionItem value="transcript">
-                    <AccordionTrigger>Transcript (debug)</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button variant="outline" onClick={refreshSpanishSessions}>
-                            Refresh sessions
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              if (spanishSessionId) loadSpanishTranscript(spanishSessionId);
-                            }}
-                            disabled={!spanishSessionId}
-                          >
-                            Load current session transcript
-                          </Button>
-                          {spanishTranscriptSessionId ? (
-                            <span className="text-sm text-muted-foreground">
-                              viewing: <span className="font-mono">{spanishTranscriptSessionId}</span>
-                            </span>
-                          ) : null}
-                        </div>
-
-                        {spanishTranscriptError ? (
-                          <Alert variant="destructive">
-                            <AlertTitle>Error</AlertTitle>
-                            <AlertDescription>{spanishTranscriptError}</AlertDescription>
-                          </Alert>
-                        ) : null}
-
-                        {spanishSessions.length === 0 ? (
-                          <div className="text-sm text-muted-foreground">No sessions loaded yet.</div>
-                        ) : (
-                          <div className="rounded-md border">
-                            <div className="border-b px-3 py-2 text-sm font-medium">Recent sessions</div>
-                            <ScrollArea className="h-[160px]">
-                              <div className="p-2 text-sm space-y-2">
-                                {spanishSessions.map((s) => (
-                                  <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
-                                    <div>
-                                      <div className="font-mono text-xs">{s.id}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        <b>{s.status}</b> {s.lane ? `(${s.lane})` : ""} • {s.brain_name ?? "codex"} •{" "}
-                                        {new Date(s.updated_at).toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <Button variant="outline" size="sm" onClick={() => loadSpanishTranscript(s.id)}>
-                                      View
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                          </div>
-                        )}
-
-                        {spanishTranscriptTurns.length > 0 ? (
-                          <div className="rounded-md border">
-                            <div className="border-b px-3 py-2 text-sm font-medium">
-                              Turns ({spanishTranscriptTurns.length})
-                            </div>
-                            <ScrollArea className="h-[320px]">
-                              <div className="p-3 space-y-3 text-sm">
-                                {spanishTranscriptTurns.map((t) => (
-                                  <div key={t.id} className="rounded-md border p-2">
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                      <span className="font-mono">#{t.idx}</span>
-                                      <b className="text-foreground">{t.role}</b>
-                                      <span>{t.kind}</span>
-                                      <span>{new Date(t.created_at).toLocaleString()}</span>
-                                    </div>
-                                    {t.content ? <pre className="mt-2 whitespace-pre-wrap text-sm">{t.content}</pre> : null}
-                                    {t.json ? (
-                                      <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">
-                                        {prettyJson(t.json)}
-                                      </pre>
-                                    ) : null}
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">No transcript loaded.</div>
-                        )}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-	              </CardContent>
-	            </Card>
-	          </TabsContent>
-
-	          <TabsContent value="sovt">
-	            <Card>
-	              <CardHeader>
-	                <CardTitle>SOVT / Pitch</CardTitle>
-	                <CardDescription>Run SOVT card scripts in the browser (server plays audio locally via `site-toggle play`).</CardDescription>
-	              </CardHeader>
-	              <CardContent className="space-y-4">
-	                <div className="flex flex-wrap items-center gap-2">
-	                  <Button variant="secondary" onClick={chooseBreakLaneAndStartSovt} disabled={!breakMenu}>
-	                    Load from Break menu (choose + start)
-	                  </Button>
-	                  <Button variant="outline" onClick={() => completeSovt("completed")} disabled={!breakMenu || !sovtCard?.id}>
-	                    Mark completed
-	                  </Button>
-	                  <Button variant="outline" onClick={() => completeSovt("abandoned")} disabled={!breakMenu || !sovtCard?.id}>
-	                    Mark abandoned
-	                  </Button>
-	                  <div className="text-sm text-muted-foreground">
-	                    card: <span className="font-mono">{sovtCard?.id ?? "(none)"}</span>
-	                  </div>
-	                </div>
-
-	                {sovtError ? (
-	                  <Alert variant="destructive">
-	                    <AlertTitle>Error</AlertTitle>
-	                    <AlertDescription>{sovtError}</AlertDescription>
-	                  </Alert>
-	                ) : null}
-
-	                {sovtCompletion ? (
-	                  <Alert>
-	                    <AlertTitle>Completion logged</AlertTitle>
-	                    <AlertDescription>
-	                      <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">
-	                        {JSON.stringify(sovtCompletion, null, 2)}
-	                      </pre>
-	                    </AlertDescription>
-	                  </Alert>
-	                ) : null}
-
-	                {sovtCard ? (
-	                  <div className="rounded-md border p-3">
-	                    <div className="text-sm font-medium">{String(sovtCard.activity ?? "SOVT")}</div>
-	                    <div className="text-xs text-muted-foreground">
-	                      {sovtCard.minutes ?? "?"} min • {sovtCard.doneCondition ?? sovtCard.done_condition ?? ""}
-	                    </div>
-	                  </div>
-	                ) : (
-	                  <div className="text-sm text-muted-foreground">
-	                    Choose the `sovt` lane in the Break tab (or click “Choose + Start SOVT” there).
-	                  </div>
-	                )}
-
-	                <div className="flex flex-wrap items-center gap-2">
-	                  <Button
-	                    onClick={() => {
-	                      const next = sovtSteps.find((s) => s.status === "pending" || s.status === "error") ?? null;
-	                      if (next) runSovtCmd(next.idx);
-	                    }}
-	                    disabled={sovtSteps.some((s) => s.status === "running") || sovtSteps.length === 0}
-	                  >
-	                    Run next CMD
-	                  </Button>
-	                  {sovtSteps.some((s) => s.status === "running") ? (
-	                    <span className="text-sm text-muted-foreground">
-	                      <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" /> Running…
-	                    </span>
-	                  ) : null}
-	                </div>
-
-	                {sovtSteps.length === 0 ? (
-	                  <div className="text-sm text-muted-foreground">No CMD steps parsed yet.</div>
-	                ) : (
-	                  <div className="grid gap-2">
-	                    {sovtSteps.map((s) => (
-	                      <div key={s.idx} className="rounded-md border p-2">
-	                        <div className="flex flex-wrap items-center justify-between gap-2">
-	                          <div>
-	                            <div className="text-sm font-medium">
-	                              {s.idx}. {s.title}
-	                            </div>
-	                            <div className="text-xs text-muted-foreground font-mono break-all">{s.raw_cmd}</div>
-	                            <div className="text-xs text-muted-foreground">
-	                              status: <b>{s.status}</b>
-	                              {s.started_at_ms ? ` • started ${formatMmSs(Date.now() - s.started_at_ms)} ago` : ""}
-	                            </div>
-	                          </div>
-	                          <div className="flex gap-2">
-	                            <Button
-	                              size="sm"
-	                              onClick={() => runSovtCmd(s.idx)}
-	                              disabled={s.status === "running" || sovtSteps.some((x) => x.status === "running")}
-	                            >
-	                              Run
-	                            </Button>
-	                          </div>
-	                        </div>
-	                        {s.error ? (
-	                          <div className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{s.error}</div>
-	                        ) : null}
-	                        {s.result_json ? (
-	                          <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">{s.result_json}</pre>
-	                        ) : null}
-	                      </div>
-	                    ))}
-	                  </div>
-	                )}
-
-	                {sovtCard?.prompt ? (
-	                  <Accordion type="single" collapsible>
-	                    <AccordionItem value="prompt">
-	                      <AccordionTrigger>Card prompt (debug)</AccordionTrigger>
-	                      <AccordionContent>
-	                        <ScrollArea className="h-[260px] rounded-md border">
-	                          <pre className="p-3 text-xs whitespace-pre-wrap">{String(sovtCard.prompt)}</pre>
-	                        </ScrollArea>
-	                      </AccordionContent>
-	                    </AccordionItem>
-	                  </Accordion>
-	                ) : null}
-	              </CardContent>
-	            </Card>
-	          </TabsContent>
-
-	          <TabsContent value="signals">
-	            <Card>
-	              <CardHeader>
-	                <CardTitle>Signals</CardTitle>
-	                <CardDescription>Most recent signals (debug).</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {signals.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No signals yet.</div>
-                ) : (
-                  <ScrollArea className="h-[520px] rounded-md border">
-                    <div className="p-3 space-y-3">
-                      {signals.slice().reverse().slice(0, 20).map((s) => (
-                        <div key={s.id} className="rounded-md border p-2">
-                          <div className="text-sm">
-                            <b>{s.name}</b> <span className="text-xs text-muted-foreground">{s.created_at}</span>
-                          </div>
-                          <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">
-                            {JSON.stringify(s.payload, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="signals">
+            <SignalsTab signals={signals} />
           </TabsContent>
         </Tabs>
       </div>

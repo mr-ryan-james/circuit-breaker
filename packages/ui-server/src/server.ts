@@ -13,6 +13,7 @@ import {
   setSetting,
   getSiteBySlug,
   insertEvent,
+  recordSrsReview,
 } from "@circuit-breaker/core";
 
 import { defaultStateDir, writeState } from "./state.js";
@@ -258,6 +259,28 @@ function normalizeBrainName(input: unknown): BrainName {
   return input === "claude" ? "claude" : "codex";
 }
 
+const SPANISH_BRAIN_OUTPUT_EXAMPLE_JSON = JSON.stringify(
+  {
+    v: 1,
+    assistant_text: "string",
+    // Optional progress fields (include when useful, especially during scored quizzes).
+    score: { correct: 3, total: 15 },
+    phase: "quiz",
+    question_number: 3,
+    tool_requests: [
+      {
+        id: "t1",
+        tool: "speak",
+        args: { text: "string", voice: "es-ES-AlvaroNeural|es-ES-ElviraNeural|es-MX-JorgeNeural|es-MX-DaliaNeural", rate: "-25%" },
+      },
+      { id: "t2", tool: "listen", args: { target_text: "string" } },
+    ],
+    await: "user|listen_result|done",
+  },
+  null,
+  2,
+);
+
 /** System prompt shared across both Codex and Claude brain runners. */
 function spanishSystemPrompt(lane: string | null | undefined): string {
   const laneLabel = lane ? lane.trim() : "";
@@ -307,27 +330,7 @@ function spanishSystemPrompt(lane: string | null | undefined): string {
     "",
     "Return EXACTLY ONE JSON object as your final message each turn (no markdown, no code fences).",
     "The JSON MUST match this schema:",
-    JSON.stringify(
-      {
-        v: 1,
-        assistant_text: "string",
-        // Optional progress fields (include when useful, especially during scored quizzes).
-        score: { correct: 3, total: 15 },
-        phase: "quiz",
-        question_number: 3,
-        tool_requests: [
-          {
-            id: "t1",
-            tool: "speak",
-            args: { text: "string", voice: "es-ES-AlvaroNeural|es-ES-ElviraNeural|es-MX-JorgeNeural|es-MX-DaliaNeural", rate: "-25%" },
-          },
-          { id: "t2", tool: "listen", args: { target_text: "string" } },
-        ],
-        await: "user|listen_result|done",
-      },
-      null,
-      2,
-    ),
+    SPANISH_BRAIN_OUTPUT_EXAMPLE_JSON,
     "",
     "Rules:",
     "- Use Castilian Spanish with vosotros unless the prompt suggests otherwise.",
@@ -340,6 +343,30 @@ function spanishSystemPrompt(lane: string | null | undefined): string {
     laneGuidance,
     "",
     "Start by asking the first question based on CARD_PROMPT.",
+  ].join("\n");
+}
+
+function spanishRepairPrompt(args: { lane: string | null | undefined; badOutput: string; attempt: number }): string {
+  const laneLabel = args.lane ? args.lane.trim() : "";
+  const clipped = String(args.badOutput ?? "").trim().slice(0, 1500);
+  return [
+    "Your previous message was NOT valid JSON that matched the required schema.",
+    "",
+    "Return EXACTLY ONE JSON object and NOTHING ELSE:",
+    "- No markdown",
+    "- No code fences",
+    "- No extra commentary before/after",
+    "",
+    "It MUST match this schema example:",
+    SPANISH_BRAIN_OUTPUT_EXAMPLE_JSON,
+    "",
+    `Lane: ${laneLabel || "(unknown)"}`,
+    `Repair attempt: ${args.attempt}`,
+    "",
+    "Re-emit your intended response (same content) but as a valid JSON object.",
+    "",
+    "Bad output (for reference):",
+    clipped,
   ].join("\n");
 }
 
@@ -474,6 +501,43 @@ export async function main(): Promise<void> {
     }
   }
 
+  function recordSpanishPracticeCompleted(
+    db: ReturnType<typeof openCoreDb>["db"],
+    sess: ReturnType<typeof getSpanishSession>,
+    args: { status: "completed" | "abandoned"; note?: string | null; auto?: boolean },
+  ): void {
+    // Best-effort: practice tracking should never break the session lifecycle.
+    try {
+      if (!sess?.card_id) return;
+
+      insertEvent(db, {
+        type: "practice_completed",
+        eventKey: sess.event_key ?? sess.id,
+        cardId: sess.card_id,
+        metaJson: JSON.stringify({
+          module_slug: "spanish",
+          status: args.status,
+          lane: sess.lane ?? null,
+          session_id: sess.id,
+          auto: Boolean(args.auto),
+          note: args.note ?? null,
+        }),
+      });
+
+      // v0 SRS: verbs only (Leitner boxes).
+      if (sess.lane === "verb") {
+        recordSrsReview(db, {
+          cardId: sess.card_id,
+          moduleSlug: "spanish",
+          lane: "verb",
+          outcome: args.status === "completed" ? "success" : "failure",
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   /**
    * Shared helper: parse + validate brain output, insert turns, render TTS, broadcast WS.
    * Used by spanish.session.start, spanish.session.answer, and /api/spanish/listen/upload.
@@ -486,17 +550,70 @@ export async function main(): Promise<void> {
     | { ok: true; brain: SpanishBrainOutput; speakResults: any[]; pendingListen: any | null; session_status: "open" | "completed" }
     | { ok: false; error: string; raw?: string }
   > {
-    const raw = String(run.last_agent_message ?? "").trim();
-    const parsed = safeJsonParse(raw);
-    const brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
-    if (!brainParsed.success) {
+    const sess = getSpanishSession(db, sessionId);
+    const brainName: BrainName = normalizeBrainName(sess?.brain_name);
+    const lane = sess?.lane ?? null;
+
+    let currentRun: BrainResult = run;
+    let raw = String(currentRun.last_agent_message ?? "").trim();
+
+    // Codex sometimes violates the "single JSON object" constraint. Retry a couple times with a stricter prompt.
+    const maxRetries = brainName === "codex" ? 2 : 0;
+    let brainParsed: ReturnType<typeof SpanishBrainOutputSchema.safeParse> | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const parsed = safeJsonParse(raw);
+      brainParsed = SpanishBrainOutputSchema.safeParse(parsed);
+      if (brainParsed.success) break;
+
       insertSpanishTurn(db, {
         session_id: sessionId,
         idx: nextSpanishTurnIdx(db, sessionId),
         role: "assistant",
         kind: "brain_raw",
         content: raw,
+        json: { brain: brainName, attempt, error: brainParsed.error?.issues?.[0]?.message ?? "schema_validation_failed" },
       });
+
+      if (attempt >= maxRetries) {
+        return { ok: false, error: "bad_brain_output", raw };
+      }
+
+      const threadId = currentRun.thread_id;
+      if (!threadId) {
+        return { ok: false, error: "missing_thread_id", raw };
+      }
+
+      const logDir = path.join(stateDir, "spanish", brainName, sessionId);
+      fs.mkdirSync(logDir, { recursive: true });
+
+      const runner = createBrainRunner(brainName);
+      const retry = await runner.run({
+        cwd: repoRootFromHere(),
+        prompt: spanishRepairPrompt({ lane, badOutput: raw, attempt: attempt + 1 }),
+        resumeThreadId: threadId,
+        timeoutMs: 90_000,
+        logJsonlPath: path.join(logDir, `repair-${Date.now()}-attempt${attempt + 1}.jsonl`),
+      });
+
+      if (!retry.ok) {
+        insertSpanishTurn(db, {
+          session_id: sessionId,
+          idx: nextSpanishTurnIdx(db, sessionId),
+          role: "assistant",
+          kind: "error",
+          content: `Brain (${brainName}) failed during repair: ${retry.error}`,
+          json: retry,
+        });
+        return { ok: false, error: "brain_failed" };
+      }
+
+      currentRun = retry;
+      raw = String(currentRun.last_agent_message ?? "").trim();
+    }
+
+    if (!brainParsed?.success) {
+      // Defensive: should have returned above.
       return { ok: false, error: "bad_brain_output", raw };
     }
 
@@ -563,6 +680,11 @@ export async function main(): Promise<void> {
     // UI clients treat this as a terminal state and should clear local input state.
     let sessionStatus: "open" | "completed" = "open";
     if (brain.await === "done") {
+      const sess = getSpanishSession(db, sessionId);
+      // Only record completion once, on the open -> completed transition.
+      if (sess && sess.status === "open") {
+        recordSpanishPracticeCompleted(db, sess, { status: "completed", auto: true });
+      }
       sessionStatus = "completed";
       updateSpanishSession(db, sessionId, { status: "completed", pending_tool_json: null });
       insertSpanishTurn(db, {
@@ -1031,6 +1153,12 @@ export async function main(): Promise<void> {
         try {
           const sess = getSpanishSession(db, payload.session_id);
           if (!sess) return { ok: false, error: "session_not_found" };
+          if (sess.status !== "open") {
+            // Idempotent: don't record completion twice.
+            return { ok: true, already_ended: true, status: sess.status };
+          }
+
+          recordSpanishPracticeCompleted(db, sess, { status: payload.status, note: payload.note ?? null, auto: false });
           updateSpanishSession(db, payload.session_id, { status: payload.status, pending_tool_json: null });
           insertSpanishTurn(db, {
             session_id: payload.session_id,

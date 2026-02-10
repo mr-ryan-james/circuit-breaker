@@ -419,6 +419,54 @@ function ensureFluidSynthAvailable(bin: string): void {
   }
 }
 
+function midiToHz(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function midiToNoteName(midi: number): string {
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const name = names[midi % 12] ?? "C";
+  const octave = Math.floor(midi / 12) - 1;
+  return `${name}${octave}`;
+}
+
+type NoteEvent = {
+  idx: number;
+  start_ms: number;
+  duration_ms: number;
+  midi: number;
+  hz: number;
+  note: string;
+};
+
+function tokensToNoteEvents(tokens: MidiToken[], opts: { bpm: number; gapBeats: number }): { note_events: NoteEvent[]; duration_ms: number } {
+  const beatMs = 60000 / opts.bpm;
+  const out: NoteEvent[] = [];
+  let t = 0;
+  let idx = 0;
+
+  for (const tok of tokens) {
+    const durMs = tok.beats * beatMs;
+    if (tok.type === "rest") {
+      t += durMs;
+      continue;
+    }
+    idx += 1;
+    const hz = midiToHz(tok.midi);
+    out.push({
+      idx,
+      start_ms: Math.round(t),
+      duration_ms: Math.round(durMs),
+      midi: tok.midi,
+      hz,
+      note: midiToNoteName(tok.midi),
+    });
+    t += durMs + opts.gapBeats * beatMs;
+  }
+
+  return { note_events: out, duration_ms: Math.round(t) };
+}
+
 export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   const rawSubcommand = args[0];
   const subcommand = rawSubcommand && !rawSubcommand.startsWith("--") ? rawSubcommand : "seq";
@@ -431,6 +479,7 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
   let noteBeats = 1;
   let refresh = false;
   let noPlay = false;
+  let notesJson = false;
 
   // Subcommand specific
   let octaves = 1;
@@ -481,6 +530,10 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
     }
     if (a === "--no-play") {
       noPlay = true;
+      continue;
+    }
+    if (a === "--notes-json") {
+      notesJson = true;
       continue;
     }
 
@@ -606,11 +659,34 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
     throw new Error(`Unknown play subcommand: ${subcommand}`);
   }
 
+  const beatMs = 60000 / bpm;
+  const gapBeats = gapMs > 0 ? gapMs / beatMs : 0;
+  const noteInfo = notesJson ? tokensToNoteEvents(tokens, { bpm, gapBeats }) : null;
+
+  // Analysis-only: allow computing expected note timelines without requiring fluidsynth/SF2.
+  // Intended for browser pitch tooling. Output is deterministic from tokens + bpm.
+  if (json && notesJson && noPlay) {
+    printJson({
+      ok: true,
+      command: "play",
+      subcommand,
+      analyzed: true,
+      played: false,
+      cached: false,
+      bpm,
+      note_beats: noteBeats,
+      volume,
+      gap_ms: gapMs,
+      duration_ms: noteInfo?.duration_ms ?? 0,
+      note_events: noteInfo?.note_events ?? [],
+    });
+    return;
+  }
+
   const sf2Path = requireSoundfontPath();
   const fluidsynthBin = resolveFluidSynthBin();
   ensureFluidSynthAvailable(fluidsynthBin);
 
-  const gapBeats = gapMs > 0 ? gapMs / (60000 / bpm) : 0;
   const velocity = Math.max(0, Math.min(127, Math.round(volume * 127)));
 
   const midiBuffer = buildMidiFile(tokens, {
@@ -696,6 +772,12 @@ export async function cmdPlay(args: string[], json: boolean): Promise<void> {
       volume,
       gap_ms: gapMs,
       soundfont: sf2Path,
+      ...(notesJson
+        ? {
+            duration_ms: noteInfo?.duration_ms ?? 0,
+            note_events: noteInfo?.note_events ?? [],
+          }
+        : {}),
     });
     return;
   }

@@ -67,6 +67,23 @@ export function applySchema(db: SqliteDb): void {
       FOREIGN KEY(card_id) REFERENCES cards(id) ON DELETE CASCADE
     );
 
+    -- Lightweight spaced repetition state (v0: used for Spanish verb lane only).
+    -- Keyed by (card_id, module_slug, lane) so future modules/lanes can opt in without schema churn.
+    CREATE TABLE IF NOT EXISTS card_srs (
+      card_id INTEGER NOT NULL,
+      module_slug TEXT NOT NULL,
+      lane TEXT NOT NULL,
+      box INTEGER NOT NULL,
+      due_at_unix INTEGER NOT NULL,
+      last_reviewed_at_unix INTEGER,
+      streak INTEGER NOT NULL DEFAULT 0,
+      fail_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (card_id, module_slug, lane),
+      FOREIGN KEY(card_id) REFERENCES cards(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -97,6 +114,7 @@ export function applySchema(db: SqliteDb): void {
     CREATE INDEX IF NOT EXISTS idx_events_type ON events(type);
     CREATE INDEX IF NOT EXISTS idx_events_site_id ON events(site_id);
     CREATE INDEX IF NOT EXISTS idx_events_card_id ON events(card_id);
+    CREATE INDEX IF NOT EXISTS idx_card_srs_due ON card_srs(module_slug, lane, due_at_unix);
 
     -- Optional durable timer support (Phase 4): store intended unblock expiry per site.
     CREATE TABLE IF NOT EXISTS site_state (

@@ -14,6 +14,19 @@ export interface ContextRow {
   name: string | null;
 }
 
+export type CardSrsRow = {
+  card_id: number;
+  module_slug: string;
+  lane: string;
+  box: number;
+  due_at_unix: number;
+  last_reviewed_at_unix: number | null;
+  streak: number;
+  fail_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
 function parseTagsJson(tagsJson: string): string[] {
   try {
     const parsed = JSON.parse(tagsJson) as unknown;
@@ -164,6 +177,120 @@ export function getCardRating(db: SqliteDb, cardId: number): CardRating | null {
   const stmt = db.prepare("SELECT rating FROM card_ratings WHERE card_id = ? LIMIT 1");
   const row = stmt.get(cardId) as { rating: CardRating } | undefined;
   return row?.rating ?? null;
+}
+
+export function getCardSrs(db: SqliteDb, args: { cardId: number; moduleSlug: string; lane: string }): CardSrsRow | null {
+  const row = db
+    .prepare(
+      `SELECT card_id, module_slug, lane, box, due_at_unix, last_reviewed_at_unix, streak, fail_count, created_at, updated_at
+       FROM card_srs
+       WHERE card_id = ? AND module_slug = ? AND lane = ?
+       LIMIT 1`,
+    )
+    .get(args.cardId, args.moduleSlug, args.lane) as unknown as CardSrsRow | undefined;
+  return row ?? null;
+}
+
+export function listDueSrsCardIds(
+  db: SqliteDb,
+  args: { moduleSlug: string; lane: string; nowUnix?: number; limit?: number },
+): number[] {
+  const nowUnix = args.nowUnix ?? Math.floor(Date.now() / 1000);
+  const limit = args.limit ?? 50;
+  const rows = db
+    .prepare(
+      `SELECT card_id
+       FROM card_srs
+       WHERE module_slug = ? AND lane = ? AND due_at_unix <= ?
+       ORDER BY due_at_unix ASC, card_id ASC
+       LIMIT ?`,
+    )
+    .all(args.moduleSlug, args.lane, nowUnix, limit) as Array<{ card_id: number }>;
+  return rows.map((r) => r.card_id);
+}
+
+const LEITNER_MAX_BOX = 5;
+const LEITNER_DAYS_BY_BOX: Record<number, number> = {
+  1: 0,
+  2: 1,
+  3: 3,
+  4: 7,
+  5: 14,
+};
+
+function clampLeitnerBox(box: number): number {
+  if (!Number.isFinite(box)) return 1;
+  return Math.max(1, Math.min(LEITNER_MAX_BOX, Math.trunc(box)));
+}
+
+function dueAtForBox(nowUnix: number, box: number): number {
+  const b = clampLeitnerBox(box);
+  const days = LEITNER_DAYS_BY_BOX[b] ?? 0;
+  return nowUnix + days * 24 * 60 * 60;
+}
+
+/**
+ * Record a Leitner-style review outcome for a specific card+lane.
+ * v0 policy:
+ * - success: move up one box (max box), schedule by box interval
+ * - failure: reset to box 1 (due now)
+ */
+export function recordSrsReview(
+  db: SqliteDb,
+  args: {
+    cardId: number;
+    moduleSlug: string;
+    lane: string;
+    outcome: "success" | "failure";
+    nowUnix?: number;
+  },
+): CardSrsRow {
+  const nowUnix = args.nowUnix ?? Math.floor(Date.now() / 1000);
+  const existing = getCardSrs(db, { cardId: args.cardId, moduleSlug: args.moduleSlug, lane: args.lane });
+
+  const prevBox = clampLeitnerBox(existing?.box ?? 1);
+  const nextBox = args.outcome === "success" ? clampLeitnerBox(prevBox + 1) : 1;
+  const nextStreak = args.outcome === "success" ? (existing?.streak ?? 0) + 1 : 0;
+  const nextFailCount = args.outcome === "failure" ? (existing?.fail_count ?? 0) + 1 : (existing?.fail_count ?? 0);
+  const dueAtUnix = args.outcome === "failure" ? nowUnix : dueAtForBox(nowUnix, nextBox);
+
+  db.prepare(
+    `INSERT INTO card_srs
+      (card_id, module_slug, lane, box, due_at_unix, last_reviewed_at_unix, streak, fail_count, created_at, updated_at)
+     VALUES
+      (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+     ON CONFLICT(card_id, module_slug, lane) DO UPDATE SET
+       box = excluded.box,
+       due_at_unix = excluded.due_at_unix,
+       last_reviewed_at_unix = excluded.last_reviewed_at_unix,
+       streak = excluded.streak,
+       fail_count = excluded.fail_count,
+       updated_at = datetime('now')`,
+  ).run(
+    args.cardId,
+    args.moduleSlug,
+    args.lane,
+    nextBox,
+    dueAtUnix,
+    nowUnix,
+    nextStreak,
+    nextFailCount,
+  );
+
+  return (
+    getCardSrs(db, { cardId: args.cardId, moduleSlug: args.moduleSlug, lane: args.lane }) ?? {
+      card_id: args.cardId,
+      module_slug: args.moduleSlug,
+      lane: args.lane,
+      box: nextBox,
+      due_at_unix: dueAtUnix,
+      last_reviewed_at_unix: nowUnix,
+      streak: nextStreak,
+      fail_count: nextFailCount,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  );
 }
 
 export function getActiveCards(db: SqliteDb, filters: {

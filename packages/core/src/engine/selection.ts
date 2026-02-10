@@ -1,5 +1,5 @@
 import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
-import { getActiveCards, getActiveCardsForContext, getCardRating, getRecentServedCardIds } from "../db/queries.js";
+import { getActiveCards, getActiveCardsForContext, getCardRating, getRecentServedCardIds, listDueSrsCardIds } from "../db/queries.js";
 import type { BreakCard, CardRating, CardRow } from "../types.js";
 
 function parseTags(tagsJson: string): string[] {
@@ -116,6 +116,29 @@ export function selectBreakCards(db: SqliteDb, options: SelectCardsOptions): Bre
   rows = rows.filter((r) => !recentServed.has(r.id));
   rows = rows.filter((r) => !excluded.has(r.id));
   rows = rows.filter(rowMatchesTags);
+
+  // v0 spaced repetition (Leitner): for the Spanish verb lane, prefer any due SRS cards.
+  // This is intentionally conservative: it only triggers when tagsAll includes both
+  // "spanish" and "verb" (the primary break menu verb lane), and only when selecting
+  // a single card.
+  const isSpanishVerbLane = count === 1 && tagsAll.includes("spanish") && tagsAll.includes("verb");
+  if (isSpanishVerbLane && rows.length > 0) {
+    try {
+      const dueIds = listDueSrsCardIds(db, { moduleSlug: "spanish", lane: "verb", limit: 50 });
+      if (dueIds.length > 0) {
+        const byId = new Map(rows.map((r) => [r.id, r] as const));
+        for (const id of dueIds) {
+          const row = byId.get(id);
+          if (!row) continue;
+          const rating = getCardRating(db, row.id);
+          if (rating === "ban") continue;
+          return [rowToCard(row)];
+        }
+      }
+    } catch {
+      // ignore and fall back to weighted random selection
+    }
+  }
 
   const picked: BreakCard[] = [];
   const usedCategories = new Set<string>();
