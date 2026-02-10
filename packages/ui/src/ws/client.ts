@@ -28,6 +28,29 @@ export type WsMessage =
   | { type: "error"; scope: string; message: string }
   | { type: string; [k: string]: any };
 
+export type WsClientMessage =
+  | {
+      type: "run_lines.start";
+      script_id: number;
+      from: number;
+      to: number;
+      mode: "practice" | "learn" | "read_through" | "speed_through";
+      me: string;
+      read_all: boolean;
+      pause_mult?: number;
+      pause_min_sec?: number;
+      pause_max_sec?: number;
+      cue_words?: number;
+      reveal_after?: boolean;
+      speed_mult?: number;
+    }
+  | { type: "run_lines.play"; session_id: string }
+  | { type: "run_lines.stop"; session_id: string }
+  | { type: "run_lines.seek"; session_id: string; from: number; to: number }
+  | { type: "run_lines.jump"; session_id: string; target_idx: number }
+  | { type: "run_lines.set_speed"; session_id: string; speed_mult: number }
+  | { type: "run_lines.ack"; session_id: string; event_id?: string; status?: "done" | "error" };
+
 export function connectWs(onMessage: (m: WsMessage) => void, token: string): WebSocket {
   const qs = `?token=${encodeURIComponent(token)}`;
   const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws${qs}`;
@@ -40,4 +63,10 @@ export function connectWs(onMessage: (m: WsMessage) => void, token: string): Web
     }
   };
   return ws;
+}
+
+export function sendWs(ws: WebSocket | null | undefined, msg: WsClientMessage): boolean {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+  ws.send(JSON.stringify(msg));
+  return true;
 }

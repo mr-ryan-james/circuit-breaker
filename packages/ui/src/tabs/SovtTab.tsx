@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { callAction } from "@/api/client";
+import { PitchTimeline } from "@/components/PitchTimeline";
 
 type NoteEvent = { idx: number; start_ms: number; duration_ms: number; midi: number; hz: number; note: string };
 type NoteAnalysis = { duration_ms: number; note_events: NoteEvent[]; bpm?: number };
@@ -36,13 +37,33 @@ function median(values: number[]): number | null {
   return (a + b) / 2;
 }
 
+function hzToMidi(hz: number): number {
+  return 69 + 12 * Math.log2(hz / 440);
+}
+
+function midiToHz(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
 // Minimal YIN-style pitch detector (offline). Good enough for an MVP pitch check.
-function detectPitchContour(samples: Float32Array, sampleRate: number, opts?: { frameSize?: number; hopSize?: number; minHz?: number; maxHz?: number; threshold?: number }) {
+function detectPitchContour(
+  samples: Float32Array,
+  sampleRate: number,
+  opts?: {
+    frameSize?: number;
+    hopSize?: number;
+    minHz?: number;
+    maxHz?: number;
+    threshold?: number;
+    gateDbfs?: number;
+  },
+) {
   const frameSize = opts?.frameSize ?? 2048;
   const hopSize = opts?.hopSize ?? 512;
-  const minHz = opts?.minHz ?? 80;
-  const maxHz = opts?.maxHz ?? 1000;
+  const minHz = opts?.minHz ?? 60;
+  const maxHz = opts?.maxHz ?? 1400;
   const threshold = opts?.threshold ?? 0.12;
+  const gateDbfs = opts?.gateDbfs ?? -40;
 
   const tauMin = Math.max(2, Math.floor(sampleRate / maxHz));
   const tauMax = Math.min(frameSize - 2, Math.floor(sampleRate / minHz));
@@ -54,6 +75,21 @@ function detectPitchContour(samples: Float32Array, sampleRate: number, opts?: { 
 
   for (let start = 0; start + frameSize <= samples.length; start += hopSize) {
     const frame = samples.subarray(start, start + frameSize);
+
+    // RMS gate (skip pitch detection for silent frames).
+    let sumSq = 0;
+    for (let i = 0; i < frame.length; i += 1) {
+      const x = frame[i] ?? 0;
+      sumSq += x * x;
+    }
+    const rms = frame.length > 0 ? Math.sqrt(sumSq / frame.length) : 0;
+    const dbfs = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+
+    const tMs = Math.round((start / sampleRate) * 1000);
+    if (dbfs < gateDbfs) {
+      contour.push({ t_ms: tMs, hz: null, clarity: 0 });
+      continue;
+    }
 
     // Difference function d(tau)
     diff.fill(0);
@@ -107,11 +143,27 @@ function detectPitchContour(samples: Float32Array, sampleRate: number, opts?: { 
       if (hz !== null && (hz < minHz || hz > maxHz)) hz = null;
     }
 
-    const tMs = Math.round((start / sampleRate) * 1000);
     contour.push({ t_ms: tMs, hz, clarity });
   }
 
-  return contour;
+  // 3-frame median smoothing in MIDI space to reduce octave spikes.
+  const midiSeq = contour.map((p) => (p.hz ? hzToMidi(p.hz) : null));
+  const smoothed = contour.map((p, i) => {
+    if (!p.hz) return p;
+    const window: number[] = [];
+    const a = midiSeq[i - 1];
+    const b = midiSeq[i];
+    const c = midiSeq[i + 1];
+    if (typeof a === "number") window.push(a);
+    if (typeof b === "number") window.push(b);
+    if (typeof c === "number") window.push(c);
+    if (window.length < 2) return p;
+    const m = median(window);
+    if (m === null) return p;
+    return { ...p, hz: midiToHz(m) };
+  });
+
+  return smoothed;
 }
 
 async function decodeRecordedAudio(blob: Blob): Promise<{ samples: Float32Array; sampleRate: number }> {
@@ -138,9 +190,68 @@ async function decodeRecordedAudio(blob: Blob): Promise<{ samples: Float32Array;
   }
 }
 
+type PitchFrame = { t_ms: number; hz: number | null; clarity: number };
+
+const PITCH_CLARITY_THRESHOLD = 0.65;
+const PITCH_OK_CENTS = 35;
+
+function computePerNoteResults(contour: PitchFrame[], expected: NoteEvent[], offsetMs: number) {
+  return expected.map((ev) => {
+    const start = ev.start_ms + offsetMs;
+    const end = start + ev.duration_ms;
+    const values = contour
+      .filter((p) => p.hz !== null && p.clarity >= PITCH_CLARITY_THRESHOLD && p.t_ms >= start && p.t_ms <= end)
+      .map((p) => p.hz as number)
+      .filter((hz) => hz >= 60 && hz <= 1400);
+    const det = median(values);
+    const cents = det ? centsDiff(det, ev.hz) : null;
+    const ok = cents !== null ? Math.abs(cents) <= PITCH_OK_CENTS : false;
+    return { idx: ev.idx, note: ev.note, expected_hz: ev.hz, detected_hz: det, cents, ok, start_ms: start, end_ms: end };
+  });
+}
+
+function scoreOffset(contour: PitchFrame[], expected: NoteEvent[], offsetMs: number): { ok_ratio: number; ok_count: number; note_count: number } {
+  const per = computePerNoteResults(contour, expected, offsetMs);
+  const okCount = per.filter((p) => p.ok).length;
+  const noteCount = per.length;
+  const okRatio = noteCount > 0 ? okCount / noteCount : 0;
+  return { ok_ratio: okRatio, ok_count: okCount, note_count: noteCount };
+}
+
+function autoAlignOffsetMs(contour: PitchFrame[], expected: NoteEvent[]): number {
+  if (expected.length === 0) return 0;
+
+  const chooseBest = (offsets: number[]): number => {
+    let best = offsets[0] ?? 0;
+    let bestScore = -1;
+    for (const off of offsets) {
+      const s = scoreOffset(contour, expected, off);
+      const score = s.ok_ratio;
+      if (score > bestScore) {
+        bestScore = score;
+        best = off;
+        continue;
+      }
+      if (score === bestScore && Math.abs(off) < Math.abs(best)) {
+        best = off;
+      }
+    }
+    return best;
+  };
+
+  const coarse: number[] = [];
+  for (let off = -2000; off <= 2000; off += 100) coarse.push(off);
+  const coarseBest = chooseBest(coarse);
+
+  const fine: number[] = [];
+  for (let off = coarseBest - 200; off <= coarseBest + 200; off += 25) fine.push(off);
+  return chooseBest(fine);
+}
+
 export function SovtTab(props: {
   breakMenuLoaded: boolean;
   sovtCard: any | null;
+  sovtEventKey: string | null;
   sovtError: string | null;
   sovtCompletion: any | null;
   sovtSteps: SovtCmdStep[];
@@ -152,6 +263,7 @@ export function SovtTab(props: {
   const {
     breakMenuLoaded,
     sovtCard,
+    sovtEventKey,
     sovtError,
     sovtCompletion,
     sovtSteps,
@@ -163,7 +275,11 @@ export function SovtTab(props: {
   const [noteAnalysis, setNoteAnalysis] = useState<NoteAnalysis | null>(null);
   const [noteAnalysisStepIdx, setNoteAnalysisStepIdx] = useState<number | null>(null);
   const [pitchOffsetMs, setPitchOffsetMs] = useState<number>(0);
+  const [pitchOffsetTouched, setPitchOffsetTouched] = useState(false);
+  const [pitchAutoOffsetMs, setPitchAutoOffsetMs] = useState<number | null>(null);
   const [pitchError, setPitchError] = useState<string | null>(null);
+  const [pitchContour, setPitchContour] = useState<Array<{ t_ms: number; hz: number | null; clarity: number }> | null>(null);
+  const [pitchHistory, setPitchHistory] = useState<any[] | null>(null);
 
   const [pitchRecording, setPitchRecording] = useState(false);
   const [pitchRecordingStartedAtMs, setPitchRecordingStartedAtMs] = useState<number | null>(null);
@@ -172,6 +288,8 @@ export function SovtTab(props: {
   const [pitchResults, setPitchResults] = useState<
     | null
     | {
+        offset_ms: number;
+        auto_offset_ms: number | null;
         duration_ms: number;
         contour_points: number;
         per_note: Array<{
@@ -181,7 +299,11 @@ export function SovtTab(props: {
           detected_hz: number | null;
           cents: number | null;
           ok: boolean;
+          start_ms: number;
+          end_ms: number;
         }>;
+        note_count: number;
+        ok_count: number;
         ok_ratio: number;
       }
   >(null);
@@ -200,11 +322,48 @@ export function SovtTab(props: {
     return () => window.clearInterval(id);
   }, [pitchRecording, pitchRecordingStartedAtMs]);
 
+  React.useEffect(() => {
+    // Best-effort: load recent pitch checks so progress is visible across reloads.
+    void (async () => {
+      try {
+        const res = await callAction<any>("sovt.pitch.history", { limit: 10 });
+        if (res?.ok && Array.isArray(res.results)) setPitchHistory(res.results);
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  // If the user adjusts the offset after analysis, recompute grading and keep the chart/results in sync.
+  React.useEffect(() => {
+    if (!pitchContour) return;
+    if (!noteAnalysis || (noteAnalysis.note_events?.length ?? 0) === 0) return;
+    setPitchResults((prev) => {
+      if (!prev) return prev;
+      const perNote = computePerNoteResults(pitchContour, noteAnalysis.note_events, pitchOffsetMs);
+      const okCount = perNote.filter((p) => p.ok).length;
+      const noteCount = perNote.length;
+      const okRatio = noteCount > 0 ? okCount / noteCount : 0;
+      return {
+        ...prev,
+        offset_ms: pitchOffsetMs,
+        per_note: perNote,
+        note_count: noteCount,
+        ok_count: okCount,
+        ok_ratio: okRatio,
+      };
+    });
+  }, [pitchOffsetMs, pitchContour, noteAnalysis]);
+
   const canAnalyzeNotes = (step: SovtCmdStep): boolean => Array.isArray(step.args) && step.args[0] === "play";
 
   async function analyzeExpectedNotesForStep(step: SovtCmdStep): Promise<void> {
     setPitchError(null);
     setPitchResults(null);
+    setPitchContour(null);
+    setPitchAutoOffsetMs(null);
+    setPitchOffsetTouched(false);
+    setPitchOffsetMs(0);
     setNoteAnalysis(null);
     setNoteAnalysisStepIdx(null);
     try {
@@ -275,36 +434,64 @@ export function SovtTab(props: {
     setPitchRecordingElapsedMs(0);
 
     try {
-      const decoded = await decodeRecordedAudio(blob);
-      const contour = detectPitchContour(decoded.samples, decoded.sampleRate);
-
       const expected = noteAnalysis?.note_events ?? [];
-      const shiftedExpected = expected.map((ev) => ({
-        ...ev,
-        start_ms: ev.start_ms + pitchOffsetMs,
-      }));
+      if (expected.length === 0) throw new Error("No expected notes loaded. Click “Notes” on a CMD step first.");
 
-      const perNote = shiftedExpected.map((ev) => {
-        const start = ev.start_ms;
-        const end = ev.start_ms + ev.duration_ms;
-        const values = contour
-          .filter((p) => p.hz !== null && p.clarity >= 0.55 && p.t_ms >= start && p.t_ms <= end)
-          .map((p) => p.hz as number);
-        const det = median(values);
-        const cents = det ? centsDiff(det, ev.hz) : null;
-        const ok = cents !== null ? Math.abs(cents) <= 60 : false;
-        return { idx: ev.idx, note: ev.note, expected_hz: ev.hz, detected_hz: det, cents, ok };
+      const decoded = await decodeRecordedAudio(blob);
+      const contour = detectPitchContour(decoded.samples, decoded.sampleRate, {
+        frameSize: 2048,
+        hopSize: 512,
+        minHz: 60,
+        maxHz: 1400,
+        gateDbfs: -40,
       });
+      setPitchContour(contour);
 
+      const autoOffset = autoAlignOffsetMs(contour, expected);
+      setPitchAutoOffsetMs(autoOffset);
+
+      const appliedOffset = pitchOffsetTouched ? pitchOffsetMs : autoOffset;
+      if (!pitchOffsetTouched) setPitchOffsetMs(autoOffset);
+
+      const perNote = computePerNoteResults(contour, expected, appliedOffset);
       const okCount = perNote.filter((p) => p.ok).length;
-      const okRatio = perNote.length > 0 ? okCount / perNote.length : 0;
+      const noteCount = perNote.length;
+      const okRatio = noteCount > 0 ? okCount / noteCount : 0;
 
+      const durationMs = Math.round((decoded.samples.length / decoded.sampleRate) * 1000);
       setPitchResults({
-        duration_ms: Math.round((decoded.samples.length / decoded.sampleRate) * 1000),
+        offset_ms: appliedOffset,
+        auto_offset_ms: autoOffset,
+        duration_ms: durationMs,
         contour_points: contour.length,
         per_note: perNote,
+        note_count: noteCount,
+        ok_count: okCount,
         ok_ratio: okRatio,
       });
+
+      // Best-effort persistence + history refresh.
+      try {
+        const step = noteAnalysisStepIdx ? (sovtSteps.find((s) => s.idx === noteAnalysisStepIdx) ?? null) : null;
+        await callAction<any>("sovt.pitch.save", {
+          card_id: sovtCard?.id ? Number(sovtCard.id) : undefined,
+          event_key: sovtEventKey ?? undefined,
+          step_idx: noteAnalysisStepIdx ?? undefined,
+          step_title: step?.title ?? undefined,
+          offset_ms: appliedOffset,
+          auto_offset_ms: autoOffset,
+          duration_ms: durationMs,
+          ok_ratio: okRatio,
+          note_count: noteCount,
+          ok_count: okCount,
+          contour_points: contour.length,
+          per_note: perNote,
+        });
+        const hist = await callAction<any>("sovt.pitch.history", { limit: 10 });
+        if (hist?.ok && Array.isArray(hist.results)) setPitchHistory(hist.results);
+      } catch {
+        // ignore
+      }
     } catch (e: unknown) {
       setPitchError(e instanceof Error ? e.message : String(e));
     }
@@ -474,10 +661,30 @@ export function SovtTab(props: {
                   id="pitch-offset"
                   type="number"
                   value={pitchOffsetMs}
-                  onChange={(e) => setPitchOffsetMs(Number(e.target.value))}
+                  onChange={(e) => {
+                    setPitchOffsetTouched(true);
+                    setPitchOffsetMs(Number(e.target.value));
+                  }}
                   className="w-[140px]"
                 />
               </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">Auto</Label>
+                <div className="text-sm text-muted-foreground font-mono">
+                  {typeof pitchAutoOffsetMs === "number" ? `${pitchAutoOffsetMs} ms` : "—"}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (typeof pitchAutoOffsetMs !== "number") return;
+                  setPitchOffsetTouched(false);
+                  setPitchOffsetMs(pitchAutoOffsetMs);
+                }}
+                disabled={typeof pitchAutoOffsetMs !== "number" || pitchRecording}
+              >
+                Use auto
+              </Button>
               {!pitchRecording ? (
                 <Button onClick={() => void startPitchRecording()} disabled={pitchRecording}>
                   Record
@@ -517,7 +724,41 @@ export function SovtTab(props: {
                     </div>
                   ))}
                 </div>
+                {pitchContour ? (
+                  <PitchTimeline
+                    durationMs={pitchResults.duration_ms}
+                    notes={pitchResults.per_note}
+                    contour={pitchContour}
+                    okCents={PITCH_OK_CENTS}
+                    clarityThreshold={PITCH_CLARITY_THRESHOLD}
+                  />
+                ) : null}
               </div>
+            ) : null}
+
+            {Array.isArray(pitchHistory) && pitchHistory.length > 0 ? (
+              <Accordion type="single" collapsible>
+                <AccordionItem value="pitch_history">
+                  <AccordionTrigger>Pitch history (last {Math.min(10, pitchHistory.length)})</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid gap-2 text-sm">
+                      {pitchHistory.slice(0, 10).map((r: any) => (
+                        <div key={String(r.id)} className="rounded-md border p-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-mono text-xs">{String(r.id)}</div>
+                            <div className="text-xs text-muted-foreground">{String(r.created_at ?? "")}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.step_title ? <b className="text-foreground">{String(r.step_title)}</b> : "pitch check"} •{" "}
+                            ok {Math.round(Number(r.ok_ratio ?? 0) * 100)}% • {Number(r.ok_count ?? 0)}/{Number(r.note_count ?? 0)} notes •{" "}
+                            offset {typeof r.offset_ms === "number" ? `${r.offset_ms}ms` : "—"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             ) : null}
           </CardContent>
         </Card>

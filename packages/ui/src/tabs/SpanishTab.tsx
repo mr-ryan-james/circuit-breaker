@@ -43,8 +43,10 @@ export function SpanishTab(props: {
   spanishError: string | null;
   spanishMessages: SpanishMessage[];
   spanishChatEndRef: React.RefObject<HTMLDivElement>;
+  spanishSrsDueCounts: { verb: number; noun: number; lesson: number } | null;
 
   startSpanishSessionFromChoice: () => void;
+  startSpanishDueSession: (lane: "verb" | "noun" | "lesson") => void;
   endSpanishSession: (status: "completed" | "abandoned") => void;
 
   spanishAnswer: string;
@@ -81,7 +83,9 @@ export function SpanishTab(props: {
     spanishError,
     spanishMessages,
     spanishChatEndRef,
+    spanishSrsDueCounts,
     startSpanishSessionFromChoice,
+    startSpanishDueSession,
     endSpanishSession,
     spanishAnswer,
     setSpanishAnswer,
@@ -105,6 +109,11 @@ export function SpanishTab(props: {
     spanishTranscriptTurns,
     spanishTranscriptError,
   } = props;
+
+  const [dueLane, setDueLane] = React.useState<"verb" | "noun" | "lesson">("verb");
+  const hasDueCounts = spanishSrsDueCounts !== null;
+  const dueNow = spanishSrsDueCounts ?? { verb: 0, noun: 0, lesson: 0 };
+  const dueForLane = hasDueCounts ? Number((dueNow as any)[dueLane] ?? 0) || 0 : null;
 
   return (
     <Card>
@@ -137,6 +146,31 @@ export function SpanishTab(props: {
           <Button onClick={startSpanishSessionFromChoice} disabled={spanishLoading}>
             Start Spanish Session (from last break choice)
           </Button>
+          <div className="flex flex-wrap items-end gap-2 rounded-md border px-3 py-2">
+            <div className="grid gap-1">
+              <Label htmlFor="sp-due-lane" className="text-xs text-muted-foreground">
+                Due lane
+              </Label>
+              <select
+                id="sp-due-lane"
+                value={dueLane}
+                onChange={(e) => setDueLane(e.target.value as any)}
+                disabled={spanishLoading || Boolean(spanishSessionId)}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              >
+                <option value="verb">verb ({hasDueCounts ? dueNow.verb : "?"} due)</option>
+                <option value="noun">noun ({hasDueCounts ? dueNow.noun : "?"} due)</option>
+                <option value="lesson">lesson ({hasDueCounts ? dueNow.lesson : "?"} due)</option>
+              </select>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => startSpanishDueSession(dueLane)}
+              disabled={spanishLoading || Boolean(spanishSessionId) || (hasDueCounts && (dueForLane ?? 0) <= 0)}
+            >
+              Review due now
+            </Button>
+          </div>
           <Button variant="secondary" onClick={() => endSpanishSession("completed")} disabled={!spanishSessionId}>
             End (completed)
           </Button>

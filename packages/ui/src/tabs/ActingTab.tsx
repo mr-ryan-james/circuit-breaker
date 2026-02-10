@@ -49,6 +49,8 @@ export function ActingTab(props: {
   lines: LineRow[];
 
   audioNeedsGesture: boolean;
+  audioErrorIdx: number | null;
+  onRetryErroredLine: () => void;
   onEnableAudio: () => void;
   audioRef: React.RefObject<HTMLAudioElement>;
 
@@ -97,6 +99,8 @@ export function ActingTab(props: {
     lines,
 
     audioNeedsGesture,
+    audioErrorIdx,
+    onRetryErroredLine,
     onEnableAudio,
     audioRef,
 
@@ -293,6 +297,20 @@ export function ActingTab(props: {
               </AlertDescription>
             </Alert>
           ) : null}
+
+          {audioErrorIdx !== null ? (
+            <Alert>
+              <AlertTitle>Audio failed</AlertTitle>
+              <AlertDescription className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Line <span className="font-mono">{audioErrorIdx}</span> failed to load or decode.
+                </span>
+                <Button variant="secondary" onClick={onRetryErroredLine} disabled={!sessionId}>
+                  Retry this line
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <audio ref={audioRef} controls className="w-full" />
 
           <Accordion type="single" collapsible>
@@ -378,4 +396,3 @@ export function ActingTab(props: {
     </div>
   );
 }
-

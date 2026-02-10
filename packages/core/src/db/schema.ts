@@ -116,6 +116,26 @@ export function applySchema(db: SqliteDb): void {
     CREATE INDEX IF NOT EXISTS idx_events_card_id ON events(card_id);
     CREATE INDEX IF NOT EXISTS idx_card_srs_due ON card_srs(module_slug, lane, due_at_unix);
 
+    CREATE TABLE IF NOT EXISTS pitch_results (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      card_id INTEGER,
+      event_key TEXT,
+      step_idx INTEGER,
+      step_title TEXT,
+      offset_ms INTEGER,
+      auto_offset_ms INTEGER,
+      duration_ms INTEGER NOT NULL,
+      ok_ratio REAL NOT NULL,
+      note_count INTEGER NOT NULL,
+      ok_count INTEGER NOT NULL,
+      contour_points INTEGER NOT NULL,
+      per_note_json TEXT NOT NULL,
+      FOREIGN KEY(card_id) REFERENCES cards(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_pitch_results_created_at ON pitch_results(created_at);
+    CREATE INDEX IF NOT EXISTS idx_pitch_results_card_id ON pitch_results(card_id);
+
     -- Optional durable timer support (Phase 4): store intended unblock expiry per site.
     CREATE TABLE IF NOT EXISTS site_state (
       site_id INTEGER PRIMARY KEY,

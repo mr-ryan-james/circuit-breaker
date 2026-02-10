@@ -8,7 +8,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
-    "test": "pnpm build && pnpm --filter @circuit-breaker/cli test",
+    "test": "pnpm build && pnpm --filter @circuit-breaker/cli test && pnpm --filter @circuit-breaker/ui-server test",
     "typecheck": "pnpm -r typecheck",
     "ui:start": "bash scripts/ui-start",
     "ui:stop": "bash scripts/ui-stop",

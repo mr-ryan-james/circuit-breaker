@@ -117,14 +117,23 @@ export function selectBreakCards(db: SqliteDb, options: SelectCardsOptions): Bre
   rows = rows.filter((r) => !excluded.has(r.id));
   rows = rows.filter(rowMatchesTags);
 
-  // v0 spaced repetition (Leitner): for the Spanish verb lane, prefer any due SRS cards.
-  // This is intentionally conservative: it only triggers when tagsAll includes both
-  // "spanish" and "verb" (the primary break menu verb lane), and only when selecting
-  // a single card.
-  const isSpanishVerbLane = count === 1 && tagsAll.includes("spanish") && tagsAll.includes("verb");
-  if (isSpanishVerbLane && rows.length > 0) {
+  // Spaced repetition (Leitner): for Spanish lanes, prefer any due SRS cards.
+  // Intentionally conservative:
+  // - only triggers for primary break menu lanes (tagsAll includes "spanish" + lane tag)
+  // - only when selecting a single card
+  const spanishSrsLane: "verb" | "noun" | "lesson" | null =
+    count === 1 && tagsAll.includes("spanish")
+      ? tagsAll.includes("verb")
+        ? "verb"
+        : tagsAll.includes("noun")
+          ? "noun"
+          : tagsAll.includes("lesson")
+            ? "lesson"
+            : null
+      : null;
+  if (spanishSrsLane && rows.length > 0) {
     try {
-      const dueIds = listDueSrsCardIds(db, { moduleSlug: "spanish", lane: "verb", limit: 50 });
+      const dueIds = listDueSrsCardIds(db, { moduleSlug: "spanish", lane: spanishSrsLane, limit: 50 });
       if (dueIds.length > 0) {
         const byId = new Map(rows.map((r) => [r.id, r] as const));
         for (const id of dueIds) {

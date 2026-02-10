@@ -209,6 +209,57 @@ export function listDueSrsCardIds(
   return rows.map((r) => r.card_id);
 }
 
+export function countSrsCards(db: SqliteDb, args: { moduleSlug: string; lane: string }): number {
+  const row = db
+    .prepare(
+      `SELECT COUNT(1) AS n
+       FROM card_srs
+       WHERE module_slug = ? AND lane = ?`,
+    )
+    .get(args.moduleSlug, args.lane) as { n?: number } | undefined;
+  const n = Number(row?.n ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function countDueSrsCards(db: SqliteDb, args: { moduleSlug: string; lane: string; nowUnix?: number }): number {
+  const nowUnix = args.nowUnix ?? Math.floor(Date.now() / 1000);
+  const row = db
+    .prepare(
+      `SELECT COUNT(1) AS n
+       FROM card_srs
+       WHERE module_slug = ? AND lane = ? AND due_at_unix <= ?`,
+    )
+    .get(args.moduleSlug, args.lane, nowUnix) as { n?: number } | undefined;
+  const n = Number(row?.n ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export type DueSrsCardRow = {
+  card_id: number;
+  card_key: string;
+  lane: string;
+  box: number;
+  due_at_unix: number;
+};
+
+export function listDueSrsCards(
+  db: SqliteDb,
+  args: { moduleSlug: string; lane: string; nowUnix?: number; limit?: number },
+): DueSrsCardRow[] {
+  const nowUnix = args.nowUnix ?? Math.floor(Date.now() / 1000);
+  const limit = args.limit ?? 50;
+  return db
+    .prepare(
+      `SELECT s.card_id, c.key AS card_key, s.lane, s.box, s.due_at_unix
+       FROM card_srs s
+       JOIN cards c ON c.id = s.card_id
+       WHERE s.module_slug = ? AND s.lane = ? AND s.due_at_unix <= ?
+       ORDER BY s.due_at_unix ASC, s.card_id ASC
+       LIMIT ?`,
+    )
+    .all(args.moduleSlug, args.lane, nowUnix, limit) as unknown as DueSrsCardRow[];
+}
+
 const LEITNER_MAX_BOX = 5;
 const LEITNER_DAYS_BY_BOX: Record<number, number> = {
   1: 0,
@@ -291,6 +342,77 @@ export function recordSrsReview(
       updated_at: new Date().toISOString(),
     }
   );
+}
+
+export type PitchResultRow = {
+  id: string;
+  created_at: string;
+  card_id: number | null;
+  event_key: string | null;
+  step_idx: number | null;
+  step_title: string | null;
+  offset_ms: number | null;
+  auto_offset_ms: number | null;
+  duration_ms: number;
+  ok_ratio: number;
+  note_count: number;
+  ok_count: number;
+  contour_points: number;
+  per_note_json: string;
+};
+
+export function insertPitchResult(
+  db: SqliteDb,
+  args: {
+    id: string;
+    cardId?: number | null;
+    eventKey?: string | null;
+    stepIdx?: number | null;
+    stepTitle?: string | null;
+    offsetMs?: number | null;
+    autoOffsetMs?: number | null;
+    durationMs: number;
+    okRatio: number;
+    noteCount: number;
+    okCount: number;
+    contourPoints: number;
+    perNoteJson: string;
+  },
+): void {
+  db.prepare(
+    `INSERT INTO pitch_results
+      (id, created_at, card_id, event_key, step_idx, step_title, offset_ms, auto_offset_ms, duration_ms, ok_ratio, note_count, ok_count, contour_points, per_note_json)
+     VALUES
+      (?, datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    args.id,
+    args.cardId ?? null,
+    args.eventKey ?? null,
+    args.stepIdx ?? null,
+    args.stepTitle ?? null,
+    args.offsetMs ?? null,
+    args.autoOffsetMs ?? null,
+    args.durationMs,
+    args.okRatio,
+    args.noteCount,
+    args.okCount,
+    args.contourPoints,
+    args.perNoteJson,
+  );
+}
+
+export function listPitchResults(db: SqliteDb, args?: { limit?: number }): PitchResultRow[] {
+  const limit = args?.limit ?? 10;
+  return db
+    .prepare(
+      `SELECT
+         id, created_at, card_id, event_key, step_idx, step_title, offset_ms, auto_offset_ms, duration_ms,
+         ok_ratio, note_count, ok_count, contour_points, per_note_json
+       FROM pitch_results
+       ORDER BY created_at DESC
+       LIMIT ?`,
+    )
+    .all(limit) as unknown as PitchResultRow[];
 }
 
 export function getActiveCards(db: SqliteDb, filters: {

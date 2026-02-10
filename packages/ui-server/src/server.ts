@@ -8,11 +8,15 @@ import { z } from "zod";
 
 import {
   buildBreakMenu,
+  countDueSrsCards,
   getBreakServedEvent,
   getSetting,
   setSetting,
   getSiteBySlug,
   insertEvent,
+  insertPitchResult,
+  listDueSrsCards,
+  listPitchResults,
   recordSrsReview,
 } from "@circuit-breaker/core";
 
@@ -63,6 +67,7 @@ type RunLinesSession = {
   last_activity_ms: number;
   play_started_ms: number | null;
   last_emitted_idx: number | null;
+  prefetch_in_flight: boolean;
   script_id: number;
   from: number;
   to: number;
@@ -504,11 +509,34 @@ export async function main(): Promise<void> {
   function recordSpanishPracticeCompleted(
     db: ReturnType<typeof openCoreDb>["db"],
     sess: ReturnType<typeof getSpanishSession>,
-    args: { status: "completed" | "abandoned"; note?: string | null; auto?: boolean },
+    args: {
+      status: "completed" | "abandoned";
+      note?: string | null;
+      auto?: boolean;
+      score?: { correct: number; total: number } | null;
+    },
   ): void {
     // Best-effort: practice tracking should never break the session lifecycle.
     try {
       if (!sess?.card_id) return;
+
+      const score = args.score ?? null;
+      const scoreRatio =
+        score && Number.isFinite(score.correct) && Number.isFinite(score.total) && score.total > 0
+          ? score.correct / score.total
+          : null;
+
+      // v1 SRS outcome derivation (single source of truth):
+      // - If we have a non-trivial score (>=3 questions): success iff ratio >= 0.8.
+      // - Else: completed => success, abandoned => failure.
+      const outcome: "success" | "failure" =
+        score && Number.isFinite(score.total) && score.total >= 3
+          ? scoreRatio !== null && scoreRatio >= 0.8
+            ? "success"
+            : "failure"
+          : args.status === "completed"
+            ? "success"
+            : "failure";
 
       insertEvent(db, {
         type: "practice_completed",
@@ -521,17 +549,16 @@ export async function main(): Promise<void> {
           session_id: sess.id,
           auto: Boolean(args.auto),
           note: args.note ?? null,
+          score,
+          score_ratio: scoreRatio,
+          outcome,
         }),
       });
 
-      // v0 SRS: verbs only (Leitner boxes).
-      if (sess.lane === "verb") {
-        recordSrsReview(db, {
-          cardId: sess.card_id,
-          moduleSlug: "spanish",
-          lane: "verb",
-          outcome: args.status === "completed" ? "success" : "failure",
-        });
+      // v1 SRS: track verb/noun/lesson lanes (explicitly exclude fusion).
+      const lane = sess.lane ?? null;
+      if (lane && (lane === "verb" || lane === "noun" || lane === "lesson")) {
+        recordSrsReview(db, { cardId: sess.card_id, moduleSlug: "spanish", lane, outcome });
       }
     } catch {
       // ignore
@@ -683,7 +710,7 @@ export async function main(): Promise<void> {
       const sess = getSpanishSession(db, sessionId);
       // Only record completion once, on the open -> completed transition.
       if (sess && sess.status === "open") {
-        recordSpanishPracticeCompleted(db, sess, { status: "completed", auto: true });
+        recordSpanishPracticeCompleted(db, sess, { status: "completed", auto: true, score: brain.score ?? null });
       }
       sessionStatus = "completed";
       updateSpanishSession(db, sessionId, { status: "completed", pending_tool_json: null });
@@ -979,6 +1006,129 @@ export async function main(): Promise<void> {
         }
       },
     },
+    "spanish.srs.due": {
+      description: "Get due-now SRS counts for Spanish lanes (verb/noun/lesson).",
+      schema: z.object({}),
+      async handler() {
+        const { db } = openCoreDb();
+        try {
+          const nowUnix = Math.floor(Date.now() / 1000);
+          const lanes = {
+            verb: countDueSrsCards(db, { moduleSlug: "spanish", lane: "verb", nowUnix }),
+            noun: countDueSrsCards(db, { moduleSlug: "spanish", lane: "noun", nowUnix }),
+            lesson: countDueSrsCards(db, { moduleSlug: "spanish", lane: "lesson", nowUnix }),
+          };
+          return { ok: true, now_unix: nowUnix, lanes };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "spanish.session.start_due": {
+      description: "Start a Spanish session from the due SRS queue (bypasses break menu).",
+      schema: z.object({ lane: z.enum(["verb", "noun", "lesson"]) }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          const nowUnix = Math.floor(Date.now() / 1000);
+          const due = listDueSrsCards(db, { moduleSlug: "spanish", lane: payload.lane, nowUnix, limit: 1 })[0] ?? null;
+          if (!due) return { ok: false, error: "no_due_cards" };
+
+          const row = db.prepare("SELECT id, key, prompt FROM cards WHERE id = ? LIMIT 1").get(due.card_id) as
+            | { id: number; key: string; prompt: string | null }
+            | undefined;
+          if (!row) return { ok: false, error: "card_not_found", card_id: due.card_id };
+
+          const cardPrompt = String(row.prompt ?? "").trim();
+          if (!cardPrompt) return { ok: false, error: "missing_card_prompt", card_id: row.id, card_key: row.key };
+
+          const brainName = normalizeBrainName(getSetting(db, "spanish_brain"));
+          const sessionId = makeSpanishId("sp_sess");
+
+          insertSpanishSession(db, {
+            id: sessionId,
+            status: "open",
+            source: "srs_due",
+            event_key: null,
+            lane: payload.lane,
+            card_id: row.id,
+            card_key: row.key,
+            card_prompt: cardPrompt,
+            codex_thread_id: null,
+            brain_name: brainName,
+            brain_thread_id: null,
+            pending_tool_json: null,
+            meta_json: JSON.stringify({ v: 1 }),
+          });
+
+          wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
+
+          const system = spanishSystemPrompt(payload.lane);
+          const userPrompt = `CARD_PROMPT:\n${cardPrompt}\n`;
+          const promptForLog = `${system}\n\n${userPrompt}`;
+          insertSpanishTurn(db, {
+            session_id: sessionId,
+            idx: nextSpanishTurnIdx(db, sessionId),
+            role: "system",
+            kind: "prompt",
+            content: promptForLog,
+          });
+
+          const logDir = path.join(stateDir, "spanish", brainName, sessionId);
+          fs.mkdirSync(logDir, { recursive: true });
+
+          const runner = createBrainRunner(brainName);
+          const run = await runner.run({
+            cwd: repoRootFromHere(),
+            prompt: userPrompt,
+            systemPrompt: system,
+            timeoutMs: 120_000,
+            logJsonlPath: path.join(logDir, "turn0.jsonl"),
+          });
+
+          if (!run.ok) {
+            insertSpanishTurn(db, {
+              session_id: sessionId,
+              idx: nextSpanishTurnIdx(db, sessionId),
+              role: "assistant",
+              kind: "error",
+              content: `Brain (${brainName}) failed: ${run.error}`,
+              json: run,
+            });
+            return { ok: false, error: "brain_failed", details: run, session_id: sessionId };
+          }
+
+          updateSpanishSession(db, sessionId, {
+            codex_thread_id: brainName === "codex" ? run.thread_id : null,
+            brain_name: brainName,
+            brain_thread_id: run.thread_id,
+          });
+
+          const processed = await processBrainResponse(db, sessionId, run);
+          if (!processed.ok) return { ok: false, error: processed.error, session_id: sessionId, raw: processed.raw };
+
+          return {
+            ok: true,
+            session_id: sessionId,
+            thread_id: run.thread_id,
+            brain_name: brainName,
+            picked: {
+              card_id: due.card_id,
+              card_key: due.card_key,
+              lane: payload.lane,
+              box: due.box,
+              due_at_unix: due.due_at_unix,
+            },
+            brain: processed.brain,
+            speak_results: processed.speakResults,
+            pending_listen: processed.pendingListen,
+            session_status: processed.session_status,
+          };
+        } finally {
+          db.close();
+        }
+      },
+    },
     "spanish.session.start": {
       description: "Start a Spanish tutoring session driven by a brain (Codex or Claude).",
       schema: z.object({
@@ -1158,7 +1308,33 @@ export async function main(): Promise<void> {
             return { ok: true, already_ended: true, status: sess.status };
           }
 
-          recordSpanishPracticeCompleted(db, sess, { status: payload.status, note: payload.note ?? null, auto: false });
+          // Best-effort: extract the most recent brain score so SRS outcomes can be score-aware.
+          // (If missing/unparseable, we'll fall back to status-only outcomes.)
+          let score: { correct: number; total: number } | null = null;
+          try {
+            const row = db
+              .prepare(
+                `SELECT json
+                 FROM spanish_turns
+                 WHERE session_id = ? AND kind = 'brain_output'
+                 ORDER BY idx DESC
+                 LIMIT 1`,
+              )
+              .get(payload.session_id) as { json: string | null } | undefined;
+            if (row?.json) {
+              const parsed = JSON.parse(row.json) as any;
+              const s = parsed?.score;
+              if (s && Number.isFinite(s.correct) && Number.isFinite(s.total)) {
+                const correct = Math.max(0, Math.trunc(Number(s.correct)));
+                const total = Math.max(0, Math.trunc(Number(s.total)));
+                if (total > 0) score = { correct, total };
+              }
+            }
+          } catch {
+            // ignore
+          }
+
+          recordSpanishPracticeCompleted(db, sess, { status: payload.status, note: payload.note ?? null, auto: false, score });
           updateSpanishSession(db, payload.session_id, { status: payload.status, pending_tool_json: null });
           insertSpanishTurn(db, {
             session_id: payload.session_id,
@@ -1234,6 +1410,60 @@ export async function main(): Promise<void> {
         const res = await runSiteToggle(finalArgs);
         if (!res.ok) return { ok: false, error: res.error, details: res.details };
         return res.result;
+      },
+    },
+    "sovt.pitch.save": {
+      description: "Persist a pitch check result (numeric summary + per-note JSON).",
+      schema: z.object({
+        card_id: z.number().int().positive().optional(),
+        event_key: z.string().min(1).optional(),
+        step_idx: z.number().int().positive().optional(),
+        step_title: z.string().min(1).max(200).optional(),
+        offset_ms: z.number().int().optional(),
+        auto_offset_ms: z.number().int().optional(),
+        duration_ms: z.number().int().positive(),
+        ok_ratio: z.number().min(0).max(1),
+        note_count: z.number().int().nonnegative(),
+        ok_count: z.number().int().nonnegative(),
+        contour_points: z.number().int().nonnegative(),
+        per_note: z.array(z.unknown()).max(2000),
+      }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          const id = makeId("pitch");
+          insertPitchResult(db, {
+            id,
+            cardId: payload.card_id ?? null,
+            eventKey: payload.event_key ?? null,
+            stepIdx: payload.step_idx ?? null,
+            stepTitle: payload.step_title ?? null,
+            offsetMs: typeof payload.offset_ms === "number" ? payload.offset_ms : null,
+            autoOffsetMs: typeof payload.auto_offset_ms === "number" ? payload.auto_offset_ms : null,
+            durationMs: payload.duration_ms,
+            okRatio: payload.ok_ratio,
+            noteCount: payload.note_count,
+            okCount: payload.ok_count,
+            contourPoints: payload.contour_points,
+            perNoteJson: JSON.stringify(payload.per_note),
+          });
+          return { ok: true, id };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "sovt.pitch.history": {
+      description: "List recent pitch check results.",
+      schema: z.object({ limit: z.number().int().min(1).max(200).optional() }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          const rows = listPitchResults(db, { limit: payload.limit ?? 10 });
+          return { ok: true, results: rows };
+        } finally {
+          db.close();
+        }
       },
     },
     "sovt.complete": {
@@ -1555,6 +1785,7 @@ export async function main(): Promise<void> {
             pending_self_line: null,
             event_seq: 0,
             idx: 0,
+            prefetch_in_flight: false,
             lines,
             characters,
           };
@@ -1720,11 +1951,15 @@ export async function main(): Promise<void> {
   console.log(`[ui-server] listening on http://127.0.0.1:${runtimePort}/  (dev=${dev})`);
 }
 
-function prefetchNextRunLineTts(session: RunLinesSession): void {
-  // Best-effort: if this fails, we still render on-demand.
+async function prefetchNextRunLineTts(session: RunLinesSession): Promise<void> {
+  if (session.prefetch_in_flight) return;
+  session.prefetch_in_flight = true;
+
   try {
     const startIdx = Math.max(0, session.idx);
-    for (let i = startIdx; i < session.lines.length; i += 1) {
+    let prefetched = 0;
+
+    for (let i = startIdx; i < session.lines.length && prefetched < 3; i += 1) {
       const l = session.lines[i];
       if (!l) continue;
       if (l.type !== "dialogue") continue;
@@ -1733,24 +1968,29 @@ function prefetchNextRunLineTts(session: RunLinesSession): void {
       const spoken = sanitizeTtsText(l.text);
       if (!spoken) continue;
 
-	      const isMe = !session.read_all && speaker && speaker === session.me_norm;
-	      const needsAudio =
-	        session.mode === "read_through"
-	          ? true
-	          : isMe
-	            ? session.reveal_after
-	            : session.mode !== "speed_through";
-	      if (!needsAudio) continue;
+      const isMe = !session.read_all && speaker && speaker === session.me_norm;
+      const needsAudio =
+        session.mode === "read_through"
+          ? true
+          : isMe
+            ? session.reveal_after
+            : session.mode !== "speed_through";
+      if (!needsAudio) continue;
 
       const ch = session.characters.find((c) => c.normalized_name === speaker) ?? null;
       const voice = ch?.voice ?? "en-US-GuyNeural";
       const rate = ch?.rate ?? "+0%";
 
-      void renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION }).catch(() => {});
-      return;
+      // Prefetch sequentially to avoid bursts. Best-effort: ignore failures.
+      try {
+        await renderTts({ text: spoken, voice, rate, sanitizerVersion: TTS_SANITIZER_VERSION });
+      } catch {
+        // ignore
+      }
+      prefetched += 1;
     }
-  } catch {
-    // ignore
+  } finally {
+    session.prefetch_in_flight = false;
   }
 }
 
@@ -1774,7 +2014,7 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
         playback_rate: clamp(0.5, 3.0, session.speed_mult),
       }),
     );
-    prefetchNextRunLineTts(session);
+    void prefetchNextRunLineTts(session);
     return { ended: false };
   }
 
@@ -1868,7 +2108,7 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
           cue: session.cue_words > 0 ? cuePrefixWords(spoken, session.cue_words) : null,
         }),
       );
-      prefetchNextRunLineTts(session);
+      void prefetchNextRunLineTts(session);
       return { ended: false };
     }
 
@@ -1889,7 +2129,7 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
           playback_rate: speed,
         }),
       );
-      prefetchNextRunLineTts(session);
+      void prefetchNextRunLineTts(session);
       return { ended: false };
     } catch {
       const gapSec = clamp(session.pause_min_sec, session.pause_max_sec, estimatedSpeakSeconds(spoken) / speed);

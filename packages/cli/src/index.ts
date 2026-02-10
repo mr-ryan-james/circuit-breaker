@@ -15,6 +15,8 @@ import {
   startTimer,
   isDomainBlocked,
   buildBreakMenu,
+  countDueSrsCards,
+  countSrsCards,
   findMostRecentOpenBreakEventKey,
   flushDns,
   getAllSites,
@@ -48,6 +50,7 @@ import {
   setSiteUnblockedUntil,
   unlinkContextLocation,
   unblockDomains,
+  listDueSrsCards,
   writeHostsFile,
 } from "@circuit-breaker/core";
 
@@ -617,7 +620,7 @@ async function cmdUi(args: string[], json: boolean): Promise<void> {
 }
 
 function printModuleHelp(json: boolean, moduleSlug?: string): void {
-  const actions = ["history", "start", "complete", "resume", "last", "test", "test-complete"];
+  const actions = ["history", "start", "complete", "resume", "last", "srs", "test", "test-complete"];
   const usageBase = moduleSlug ? `site-toggle module ${moduleSlug}` : "site-toggle module <slug>";
 
   if (json) {
@@ -639,6 +642,7 @@ function printModuleHelp(json: boolean, moduleSlug?: string): void {
   console.log("");
   console.log(`Examples:`);
   console.log(`  ${usageBase} history --days 7 --limit 5 --json`);
+  console.log(`  ${usageBase} srs --json`);
   console.log(`  ${usageBase} test --count 20 --json`);
 }
 
@@ -662,6 +666,10 @@ function printModuleActionHelp(json: boolean, moduleSlug: string, action: string
       break;
     case "last":
       usage = `${base} last`;
+      break;
+    case "srs":
+      usage = `${base} srs [--json]`;
+      notes.push('Outputs current spaced repetition (SRS) state for the module (currently "spanish" only).');
       break;
     case "test":
       usage = `${base} test [--count N] [--days N]`;
@@ -1817,10 +1825,11 @@ async function cmdModule(args: string[], json: boolean): Promise<void> {
   if (action === "complete") return cmdModuleComplete(moduleDef, actionArgs, json);
   if (action === "resume") return cmdModuleResume(moduleDef, actionArgs, json);
   if (action === "last") return cmdModuleLast(moduleDef, actionArgs, json);
+  if (action === "srs") return cmdModuleSrs(moduleDef, actionArgs, json);
   if (action === "test") return cmdModuleTest(moduleDef, actionArgs, json);
   if (action === "test-complete") return cmdModuleTestComplete(moduleDef, actionArgs, json);
 
-  throw new Error(`Unknown module action: ${action}\nUsage: module <slug> <history|start|complete|resume|last|test|test-complete>`);
+  throw new Error(`Unknown module action: ${action}\nUsage: module <slug> <history|start|complete|resume|last|srs|test|test-complete>`);
 }
 
 function cmdModuleHistory(moduleDef: ModuleDefinition, args: string[], json: boolean): void {
@@ -2136,6 +2145,72 @@ function cmdModuleHistory(moduleDef: ModuleDefinition, args: string[], json: boo
         console.log(`- ${s.served_at} — ${s.card.activity} (source: ${s.source})`);
       }
     }
+  }
+}
+
+function cmdModuleSrs(moduleDef: ModuleDefinition, args: string[], json: boolean): void {
+  if (moduleDef.slug !== "spanish") throw new Error('SRS is only supported for module "spanish".');
+
+  if (args.length > 0 && isHelpToken(args[0])) {
+    printModuleActionHelp(json, moduleDef.slug, "srs");
+    return;
+  }
+
+  const { db } = openDb();
+  try {
+    const nowUnix = Math.floor(Date.now() / 1000);
+    const lanes = ["verb", "noun", "lesson"] as const;
+    type Lane = (typeof lanes)[number];
+
+    const lanesOut: Record<Lane, { total: number; due_now: number }> = {
+      verb: { total: 0, due_now: 0 },
+      noun: { total: 0, due_now: 0 },
+      lesson: { total: 0, due_now: 0 },
+    };
+    const dueSample: Array<{ card_id: number; card_key: string; lane: string; box: number; due_at_unix: number }> = [];
+
+    for (const lane of lanes) {
+      lanesOut[lane] = {
+        total: countSrsCards(db, { moduleSlug: moduleDef.slug, lane }),
+        due_now: countDueSrsCards(db, { moduleSlug: moduleDef.slug, lane, nowUnix }),
+      };
+      dueSample.push(...listDueSrsCards(db, { moduleSlug: moduleDef.slug, lane, nowUnix, limit: 10 }));
+    }
+
+    dueSample.sort((a, b) => a.due_at_unix - b.due_at_unix || a.card_id - b.card_id);
+
+    if (json) {
+      printJson({
+        ok: true,
+        command: "module",
+        module: { slug: moduleDef.slug, name: moduleDef.name },
+        action: "srs",
+        now_unix: nowUnix,
+        lanes: lanesOut,
+        sample_due: dueSample.slice(0, 10),
+      });
+      return;
+    }
+
+    console.log(`Module: ${moduleDef.slug} (${moduleDef.name})`);
+    console.log(`Now: ${nowUnix}`);
+    console.log("");
+    console.log("SRS lanes:");
+    for (const lane of lanes) {
+      const s = lanesOut[lane];
+      console.log(`- ${lane}: total=${s.total} due_now=${s.due_now}`);
+    }
+
+    const sample = dueSample.slice(0, 10);
+    if (sample.length > 0) {
+      console.log("");
+      console.log("Sample due:");
+      for (const r of sample) {
+        console.log(`- [${r.card_id}] ${r.card_key} (${r.lane}) box=${r.box} due_at_unix=${r.due_at_unix}`);
+      }
+    }
+  } finally {
+    db.close();
   }
 }
 

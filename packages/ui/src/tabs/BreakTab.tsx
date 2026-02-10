@@ -22,6 +22,7 @@ export function BreakTab(props: {
   setAutoStartActing: (v: boolean) => void;
   breakMenu: BreakMenu | null;
   breakChoice: any | null;
+  spanishSrsDueCounts: { verb: number; noun: number; lesson: number } | null;
   loadBreakMenu: () => void;
   unblockAllFromUi: (minutes: number) => void;
   chooseBreakLane: (lane: string) => void;
@@ -52,6 +53,7 @@ export function BreakTab(props: {
     setAutoStartActing,
     breakMenu,
     breakChoice,
+    spanishSrsDueCounts,
     loadBreakMenu,
     unblockAllFromUi,
     chooseBreakLane,
@@ -143,11 +145,18 @@ export function BreakTab(props: {
                 const isSpanishLane = ["verb", "noun", "lesson", "fusion"].includes(laneType);
                 const isSovtLane = laneType === "sovt";
                 const isActingLane = laneType === "acting";
+                const dueCount =
+                  laneType === "verb" || laneType === "noun" || laneType === "lesson"
+                    ? Number((spanishSrsDueCounts as any)?.[laneType] ?? 0) || 0
+                    : 0;
 
                 return (
                   <Card key={`${breakMenu.event_key}-${l.type}-${card?.id ?? "x"}`}>
                     <CardHeader>
-                      <CardTitle className="text-base">{l.type}</CardTitle>
+                      <CardTitle className="text-base">
+                        {laneType}
+                        {dueCount > 0 ? <span className="text-muted-foreground"> ({dueCount} due)</span> : null}
+                      </CardTitle>
                       <CardDescription>
                         {card?.activity ?? "(missing card)"} • {card?.minutes ?? "?"} min •{" "}
                         {card?.doneCondition ?? card?.done_condition ?? ""}
@@ -311,4 +320,3 @@ export function BreakTab(props: {
     </Card>
   );
 }
-
