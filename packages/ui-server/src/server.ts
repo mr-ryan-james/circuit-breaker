@@ -829,6 +829,56 @@ export async function main(): Promise<void> {
     };
   }
 
+  async function runSpanishFollowupAndProcess(
+    db: ReturnType<typeof openCoreDb>["db"],
+    args: {
+      sessionId: string;
+      brainName: BrainName;
+      threadId: string;
+      prompt: string;
+      logBasename: string;
+      timeoutMs?: number;
+    },
+  ): Promise<
+    | { ok: true; brain: SpanishBrainOutput; speakResults: any[]; pendingListen: any | null; session_status: "open" | "completed" }
+    | { ok: false; error: string; details?: any; raw?: string }
+  > {
+    const logDir = path.join(stateDir, "spanish", args.brainName, args.sessionId);
+    fs.mkdirSync(logDir, { recursive: true });
+
+    const runner = createBrainRunner(args.brainName);
+    const run = await runner.run({
+      cwd: repoRootFromHere(),
+      prompt: args.prompt,
+      resumeThreadId: args.threadId,
+      timeoutMs: args.timeoutMs ?? 120_000,
+      logJsonlPath: path.join(logDir, args.logBasename),
+    });
+
+    if (!run.ok) {
+      insertSpanishTurn(db, {
+        session_id: args.sessionId,
+        idx: nextSpanishTurnIdx(db, args.sessionId),
+        role: "assistant",
+        kind: "error",
+        content: `Brain (${args.brainName}) failed: ${run.error}`,
+        json: run,
+      });
+      return { ok: false, error: "brain_failed", details: run };
+    }
+
+    const processed = await processBrainResponse(db, args.sessionId, run);
+    if (!processed.ok) return { ok: false, error: processed.error, raw: processed.raw };
+
+    return {
+      ok: true,
+      brain: processed.brain,
+      speakResults: processed.speakResults,
+      pendingListen: processed.pendingListen,
+      session_status: processed.session_status,
+    };
+  }
+
   const actionHandlers: Record<
     string,
     {
@@ -1221,32 +1271,15 @@ export async function main(): Promise<void> {
 
           const followup = JSON.stringify({ kind: "user_answer", text: payload.answer });
           const brainName: BrainName = normalizeBrainName(sess.brain_name);
-          const logDir = path.join(stateDir, "spanish", brainName, payload.session_id);
-          fs.mkdirSync(logDir, { recursive: true });
-
-          const runner = createBrainRunner(brainName);
-          const run = await runner.run({
-            cwd: repoRootFromHere(),
-            prompt: followup,
-            resumeThreadId: threadId,
-            timeoutMs: 120_000,
-            logJsonlPath: path.join(logDir, `turn${Date.now()}.jsonl`),
-          });
-          if (!run.ok) {
-            insertSpanishTurn(db, {
-              session_id: payload.session_id,
-              idx: nextSpanishTurnIdx(db, payload.session_id),
-              role: "assistant",
-              kind: "error",
-              content: `Brain (${brainName}) failed: ${run.error}`,
-              json: run,
-            });
-            return { ok: false, error: "brain_failed", details: run };
-          }
-
           updateSpanishSession(db, payload.session_id, { pending_tool_json: null });
-          const processed = await processBrainResponse(db, payload.session_id, run);
-          if (!processed.ok) return { ok: false, error: processed.error, raw: processed.raw };
+          const processed = await runSpanishFollowupAndProcess(db, {
+            sessionId: payload.session_id,
+            brainName,
+            threadId,
+            prompt: followup,
+            logBasename: `turn${Date.now()}.jsonl`,
+          });
+          if (!processed.ok) return processed;
 
           return {
             ok: true,
@@ -1583,25 +1616,14 @@ export async function main(): Promise<void> {
 
       const followup = JSON.stringify({ kind: "tool_result", tool: "listen", id: pending.id, result: analysis });
       const brainName: BrainName = normalizeBrainName(sess.brain_name);
-      const logDir = path.join(stateDir, "spanish", brainName, sessionId);
-      fs.mkdirSync(logDir, { recursive: true });
-
-      const runner = createBrainRunner(brainName);
-      const run = await runner.run({
-        cwd: repoRootFromHere(),
+      const processed = await runSpanishFollowupAndProcess(db, {
+        sessionId,
+        brainName,
+        threadId,
         prompt: followup,
-        resumeThreadId: threadId,
-        timeoutMs: 120_000,
-        logJsonlPath: path.join(logDir, `listen-${uploadId}.jsonl`),
+        logBasename: `listen-${uploadId}.jsonl`,
       });
-
-      if (!run.ok) {
-        insertSpanishTurn(db, { session_id: sessionId, idx: nextSpanishTurnIdx(db, sessionId), role: "assistant", kind: "error", content: `Brain (${brainName}) failed: ${run.error}`, json: run });
-        return c.json({ ok: false, error: "brain_failed", details: run }, 500);
-      }
-
-      const processed = await processBrainResponse(db, sessionId, run);
-      if (!processed.ok) return c.json({ ok: false, error: processed.error, raw: processed.raw }, 500);
+      if (!processed.ok) return c.json({ ok: false, error: processed.error, details: processed.details, raw: processed.raw }, 500);
 
       return c.json({
         ok: true,

@@ -187,6 +187,13 @@ beforeAll(async () => {
       CIRCUIT_BREAKER_DB_PATH: coreDbPath,
       CIRCUIT_BREAKER_ACTING_DB_PATH: actingDbPath,
       CIRCUIT_BREAKER_BRAIN_MODE: "mock",
+      CIRCUIT_BREAKER_MOCK_BRAIN_OUTPUT_JSON_KIND_USER_ANSWER: JSON.stringify({
+        v: 1,
+        assistant_text: "ok",
+        tool_requests: [],
+        await: "done",
+        score: { correct: 3, total: 3 },
+      }),
     },
     stdout: "ignore",
     stderr: "ignore",
@@ -311,3 +318,33 @@ test("spanish: srs.due counts match due-now rows", async () => {
   expect(res.lanes.lesson).toBe(0);
 });
 
+test("spanish: start_due await=user then answer completes and advances SRS", async () => {
+  if (!state) throw new Error("missing state");
+  if (!coreDbPath) throw new Error("missing coreDbPath");
+
+  const nowUnix = Math.floor(Date.now() / 1000);
+  seedCard(coreDbPath, {
+    id: 120,
+    key: "learning.spanish.verb.multiturn.v1",
+    prompt:
+      "MOCK_BRAIN_OUTPUT_JSON: {\"v\":1,\"assistant_text\":\"Type your answer\",\"tool_requests\":[],\"await\":\"user\"}",
+  });
+  seedDueSrs(coreDbPath, { cardId: 120, lane: "verb", box: 1, dueAtUnix: nowUnix - 10 });
+
+  const started = await callAction(state, "spanish.session.start_due", { lane: "verb" });
+  expect(started.ok).toBe(true);
+  expect(started.session_status).toBe("open");
+  expect(typeof started.session_id).toBe("string");
+
+  const sessId = String(started.session_id);
+  const answered = await callAction(state, "spanish.session.answer", { session_id: sessId, answer: "hola" });
+  expect(answered.ok).toBe(true);
+  expect(answered.session_status).toBe("completed");
+
+  const box = getSrsBox(coreDbPath, { cardId: 120, lane: "verb" });
+  expect(box).toBe(2);
+
+  const meta = getLatestPracticeCompletedMeta(coreDbPath, 120);
+  expect(meta?.outcome).toBe("success");
+  expect(meta?.score?.total).toBe(3);
+});

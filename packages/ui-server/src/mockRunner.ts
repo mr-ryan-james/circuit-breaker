@@ -10,6 +10,18 @@ function tryParseJson(raw: string): any | null {
   }
 }
 
+function tryExtractMockBrainOutputFromKindEnv(prompt: string): any | null {
+  const parsed = tryParseJson(String(prompt ?? "").trim());
+  if (!parsed || typeof parsed !== "object") return null;
+  const kind = typeof (parsed as any).kind === "string" ? String((parsed as any).kind).trim() : "";
+  if (!kind) return null;
+  const key = `CIRCUIT_BREAKER_MOCK_BRAIN_OUTPUT_JSON_KIND_${kind.toUpperCase()}`;
+  const raw = process.env[key]?.trim();
+  if (!raw) return null;
+  const out = tryParseJson(raw);
+  return out && typeof out === "object" ? out : null;
+}
+
 function extractMockBrainOutputFromPrompt(prompt: string): any | null {
   const lines = String(prompt ?? "").split("\n");
   for (const line of lines) {
@@ -38,6 +50,7 @@ export async function runMock(opts: BrainRunOpts): Promise<BrainResult> {
   const started = Date.now();
 
   const fromPrompt = extractMockBrainOutputFromPrompt(opts.prompt);
+  const fromKindEnv = tryExtractMockBrainOutputFromKindEnv(opts.prompt);
   const fromEnv = (() => {
     const raw = process.env["CIRCUIT_BREAKER_MOCK_BRAIN_OUTPUT_JSON"]?.trim();
     if (!raw) return null;
@@ -45,7 +58,7 @@ export async function runMock(opts: BrainRunOpts): Promise<BrainResult> {
     return parsed && typeof parsed === "object" ? parsed : null;
   })();
 
-  const output = fromPrompt ?? fromEnv ?? defaultMockBrainOutput();
+  const output = fromPrompt ?? fromKindEnv ?? fromEnv ?? defaultMockBrainOutput();
 
   const threadId = opts.resumeThreadId && opts.resumeThreadId.trim().length > 0 ? opts.resumeThreadId.trim() : "mock_thread_1";
   const durationMs = Date.now() - started;
@@ -59,4 +72,3 @@ export async function runMock(opts: BrainRunOpts): Promise<BrainResult> {
     stderr_tail: "",
   };
 }
-
