@@ -71,7 +71,10 @@ export async function runCodex(opts: CodexRunOpts): Promise<CodexRunResult> {
   const sandbox = opts.sandbox ?? "read-only";
   const timeoutMs = opts.timeoutMs ?? 120_000;
 
-  const args: string[] = ["exec", "--json", "-c", "suppress_unstable_features_warning=true", "-s", sandbox];
+  // Safety: In this UI-server context, Codex is used as a "brain" that should not
+  // execute arbitrary commands. `-a untrusted` ensures anything outside the trusted
+  // command allowlist requires explicit approval (which we never grant here).
+  const args: string[] = ["-a", "untrusted", "exec", "--json", "-c", "suppress_unstable_features_warning=true", "-s", sandbox];
   if (opts.resumeThreadId) {
     args.push("resume", opts.resumeThreadId, "-");
   } else {

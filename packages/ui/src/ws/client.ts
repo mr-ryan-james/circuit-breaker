@@ -25,6 +25,39 @@ export type WsMessage =
       cue?: string | null;
       playback_rate?: number;
     }
+  | {
+      type: "allgravy.queue";
+      event: "started" | "progress" | "completed" | "failed";
+      run_id?: string;
+      repos?: string[];
+      refreshed_at?: string;
+      repo?: string;
+      inserted?: number;
+      errors?: Array<{ repo: string; error: string }>;
+      error?: string;
+    }
+  | {
+      type: "allgravy.proposals";
+      event: "started" | "generated" | "failed";
+      pr_id: string;
+      brain?: "codex" | "claude";
+      error?: string;
+      proposals?: Array<{ id?: string; path?: string; position?: number; body?: string; patch_line_preview?: string }>;
+    }
+  | {
+      type: "allgravy.comment";
+      event: "applied" | "discarded" | "failed";
+      proposal_id: string;
+      comment_url?: string;
+      error?: string;
+    }
+  | {
+      type: "allgravy.pr";
+      event: "approved";
+      pr_id: string;
+      repo?: string;
+      pr_number?: number;
+    }
   | { type: "error"; scope: string; message: string }
   | { type: string; [k: string]: any };
 

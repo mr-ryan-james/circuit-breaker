@@ -8,6 +8,7 @@ import type { SqliteDb } from "@circuit-breaker/shared-sqlite";
 import { Database } from "bun:sqlite";
 
 import { ensureSpanishSchema } from "./spanishDb.js";
+import { ensureAllGravySchema } from "./allGravyDb.js";
 
 export function openCoreDb(): { db: SqliteDb; raw: Database; dbPath: string } {
   const dbPath = resolveDbPath();
@@ -16,5 +17,6 @@ export function openCoreDb(): { db: SqliteDb; raw: Database; dbPath: string } {
   const db = bunDbAdapter(raw);
   applySchema(db);
   ensureSpanishSchema(db);
+  ensureAllGravySchema(db);
   return { db, raw, dbPath };
 }

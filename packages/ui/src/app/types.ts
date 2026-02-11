@@ -91,3 +91,40 @@ export type SovtCmdStep = {
   error: string | null;
 };
 
+export type AllGravyPrStatus = "new_unreviewed" | "waiting" | "ready_to_approve";
+export type AllGravyProposalStatus = "proposed" | "applied" | "discarded" | "failed";
+
+export type AllGravyPrRow = {
+  id: string;
+  run_id: string;
+  refreshed_at: string;
+  gh_login: string;
+  repo: string;
+  pr_number: number;
+  pr_url: string;
+  title: string;
+  author_login: string | null;
+  head_sha: string;
+  status: AllGravyPrStatus;
+  thread_summary_json: string;
+  patches_json: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AllGravyProposalRow = {
+  id: string;
+  pr_id: string;
+  repo: string;
+  pr_number: number;
+  head_sha: string;
+  commit_id: string;
+  path: string;
+  position: number;
+  body: string;
+  status: AllGravyProposalStatus;
+  gh_command: string | null;
+  apply_result_json: string | null;
+  created_at: string;
+  updated_at: string;
+};

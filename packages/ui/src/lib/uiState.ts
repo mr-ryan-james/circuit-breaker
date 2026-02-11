@@ -1,4 +1,4 @@
-export type UiTab = "break" | "acting" | "spanish" | "sovt" | "signals" | "status";
+export type UiTab = "break" | "acting" | "spanish" | "sovt" | "allgravy" | "signals" | "status";
 
 export type ActingMode = "practice" | "learn" | "read_through" | "speed_through";
 
@@ -23,6 +23,7 @@ function isUiTab(v: unknown): v is UiTab {
     v === "acting" ||
     v === "spanish" ||
     v === "sovt" ||
+    v === "allgravy" ||
     v === "signals" ||
     v === "status"
   );

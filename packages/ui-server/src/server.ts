@@ -27,6 +27,7 @@ import { estimatedSpeakSeconds, sanitizeTtsText, TTS_SANITIZER_VERSION } from ".
 import { renderTts, resolveTtsCacheDir } from "./tts.js";
 import { createBrainRunner, type BrainResult } from "./brainRunner.js";
 import { analyzeListenAttempt } from "./listenServer.js";
+import { createAllGravyActionHandlers } from "./allGravyActions.js";
 import {
   getSpanishSession,
   insertSpanishSession,
@@ -879,6 +880,8 @@ export async function main(): Promise<void> {
     };
   }
 
+  const allGravyActionHandlers = createAllGravyActionHandlers({ stateDir, wsBroadcast });
+
   const actionHandlers: Record<
     string,
     {
@@ -1503,6 +1506,7 @@ export async function main(): Promise<void> {
         }
       },
     },
+    ...allGravyActionHandlers,
   };
 
   const app = new Hono();

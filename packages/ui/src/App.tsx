@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { loadInitialUiState, persistUiState, replaceUrlFromUiState, type UiTab } from "@/lib/uiState";
 import { useActingSession } from "@/hooks/useActingSession";
+import { useAllGravy } from "@/hooks/useAllGravy";
 import { useSpanishSession } from "@/hooks/useSpanishSession";
 import { useSovtSession } from "@/hooks/useSovtSession";
 import { ActingTab } from "@/tabs/ActingTab";
+import { AllGravyTab } from "@/tabs/AllGravyTab";
 import { BreakTab } from "@/tabs/BreakTab";
 import { SignalsTab } from "@/tabs/SignalsTab";
 import { SovtTab } from "@/tabs/SovtTab";
@@ -49,6 +51,7 @@ export function App() {
   const [actingPickerLoadingId, setActingPickerLoadingId] = useState<number | null>(null);
 
   const spanish = useSpanishSession();
+  const allGravy = useAllGravy();
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -68,6 +71,11 @@ export function App() {
   useEffect(() => {
     actingOnWsMessageRef.current = acting.onWsMessage;
   }, [acting.onWsMessage]);
+
+  const allGravyOnWsMessageRef = useRef(allGravy.onWsMessage);
+  useEffect(() => {
+    allGravyOnWsMessageRef.current = allGravy.onWsMessage;
+  }, [allGravy.onWsMessage]);
 
   const sovt = useSovtSession();
 
@@ -118,6 +126,7 @@ export function App() {
         setSignals((prev) => [...prev, m as Signal].slice(-200));
         return;
       }
+      allGravyOnWsMessageRef.current(m);
       actingOnWsMessageRef.current(m);
     };
 
@@ -293,11 +302,12 @@ export function App() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
             <TabsTrigger value="break">Break</TabsTrigger>
             <TabsTrigger value="acting">Acting</TabsTrigger>
             <TabsTrigger value="spanish">Spanish</TabsTrigger>
             <TabsTrigger value="sovt">SOVT</TabsTrigger>
+            <TabsTrigger value="allgravy">All Gravy</TabsTrigger>
             <TabsTrigger value="signals">Signals</TabsTrigger>
             <TabsTrigger value="status">Status</TabsTrigger>
           </TabsList>
@@ -384,6 +394,39 @@ export function App() {
               switchToActingTab={() => setActiveTab("acting")}
               copyToClipboard={copyToClipboard}
               sendChoiceToAgent={sendChoiceToAgent}
+            />
+          </TabsContent>
+
+          <TabsContent value="allgravy">
+            <AllGravyTab
+              reposText={allGravy.reposText}
+              setReposText={allGravy.setReposText}
+              repos={allGravy.repos}
+              brain={allGravy.brain}
+              loadingSettings={allGravy.loadingSettings}
+              refreshing={allGravy.refreshing}
+              generatingForPr={allGravy.generatingForPr}
+              applyingProposal={allGravy.applyingProposal}
+              approvingPr={allGravy.approvingPr}
+              runId={allGravy.runId}
+              prs={allGravy.prs}
+              queueErrors={allGravy.queueErrors}
+              selectedPrId={allGravy.selectedPrId}
+              selectedPr={allGravy.selectedPr}
+              selectedPatches={allGravy.selectedPatches}
+              selectedProposals={allGravy.selectedProposals}
+              error={allGravy.error}
+              setError={allGravy.setError}
+              saveReposFromText={() => allGravy.saveReposFromText()}
+              saveBrain={(b) => allGravy.saveBrain(b)}
+              loadLatestQueue={() => allGravy.loadLatestQueue()}
+              refreshQueue={() => allGravy.refreshQueue()}
+              selectPr={(id) => allGravy.selectPr(id)}
+              generateProposals={(id) => allGravy.generateProposals(id)}
+              applyProposal={(id, body) => allGravy.applyProposal(id, body)}
+              discardProposal={(id) => allGravy.discardProposal(id)}
+              approve={(id) => allGravy.approve(id)}
+              counts={allGravy.counts}
             />
           </TabsContent>
 
