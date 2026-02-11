@@ -3,24 +3,31 @@ import React, { useMemo, useRef, useState } from "react";
 import type { SovtCmdStep } from "@/app/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ActivityDot } from "@/components/ActivityDot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RecordingControls } from "@/components/RecordingControls";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SessionBanner } from "@/components/SessionBanner";
 
 import { callAction } from "@/api/client";
 import { PitchTimeline } from "@/components/PitchTimeline";
+import { formatMmSs } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type NoteEvent = { idx: number; start_ms: number; duration_ms: number; midi: number; hz: number; note: string };
 type NoteAnalysis = { duration_ms: number; note_events: NoteEvent[]; bpm?: number };
-
-function formatMmSs(ms: number): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function centsDiff(actualHz: number, expectedHz: number): number {
   return 1200 * Math.log2(actualHz / expectedHz);
@@ -257,6 +264,7 @@ export function SovtTab(props: {
   sovtSteps: SovtCmdStep[];
 
   chooseBreakLaneAndStartSovt: () => void;
+  onGoToBreakTab: () => void;
   runSovtCmd: (stepIdx: number) => Promise<void>;
   completeSovt: (status: "completed" | "abandoned") => void;
 }) {
@@ -268,6 +276,7 @@ export function SovtTab(props: {
     sovtCompletion,
     sovtSteps,
     chooseBreakLaneAndStartSovt,
+    onGoToBreakTab,
     runSovtCmd,
     completeSovt,
   } = props;
@@ -284,6 +293,7 @@ export function SovtTab(props: {
   const [pitchRecording, setPitchRecording] = useState(false);
   const [pitchRecordingStartedAtMs, setPitchRecordingStartedAtMs] = useState<number | null>(null);
   const [pitchRecordingElapsedMs, setPitchRecordingElapsedMs] = useState<number>(0);
+  const [pendingEndStatus, setPendingEndStatus] = useState<"completed" | "abandoned" | null>(null);
 
   const [pitchResults, setPitchResults] = useState<
     | null
@@ -506,6 +516,26 @@ export function SovtTab(props: {
     return `${step.idx}. ${step.title}`;
   }, [noteAnalysisStepIdx, sovtSteps]);
 
+  const nextStep = useMemo(() => sovtSteps.find((s) => s.status === "pending" || s.status === "error") ?? null, [sovtSteps]);
+  const completedStepCount = useMemo(() => sovtSteps.filter((s) => s.status === "done").length, [sovtSteps]);
+  const hasAnyRunStep = useMemo(() => sovtSteps.some((s) => s.status === "done" || s.status === "error" || s.status === "running"), [sovtSteps]);
+  const progressPct = sovtSteps.length > 0 ? Math.round((completedStepCount / sovtSteps.length) * 100) : 0;
+
+  function stepStatusMeta(status: SovtCmdStep["status"]): { label: string; dotClass: string; pulse?: boolean } {
+    switch (status) {
+      case "pending":
+        return { label: "Pending", dotClass: "border-muted-foreground/50 bg-background" };
+      case "running":
+        return { label: "Running", dotClass: "border-primary bg-primary", pulse: true };
+      case "done":
+        return { label: "Done", dotClass: "border-emerald-500 bg-emerald-500" };
+      case "error":
+        return { label: "Error", dotClass: "border-destructive bg-destructive" };
+      default:
+        return { label: status, dotClass: "border-muted-foreground/50 bg-muted-foreground/40" };
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -514,32 +544,49 @@ export function SovtTab(props: {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" onClick={chooseBreakLaneAndStartSovt} disabled={!breakMenuLoaded}>
+          <Button
+            variant="secondary"
+            onClick={chooseBreakLaneAndStartSovt}
+            disabled={!breakMenuLoaded}
+            title={!breakMenuLoaded ? "Load a break menu first." : undefined}
+          >
             Load from Break menu (choose + start)
           </Button>
-          <Button variant="outline" onClick={() => completeSovt("completed")} disabled={!breakMenuLoaded || !sovtCard?.id}>
-            Mark completed
-          </Button>
-          <Button variant="outline" onClick={() => completeSovt("abandoned")} disabled={!breakMenuLoaded || !sovtCard?.id}>
-            Mark abandoned
-          </Button>
-          <div className="text-sm text-muted-foreground">
-            card: <span className="font-mono">{sovtCard?.id ?? "(none)"}</span>
-          </div>
         </div>
 
-        {sovtError ? (
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{sovtError}</AlertDescription>
-          </Alert>
-        ) : null}
+        <SessionBanner
+          active={Boolean(sovtCard?.id)}
+          label={sovtCard ? `Loaded: ${String(sovtCard.activity ?? "SOVT")}` : "No exercise loaded"}
+          rawId={sovtCard?.id ? `card:${String(sovtCard.id)}` : null}
+          actions={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setPendingEndStatus("completed")}
+                disabled={!breakMenuLoaded || !sovtCard?.id || !hasAnyRunStep}
+                title={!hasAnyRunStep ? "Run at least one step first." : undefined}
+              >
+                Complete
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setPendingEndStatus("abandoned")}
+                disabled={!breakMenuLoaded || !sovtCard?.id || !hasAnyRunStep}
+                title={!hasAnyRunStep ? "Run at least one step first." : undefined}
+              >
+                Abandon
+              </Button>
+            </>
+          }
+        />
+
+        <ErrorBanner message={sovtError} />
 
         {sovtCompletion ? (
           <Alert>
-            <AlertTitle>Completion logged</AlertTitle>
-            <AlertDescription>
-              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">{JSON.stringify(sovtCompletion, null, 2)}</pre>
+            <AlertTitle>Session updated</AlertTitle>
+            <AlertDescription className="text-sm">
+              Session marked as <b>{String(sovtCompletion?.session?.status ?? "completed")}</b>.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -552,221 +599,251 @@ export function SovtTab(props: {
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">Choose the `sovt` lane in the Break tab (or click “Choose + Start SOVT” there).</div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={() => {
-              const next = sovtSteps.find((s) => s.status === "pending" || s.status === "error") ?? null;
-              if (next) void runSovtCmd(next.idx);
-            }}
-            disabled={sovtSteps.some((s) => s.status === "running") || sovtSteps.length === 0}
-          >
-            Run next CMD
-          </Button>
-          {sovtSteps.some((s) => s.status === "running") ? (
-            <span className="text-sm text-muted-foreground">
-              <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" /> Running…
-            </span>
-          ) : null}
-        </div>
-
-        {sovtSteps.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No CMD steps parsed yet.</div>
-        ) : (
-          <div className="grid gap-2">
-            {sovtSteps.map((s) => (
-              <div key={s.idx} className="rounded-md border p-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-medium">
-                      {s.idx}. {s.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono break-all">{s.raw_cmd}</div>
-                    <div className="text-xs text-muted-foreground">
-                      status: <b>{s.status}</b>
-                      {s.started_at_ms ? ` • started ${formatMmSs(Date.now() - s.started_at_ms)} ago` : ""}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => void runSovtCmd(s.idx)} disabled={s.status === "running" || sovtSteps.some((x) => x.status === "running")}>
-                      Run
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => void analyzeExpectedNotesForStep(s)} disabled={!canAnalyzeNotes(s) || s.status === "running"}>
-                      Notes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={async () => {
-                        setPitchError(null);
-                        await analyzeExpectedNotesForStep(s);
-                        await startPitchRecording();
-                        try {
-                          // Start playback after recording starts to minimize alignment drift.
-                          await runSovtCmd(s.idx);
-                        } finally {
-                          await stopPitchRecordingAndAnalyze();
-                        }
-                      }}
-                      disabled={!canAnalyzeNotes(s) || pitchRecording || s.status === "running"}
-                    >
-                      Run + Record
-                    </Button>
-                  </div>
-                </div>
-                {s.error ? <div className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{s.error}</div> : null}
-                {s.result_json ? <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">{s.result_json}</pre> : null}
+          <Alert>
+            <AlertTitle>No exercise loaded</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <div className="text-sm text-muted-foreground">
+                Go to the Break tab, load a break menu, then choose the SOVT lane.
               </div>
-            ))}
-          </div>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pitch Check (MVP)</CardTitle>
-            <CardDescription>
-              Record your mic and compare to expected notes from a `site-toggle play` command. Use headphones to avoid capturing the piano audio.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pitchError ? (
-              <Alert variant="destructive">
-                <AlertTitle>Pitch error</AlertTitle>
-                <AlertDescription>{pitchError}</AlertDescription>
-              </Alert>
-            ) : null}
-
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="grid gap-1.5">
-                <Label>Expected notes</Label>
-                <div className="text-sm text-muted-foreground">
-                  {hasNotes ? (
-                    <>
-                      {analyzedLabel ?? "Loaded"} • {noteAnalysis?.note_events.length ?? 0} notes •{" "}
-                      {formatMmSs(noteAnalysis?.duration_ms ?? 0)}
-                    </>
-                  ) : (
-                    "Click “Notes” on a CMD step to load targets."
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="pitch-offset">Offset (ms)</Label>
-                <Input
-                  id="pitch-offset"
-                  type="number"
-                  value={pitchOffsetMs}
-                  onChange={(e) => {
-                    setPitchOffsetTouched(true);
-                    setPitchOffsetMs(Number(e.target.value));
-                  }}
-                  className="w-[140px]"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Auto</Label>
-                <div className="text-sm text-muted-foreground font-mono">
-                  {typeof pitchAutoOffsetMs === "number" ? `${pitchAutoOffsetMs} ms` : "—"}
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (typeof pitchAutoOffsetMs !== "number") return;
-                  setPitchOffsetTouched(false);
-                  setPitchOffsetMs(pitchAutoOffsetMs);
-                }}
-                disabled={typeof pitchAutoOffsetMs !== "number" || pitchRecording}
-              >
-                Use auto
+              <Button variant="outline" size="sm" onClick={onGoToBreakTab}>
+                Go to Break tab
               </Button>
-              {!pitchRecording ? (
-                <Button onClick={() => void startPitchRecording()} disabled={pitchRecording}>
-                  Record
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {sovtCard ? (
+          <>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <div className="text-muted-foreground">
+                  Progress: {completedStepCount} / {sovtSteps.length} steps
+                </div>
+                <Button
+                  onClick={() => {
+                    if (nextStep) void runSovtCmd(nextStep.idx);
+                  }}
+                  disabled={sovtSteps.some((s) => s.status === "running") || sovtSteps.length === 0 || !nextStep}
+                >
+                  {nextStep ? `Run next: \"${nextStep.idx}. ${nextStep.title}\"` : "Run next"}
                 </Button>
-              ) : (
-                <Button onClick={() => void stopPitchRecordingAndAnalyze()}>
-                  Stop + Analyze ({formatMmSs(pitchRecordingElapsedMs)})
-                </Button>
-              )}
-              {pitchRecording ? (
-                <span className="text-sm text-muted-foreground">
-                  <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" /> Recording {formatMmSs(pitchRecordingElapsedMs)}
-                </span>
+              </div>
+              <div className="h-2 w-full rounded bg-muted/40 overflow-hidden">
+                <div className="h-full bg-primary/70 transition-all" style={{ width: `${progressPct}%` }} />
+              </div>
+              {sovtSteps.some((s) => s.status === "running") ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <ActivityDot />
+                  Running…
+                </div>
               ) : null}
             </div>
 
-            {pitchResults ? (
-              <div className="rounded-md border p-3 space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  duration: <span className="font-mono">{formatMmSs(pitchResults.duration_ms)}</span> • contour points:{" "}
-                  <span className="font-mono">{pitchResults.contour_points}</span> • in tune:{" "}
-                  <span className="font-mono">{Math.round(pitchResults.ok_ratio * 100)}%</span>
-                </div>
-                <div className="grid gap-2">
-                  {pitchResults.per_note.slice(0, 24).map((n) => (
-                    <div key={n.idx} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
-                      <div>
-                        <b className="font-mono">#{n.idx}</b> <span className="font-mono">{n.note}</span>{" "}
-                        <span className="text-xs text-muted-foreground">({n.expected_hz.toFixed(1)} Hz)</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        detected:{" "}
-                        <span className="font-mono">{n.detected_hz ? `${n.detected_hz.toFixed(1)} Hz` : "(none)"}</span>{" "}
-                        • cents: <span className="font-mono">{n.cents !== null ? n.cents.toFixed(0) : "—"}</span> •{" "}
-                        <b className={n.ok ? "text-green-700" : "text-destructive"}>{n.ok ? "ok" : "off"}</b>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {pitchContour ? (
-                  <PitchTimeline
-                    durationMs={pitchResults.duration_ms}
-                    notes={pitchResults.per_note}
-                    contour={pitchContour}
-                    okCents={PITCH_OK_CENTS}
-                    clarityThreshold={PITCH_CLARITY_THRESHOLD}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-
-            {Array.isArray(pitchHistory) && pitchHistory.length > 0 ? (
-              <Accordion type="single" collapsible>
-                <AccordionItem value="pitch_history">
-                  <AccordionTrigger>Pitch history (last {Math.min(10, pitchHistory.length)})</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="grid gap-2 text-sm">
-                      {pitchHistory.slice(0, 10).map((r: any) => (
-                        <div key={String(r.id)} className="rounded-md border p-2">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="font-mono text-xs">{String(r.id)}</div>
-                            <div className="text-xs text-muted-foreground">{String(r.created_at ?? "")}</div>
+            {sovtSteps.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No CMD steps parsed yet.</div>
+            ) : (
+              <div className="grid gap-2">
+                {sovtSteps.map((s) => {
+                  const meta = stepStatusMeta(s.status);
+                  return (
+                    <div key={s.idx} className="rounded-md border p-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-medium">
+                            {s.idx}. {s.title}
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {r.step_title ? <b className="text-foreground">{String(r.step_title)}</b> : "pitch check"} •{" "}
-                            ok {Math.round(Number(r.ok_ratio ?? 0) * 100)}% • {Number(r.ok_count ?? 0)}/{Number(r.note_count ?? 0)} notes •{" "}
-                            offset {typeof r.offset_ms === "number" ? `${r.offset_ms}ms` : "—"}
+                          <div className="text-xs text-muted-foreground font-mono break-all">{s.raw_cmd}</div>
+                          <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
+                            <span className={cn("inline-block h-2.5 w-2.5 rounded-full border", meta.dotClass, meta.pulse && "animate-pulse")} />
+                            <b>{meta.label}</b>
+                            {s.started_at_ms ? ` • started ${formatMmSs(Date.now() - s.started_at_ms)} ago` : ""}
                           </div>
                         </div>
-                      ))}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => void runSovtCmd(s.idx)}
+                            disabled={s.status === "running" || sovtSteps.some((x) => x.status === "running")}
+                          >
+                            Run
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void analyzeExpectedNotesForStep(s)}
+                            disabled={!canAnalyzeNotes(s) || s.status === "running"}
+                          >
+                            Notes
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={async () => {
+                              setPitchError(null);
+                              await analyzeExpectedNotesForStep(s);
+                              await startPitchRecording();
+                              try {
+                                // Start playback after recording starts to minimize alignment drift.
+                                await runSovtCmd(s.idx);
+                              } finally {
+                                await stopPitchRecordingAndAnalyze();
+                              }
+                            }}
+                            disabled={!canAnalyzeNotes(s) || pitchRecording || s.status === "running"}
+                          >
+                            Run + Record
+                          </Button>
+                        </div>
+                      </div>
+                      {s.error ? <div className="mt-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{s.error}</div> : null}
+                      {s.result_json ? <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted/30 p-2 text-xs">{s.result_json}</pre> : null}
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ) : null}
-          </CardContent>
-        </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="rounded-md border p-3 space-y-3">
+              <div>
+                <div className="text-base font-semibold">Pitch Check</div>
+                <div className="text-sm text-muted-foreground">
+                  Record your mic and compare against expected notes. Use headphones to avoid capturing playback.
+                </div>
+              </div>
+
+              {pitchError ? (
+                <Alert variant="destructive">
+                  <AlertTitle>Pitch error</AlertTitle>
+                  <AlertDescription>{pitchError}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="grid gap-1.5">
+                  <Label>Expected notes</Label>
+                  <div className="text-sm text-muted-foreground">
+                    {hasNotes ? (
+                      <>
+                        {analyzedLabel ?? "Loaded"} • {noteAnalysis?.note_events.length ?? 0} notes •{" "}
+                        {formatMmSs(noteAnalysis?.duration_ms ?? 0)}
+                      </>
+                    ) : (
+                      "Load a card and click Notes on a step to enable pitch analysis."
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="pitch-offset">Offset (ms)</Label>
+                  <Input
+                    id="pitch-offset"
+                    type="number"
+                    value={pitchOffsetMs}
+                    onChange={(e) => {
+                      setPitchOffsetTouched(true);
+                      setPitchOffsetMs(Number(e.target.value));
+                    }}
+                    className="w-[140px]"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Auto</Label>
+                  <div className="text-sm text-muted-foreground font-mono">
+                    {typeof pitchAutoOffsetMs === "number" ? `${pitchAutoOffsetMs} ms` : "—"}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (typeof pitchAutoOffsetMs !== "number") return;
+                    setPitchOffsetTouched(false);
+                    setPitchOffsetMs(pitchAutoOffsetMs);
+                  }}
+                  disabled={typeof pitchAutoOffsetMs !== "number" || pitchRecording}
+                >
+                  Use auto
+                </Button>
+              </div>
+
+              <RecordingControls
+                isRecording={pitchRecording}
+                elapsedMs={pitchRecordingElapsedMs}
+                onStart={() => void startPitchRecording()}
+                onStop={() => void stopPitchRecordingAndAnalyze()}
+                disabled={!sovtCard}
+                stopLabelPrefix="Stop + Analyze"
+                hint="Load expected notes first for best results."
+              />
+
+              {pitchResults ? (
+                <div className="rounded-md border p-3 space-y-2">
+                  <div className="text-sm text-muted-foreground">
+                    duration: <span className="font-mono">{formatMmSs(pitchResults.duration_ms)}</span> • contour points:{" "}
+                    <span className="font-mono">{pitchResults.contour_points}</span> • in tune:{" "}
+                    <span className="font-mono">{Math.round(pitchResults.ok_ratio * 100)}%</span>
+                  </div>
+                  <div className="grid gap-2">
+                    {pitchResults.per_note.slice(0, 24).map((n) => (
+                      <div key={n.idx} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                        <div>
+                          <b className="font-mono">#{n.idx}</b> <span className="font-mono">{n.note}</span>{" "}
+                          <span className="text-xs text-muted-foreground">({n.expected_hz.toFixed(1)} Hz)</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          detected:{" "}
+                          <span className="font-mono">{n.detected_hz ? `${n.detected_hz.toFixed(1)} Hz` : "(none)"}</span> • cents:{" "}
+                          <span className="font-mono">{n.cents !== null ? n.cents.toFixed(0) : "—"}</span> •{" "}
+                          <b className={n.ok ? "text-green-700" : "text-destructive"}>{n.ok ? "ok" : "off"}</b>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {pitchContour ? (
+                    <PitchTimeline
+                      durationMs={pitchResults.duration_ms}
+                      notes={pitchResults.per_note}
+                      contour={pitchContour}
+                      okCents={PITCH_OK_CENTS}
+                      clarityThreshold={PITCH_CLARITY_THRESHOLD}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+
+              {Array.isArray(pitchHistory) && pitchHistory.length > 0 ? (
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="pitch_history">
+                    <AccordionTrigger>Pitch history (last {Math.min(10, pitchHistory.length)})</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="grid gap-2 text-sm">
+                        {pitchHistory.slice(0, 10).map((r: any) => (
+                          <div key={String(r.id)} className="rounded-md border p-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-mono text-xs">{String(r.id)}</div>
+                              <div className="text-xs text-muted-foreground">{String(r.created_at ?? "")}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {r.step_title ? <b className="text-foreground">{String(r.step_title)}</b> : "pitch check"} • ok{" "}
+                              {Math.round(Number(r.ok_ratio ?? 0) * 100)}% • {Number(r.ok_count ?? 0)}/{Number(r.note_count ?? 0)} notes • offset{" "}
+                              {typeof r.offset_ms === "number" ? `${r.offset_ms}ms` : "—"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         {sovtCard?.prompt ? (
           <Accordion type="single" collapsible>
             <AccordionItem value="prompt">
-              <AccordionTrigger>Card prompt (debug)</AccordionTrigger>
+              <AccordionTrigger>Card prompt</AccordionTrigger>
               <AccordionContent>
                 <ScrollArea className="h-[260px] rounded-md border">
                   <pre className="p-3 text-xs whitespace-pre-wrap">{String(sovtCard.prompt)}</pre>
@@ -775,6 +852,33 @@ export function SovtTab(props: {
             </AccordionItem>
           </Accordion>
         ) : null}
+
+        <Dialog open={pendingEndStatus !== null} onOpenChange={(open) => !open && setPendingEndStatus(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{pendingEndStatus === "completed" ? "Complete this session?" : "Abandon this session?"}</DialogTitle>
+              <DialogDescription>
+                {pendingEndStatus === "completed"
+                  ? "This marks the current SOVT session as completed."
+                  : "This ends the session and marks it as abandoned."}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPendingEndStatus(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant={pendingEndStatus === "completed" ? "secondary" : "destructive"}
+                onClick={() => {
+                  if (pendingEndStatus) completeSovt(pendingEndStatus);
+                  setPendingEndStatus(null);
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

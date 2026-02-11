@@ -435,12 +435,22 @@ export function App() {
               spanishBrainDefault={spanish.spanishBrainDefault}
               setSpanishBrainSetting={spanish.setSpanishBrainSetting}
               spanishSessionId={spanish.spanishSessionId}
+              spanishSessionLane={spanish.spanishSessionLane}
+              spanishSessionSource={spanish.spanishSessionSource}
               spanishBrain={spanish.spanishBrain}
               spanishLoading={spanish.spanishLoading}
               spanishError={spanish.spanishError}
+              clearSpanishError={() => spanish.setSpanishErrorMessage(null)}
               spanishMessages={spanish.spanishMessages}
               spanishChatEndRef={spanish.spanishChatEndRef}
               spanishSrsDueCounts={spanish.spanishSrsDueCounts}
+              canStartFromBreakChoice={Boolean(
+                breakMenu &&
+                  breakChoice?.ok &&
+                  breakChoice?.card?.prompt &&
+                  ["verb", "noun", "lesson", "fusion"].includes(String(breakChoice?.lane ?? "")),
+              )}
+              onGoToBreakTab={() => setActiveTab("break")}
               startSpanishSessionFromChoice={() => void spanish.startSpanishSessionFromChoice(breakMenu, breakChoice)}
               startSpanishDueSession={(lane) => void spanish.startSpanishDueSession(lane)}
               endSpanishSession={(s) => void spanish.endSpanishSession(s)}
@@ -477,6 +487,7 @@ export function App() {
               sovtCompletion={sovt.sovtCompletion}
               sovtSteps={sovt.sovtSteps}
               chooseBreakLaneAndStartSovt={() => void chooseBreakLaneAndStartSovt()}
+              onGoToBreakTab={() => setActiveTab("break")}
               runSovtCmd={(idx) => sovt.runSovtCmd(idx)}
               completeSovt={(s) => void sovt.completeSovt(s)}
             />

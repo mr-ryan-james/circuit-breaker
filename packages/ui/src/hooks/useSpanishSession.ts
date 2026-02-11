@@ -80,6 +80,8 @@ export function useSpanishSession() {
   );
 
   const [spanishSessionId, setSpanishSessionId] = React.useState<string | null>(null);
+  const [spanishSessionLane, setSpanishSessionLane] = React.useState<string | null>(null);
+  const [spanishSessionSource, setSpanishSessionSource] = React.useState<"break_choice" | "srs_due" | null>(null);
   const [spanishBrain, setSpanishBrain] = React.useState<SpanishBrain | null>(null);
   const [spanishAnswer, setSpanishAnswer] = React.useState("");
   const [spanishSpeakResults, setSpanishSpeakResults] = React.useState<SpanishSpeakResult[]>([]);
@@ -177,6 +179,8 @@ export function useSpanishSession() {
 
   function resetSpanishSessionLocal() {
     setSpanishSessionId(null);
+    setSpanishSessionLane(null);
+    setSpanishSessionSource(null);
     setSpanishBrain(null);
     setSpanishSpeakResults([]);
     setSpanishPendingListen(null);
@@ -203,7 +207,12 @@ export function useSpanishSession() {
     }
   }
 
-  async function startSpanishSession(eventKey: string, lane: string, card: any): Promise<void> {
+  async function startSpanishSession(
+    eventKey: string,
+    lane: string,
+    card: any,
+    source: "break_choice" | "srs_due" = "break_choice",
+  ): Promise<void> {
     setSpanishError(null);
     if (!["verb", "noun", "lesson", "fusion"].includes(lane)) {
       setSpanishError(`Not a Spanish lane: ${lane}`);
@@ -239,6 +248,8 @@ export function useSpanishSession() {
       }
 
       setSpanishSessionId(String(res.session_id));
+      setSpanishSessionLane(lane);
+      setSpanishSessionSource(source);
       setSpanishBrain(res.brain ?? null);
       const speaks = Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : [];
       setSpanishSpeakResults(speaks);
@@ -302,6 +313,8 @@ export function useSpanishSession() {
       }
 
       setSpanishSessionId(String(res.session_id));
+      setSpanishSessionLane(lane);
+      setSpanishSessionSource("srs_due");
       setSpanishBrain(res.brain ?? null);
       const speaks = Array.isArray(res.speak_results) ? (res.speak_results as SpanishSpeakResult[]) : [];
       setSpanishSpeakResults(speaks);
@@ -529,6 +542,8 @@ export function useSpanishSession() {
     setSpanishBrainSetting,
 
     spanishSessionId,
+    spanishSessionLane,
+    spanishSessionSource,
     spanishBrain,
     spanishLoading,
     spanishError,

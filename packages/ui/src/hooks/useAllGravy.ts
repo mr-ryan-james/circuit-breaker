@@ -83,30 +83,33 @@ export function useAllGravy() {
     }
   }
 
-  async function saveReposFromText(): Promise<void> {
+  async function saveReposFromText(): Promise<boolean> {
     setError(null);
     const list = parseReposTextToList(reposText);
     if (list.length === 0) {
       setError("Repo list is empty.");
-      return;
+      return false;
     }
     const res = await callAction<any>("allgravy.repos.set", { repos: list });
     if (!res?.ok) {
       setError(String(res?.error ?? "Failed to save repos"));
-      return;
+      return false;
     }
     const normalized = Array.isArray(res.repos) ? res.repos.map(String) : list;
     setRepos(normalized);
     setReposText(normalized.join("\n"));
+    return true;
   }
 
-  async function saveBrain(next: BrainDefault): Promise<void> {
+  async function saveBrain(next: BrainDefault): Promise<boolean> {
     setError(null);
     setBrain(next);
     const res = await callAction<any>("allgravy.brain.set", { brain: next });
     if (!res?.ok) {
       setError(String(res?.error ?? "Failed to set brain"));
+      return false;
     }
+    return true;
   }
 
   const loadLatestQueue = React.useCallback(async (): Promise<void> => {

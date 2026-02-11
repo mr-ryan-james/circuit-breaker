@@ -4,24 +4,26 @@ import type { AllGravyPrRow, AllGravyProposalRow, BrainDefault } from "@/app/typ
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/NativeSelect";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { formatRelativeTime, tryParseJson } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type PatchesPayload = {
   patches?: Record<string, { patch?: string; numbered_lines?: string[] }>;
   omitted?: string[];
 };
-
-function tryParseJson(raw: string | null | undefined): any | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 function threadCountsLine(pr: AllGravyPrRow): string | null {
   const j = tryParseJson(pr.thread_summary_json);
@@ -52,6 +54,14 @@ function statusPill(status: string): { label: string; className: string } {
       return { label: "Waiting", className: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200" };
     case "ready_to_approve":
       return { label: "Ready", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200" };
+    case "proposed":
+      return { label: "Proposed", className: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-200" };
+    case "applied":
+      return { label: "Applied", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200" };
+    case "discarded":
+      return { label: "Discarded", className: "border-muted-foreground/30 bg-muted/20 text-muted-foreground" };
+    case "failed":
+      return { label: "Failed", className: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-200" };
     default:
       return { label: status, className: "border-muted-foreground/30 bg-muted/20 text-muted-foreground" };
   }
@@ -80,8 +90,8 @@ export function AllGravyTab(props: {
   error: string | null;
   setError: (v: string | null) => void;
 
-  saveReposFromText: () => Promise<void>;
-  saveBrain: (b: BrainDefault) => Promise<void>;
+  saveReposFromText: () => Promise<boolean>;
+  saveBrain: (b: BrainDefault) => Promise<boolean>;
   loadLatestQueue: () => Promise<void>;
   refreshQueue: () => Promise<void>;
   selectPr: (id: string) => Promise<void>;
@@ -123,15 +133,16 @@ export function AllGravyTab(props: {
   } = props;
 
   const [draftBodies, setDraftBodies] = React.useState<Record<string, string>>({});
+  const [saveFeedback, setSaveFeedback] = React.useState<string | null>(null);
+  const [approveTarget, setApproveTarget] = React.useState<AllGravyPrRow | null>(null);
+  const [applyTarget, setApplyTarget] = React.useState<AllGravyProposalRow | null>(null);
 
   React.useEffect(() => {
-    // Keep editable bodies synced with latest proposals, but don't overwrite user edits.
     setDraftBodies((prev) => {
       const next = { ...prev };
       for (const p of selectedProposals) {
         if (next[p.id] === undefined) next[p.id] = p.body ?? "";
       }
-      // Drop bodies for proposals no longer visible.
       const visible = new Set(selectedProposals.map((p) => p.id));
       for (const k of Object.keys(next)) {
         if (!visible.has(k)) delete next[k];
@@ -139,6 +150,12 @@ export function AllGravyTab(props: {
       return next;
     });
   }, [selectedProposals]);
+
+  React.useEffect(() => {
+    if (!saveFeedback) return;
+    const t = window.setTimeout(() => setSaveFeedback(null), 2000);
+    return () => window.clearTimeout(t);
+  }, [saveFeedback]);
 
   const byStatus = React.useMemo(() => {
     const ready: AllGravyPrRow[] = [];
@@ -152,6 +169,87 @@ export function AllGravyTab(props: {
     return { ready, waiting, fresh };
   }, [prs]);
 
+  const latestRefreshedAt = React.useMemo(() => {
+    let latest: string | null = null;
+    for (const pr of prs) {
+      if (!pr.refreshed_at) continue;
+      if (!latest || Date.parse(pr.refreshed_at) > Date.parse(latest)) latest = pr.refreshed_at;
+    }
+    return latest;
+  }, [prs]);
+
+  const humanRunInfo = latestRefreshedAt ? formatRelativeTime(latestRefreshedAt) : null;
+
+  async function onSaveReposClick() {
+    const ok = await saveReposFromText();
+    if (ok) setSaveFeedback("Saved!");
+  }
+
+  async function onBrainChange(next: BrainDefault) {
+    const ok = await saveBrain(next);
+    if (ok) setSaveFeedback("Saved!");
+  }
+
+  function renderPrCard(pr: AllGravyPrRow, opts?: { showApprove?: boolean; showGenerate?: boolean }) {
+    return (
+      <div
+        key={pr.id}
+        className={cn("rounded-md border p-2 cursor-pointer hover:bg-muted/20", selectedPrId === pr.id && "border-primary/40 bg-primary/5")}
+        onClick={() => void selectPr(pr.id)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium">{pr.title}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground font-mono">
+              {pr.repo}#{pr.pr_number}
+            </div>
+            {threadCountsLine(pr) ? <div className="mt-1 text-[11px] text-muted-foreground font-mono">{threadCountsLine(pr)}</div> : null}
+          </div>
+          <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[11px]", statusPill(pr.status).className)}>
+            {statusPill(pr.status).label}
+          </span>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <a className="text-xs text-primary underline" href={pr.pr_url} target="_blank" rel="noreferrer">
+            open
+          </a>
+
+          <div className="flex items-center gap-2">
+            {opts?.showGenerate ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void generateProposals(pr.id);
+                }}
+                disabled={Boolean(generatingForPr[pr.id])}
+              >
+                {generatingForPr[pr.id] ? "Thinking…" : "Propose"}
+              </Button>
+            ) : null}
+
+            {opts?.showApprove ? (
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setApproveTarget(pr);
+                }}
+                disabled={Boolean(approvingPr[pr.id])}
+              >
+                {approvingPr[pr.id] ? "Approving…" : "Approve"}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -162,30 +260,30 @@ export function AllGravyTab(props: {
               <CardDescription>PR review queue + AI proposals + per-comment apply.</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("ready_to_approve").className)}>
+              <span
+                title="PRs where all your review threads are addressed"
+                className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("ready_to_approve").className)}
+              >
                 Ready: {counts.ready_to_approve}
               </span>
-              <span className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("waiting").className)}>
+              <span
+                title="PRs with unresolved review threads"
+                className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("waiting").className)}
+              >
                 Waiting: {counts.waiting}
               </span>
-              <span className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("new_unreviewed").className)}>
+              <span
+                title="PRs not yet reviewed by the brain"
+                className={cn("rounded-full border px-2 py-0.5 text-xs", statusPill("new_unreviewed").className)}
+              >
                 New: {counts.new_unreviewed}
               </span>
             </div>
           </div>
         </CardHeader>
+
         <CardContent className="space-y-4">
-          {error ? (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-                <span>{error}</span>
-                <Button variant="outline" size="sm" onClick={() => setError(null)}>
-                  Dismiss
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2 space-y-2">
@@ -198,18 +296,23 @@ export function AllGravyTab(props: {
                 disabled={loadingSettings}
                 className="min-h-[120px] font-mono text-xs"
               />
+              {!reposText.trim() ? <div className="text-sm text-muted-foreground">Add repos above, then click Save to get started.</div> : null}
+
               <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={() => void saveReposFromText()} disabled={loadingSettings}>
+                <Button onClick={() => void onSaveReposClick()} disabled={loadingSettings}>
                   Save repos
                 </Button>
-                <Button variant="secondary" onClick={() => void loadLatestQueue()} disabled={refreshing}>
-                  Load latest queue
+                <Button variant="outline" onClick={() => void loadLatestQueue()} disabled={refreshing}>
+                  Load cached
                 </Button>
                 <Button variant="secondary" onClick={() => void refreshQueue()} disabled={refreshing}>
-                  {refreshing ? "Refreshing…" : "Refresh queue"}
+                  {refreshing ? "Fetching…" : "Fetch from GitHub"}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  run: <span className="font-mono">{runId ?? "(none)"}</span>
+
+                {saveFeedback ? <span className="text-xs text-emerald-700 dark:text-emerald-300">{saveFeedback}</span> : null}
+
+                <span className="text-xs text-muted-foreground" title={runId ?? ""}>
+                  Last fetched: {humanRunInfo ?? "(none)"}
                 </span>
               </div>
 
@@ -231,17 +334,12 @@ export function AllGravyTab(props: {
 
             <div className="space-y-2">
               <Label htmlFor="ag-brain">Brain</Label>
-              <select
-                id="ag-brain"
-                value={brain}
-                onChange={(e) => void saveBrain(e.target.value as BrainDefault)}
-                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <NativeSelect id="ag-brain" value={brain} onChange={(e) => void onBrainChange(e.target.value as BrainDefault)}>
                 <option value="codex">Codex (recommended)</option>
                 <option value="claude">Claude (may fail on large diffs)</option>
-              </select>
+              </NativeSelect>
               <div className="text-xs text-muted-foreground">
-                Apply uses <span className="font-mono">gh api</span> directly. Proposals never post to GitHub until you click Apply.
+                Comments are only posted to GitHub when you click <b>Apply</b> and confirm.
               </div>
             </div>
           </div>
@@ -252,149 +350,25 @@ export function AllGravyTab(props: {
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle>Queue</CardTitle>
-            <CardDescription>Click a PR to view context and proposals.</CardDescription>
+            <CardDescription>Click a PR to view diffs and proposals.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="text-xs font-semibold tracking-wide text-muted-foreground">READY TO APPROVE</div>
-              {byStatus.ready.length === 0 ? (
-                <div className="text-xs text-muted-foreground">None.</div>
-              ) : (
-                <div className="space-y-2">
-                  {byStatus.ready.map((pr) => (
-                    <div
-                      key={pr.id}
-                      className={cn(
-                        "rounded-md border p-2 cursor-pointer hover:bg-muted/20",
-                        selectedPrId === pr.id && "border-primary/40 bg-primary/5",
-                      )}
-                      onClick={() => void selectPr(pr.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">{pr.title}</div>
-                          <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-                            {pr.repo}#{pr.pr_number}
-                          </div>
-                          {threadCountsLine(pr) ? (
-                            <div className="mt-1 text-[11px] text-muted-foreground font-mono">{threadCountsLine(pr)}</div>
-                          ) : null}
-                        </div>
-                        <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[11px]", statusPill(pr.status).className)}>
-                          {statusPill(pr.status).label}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <a className="text-xs text-primary underline" href={pr.pr_url} target="_blank" rel="noreferrer">
-                          open
-                        </a>
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            void approve(pr.id);
-                          }}
-                          disabled={Boolean(approvingPr[pr.id])}
-                        >
-                          {approvingPr[pr.id] ? "Approving…" : "Approve"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {byStatus.ready.length === 0 ? <div className="text-sm text-muted-foreground">No ready PRs yet.</div> : <div className="space-y-2">{byStatus.ready.map((pr) => renderPrCard(pr, { showApprove: true }))}</div>}
             </div>
 
             <div className="space-y-2">
               <div className="text-xs font-semibold tracking-wide text-muted-foreground">WAITING</div>
-              {byStatus.waiting.length === 0 ? (
-                <div className="text-xs text-muted-foreground">None.</div>
-              ) : (
-                <div className="space-y-2">
-                  {byStatus.waiting.map((pr) => (
-                    <div
-                      key={pr.id}
-                      className={cn(
-                        "rounded-md border p-2 cursor-pointer hover:bg-muted/20",
-                        selectedPrId === pr.id && "border-primary/40 bg-primary/5",
-                      )}
-                      onClick={() => void selectPr(pr.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">{pr.title}</div>
-                          <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-                            {pr.repo}#{pr.pr_number}
-                          </div>
-                          {threadCountsLine(pr) ? (
-                            <div className="mt-1 text-[11px] text-muted-foreground font-mono">{threadCountsLine(pr)}</div>
-                          ) : null}
-                        </div>
-                        <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[11px]", statusPill(pr.status).className)}>
-                          {statusPill(pr.status).label}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <a className="text-xs text-primary underline" href={pr.pr_url} target="_blank" rel="noreferrer">
-                          open
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {byStatus.waiting.length === 0 ? <div className="text-sm text-muted-foreground">No waiting PRs.</div> : <div className="space-y-2">{byStatus.waiting.map((pr) => renderPrCard(pr))}</div>}
             </div>
 
             <div className="space-y-2">
               <div className="text-xs font-semibold tracking-wide text-muted-foreground">NEW (UNREVIEWED)</div>
               {byStatus.fresh.length === 0 ? (
-                <div className="text-xs text-muted-foreground">None.</div>
+                <div className="text-sm text-muted-foreground">No new PRs.</div>
               ) : (
-                <div className="space-y-2">
-                  {byStatus.fresh.map((pr) => (
-                    <div
-                      key={pr.id}
-                      className={cn(
-                        "rounded-md border p-2 cursor-pointer hover:bg-muted/20",
-                        selectedPrId === pr.id && "border-primary/40 bg-primary/5",
-                      )}
-                      onClick={() => void selectPr(pr.id)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium">{pr.title}</div>
-                          <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-                            {pr.repo}#{pr.pr_number}
-                          </div>
-                          {threadCountsLine(pr) ? (
-                            <div className="mt-1 text-[11px] text-muted-foreground font-mono">{threadCountsLine(pr)}</div>
-                          ) : null}
-                        </div>
-                        <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[11px]", statusPill(pr.status).className)}>
-                          {statusPill(pr.status).label}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <a className="text-xs text-primary underline" href={pr.pr_url} target="_blank" rel="noreferrer">
-                          open
-                        </a>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            void generateProposals(pr.id);
-                          }}
-                          disabled={Boolean(generatingForPr[pr.id])}
-                        >
-                          {generatingForPr[pr.id] ? "Thinking…" : "Propose"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="space-y-2">{byStatus.fresh.map((pr) => renderPrCard(pr, { showGenerate: true }))}</div>
               )}
             </div>
           </CardContent>
@@ -407,7 +381,7 @@ export function AllGravyTab(props: {
           </CardHeader>
           <CardContent className="space-y-4">
             {!selectedPr ? (
-              <div className="text-sm text-muted-foreground">Select a PR on the left.</div>
+              <div className="text-sm text-muted-foreground">Select a PR from the queue to view diffs and manage review comments.</div>
             ) : (
               <>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -416,18 +390,28 @@ export function AllGravyTab(props: {
                     <div className="mt-1 text-xs text-muted-foreground font-mono">
                       {selectedPr.repo}#{selectedPr.pr_number} • head {selectedPr.head_sha.slice(0, 8)}
                     </div>
-                    {threadCountsLine(selectedPr) ? (
-                      <div className="mt-1 text-xs text-muted-foreground font-mono">{threadCountsLine(selectedPr)}</div>
-                    ) : null}
+                    {threadCountsLine(selectedPr) ? <div className="mt-1 text-xs text-muted-foreground font-mono">{threadCountsLine(selectedPr)}</div> : null}
                     <div className="mt-2">
                       <a className="text-sm text-primary underline" href={selectedPr.pr_url} target="_blank" rel="noreferrer">
                         Open PR on GitHub
                       </a>
                     </div>
                   </div>
-                  <span className={cn("rounded-full border px-2 py-1 text-xs", statusPill(selectedPr.status).className)}>
-                    {statusPill(selectedPr.status).label}
-                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <span className={cn("rounded-full border px-2 py-1 text-xs", statusPill(selectedPr.status).className)}>
+                      {statusPill(selectedPr.status).label}
+                    </span>
+                    {selectedPr.status === "new_unreviewed" ? (
+                      <Button
+                        variant="secondary"
+                        onClick={() => void generateProposals(selectedPr.id)}
+                        disabled={Boolean(generatingForPr[selectedPr.id])}
+                      >
+                        {generatingForPr[selectedPr.id] ? "Thinking…" : "Generate proposals"}
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="rounded-md border">
@@ -438,8 +422,7 @@ export function AllGravyTab(props: {
                         <Alert>
                           <AlertTitle>Omitted files</AlertTitle>
                           <AlertDescription className="text-xs">
-                            No patch was available (or patch was too large):{" "}
-                            <span className="font-mono">{selectedPatches.omitted.join(", ")}</span>
+                            No patch was available (or patch was too large): <span className="font-mono">{selectedPatches.omitted.join(", ")}</span>
                           </AlertDescription>
                         </Alert>
                       ) : null}
@@ -479,9 +462,7 @@ export function AllGravyTab(props: {
                   </div>
                   <div className="p-3 space-y-4">
                     {selectedProposals.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">
-                        No proposals yet. For new PRs, click <b>Propose</b> in the queue.
-                      </div>
+                      <div className="text-sm text-muted-foreground">No proposals yet. Generate proposals from this panel for New PRs.</div>
                     ) : (
                       selectedProposals.map((p) => {
                         const preview = patchLinePreview(selectedPatches, p.path, p.position);
@@ -494,12 +475,10 @@ export function AllGravyTab(props: {
                                 {p.path}:{p.position}
                               </div>
                               <span className={cn("rounded-full border px-2 py-0.5 text-[11px]", statusPill(p.status).className)}>
-                                {p.status}
+                                {statusPill(p.status).label}
                               </span>
                             </div>
-                            {preview ? (
-                              <div className="rounded-md bg-muted/30 p-2 text-xs font-mono whitespace-pre-wrap">{preview}</div>
-                            ) : null}
+                            {preview ? <div className="rounded-md bg-muted/30 p-2 text-xs font-mono whitespace-pre-wrap">{preview}</div> : null}
                             <Textarea
                               value={draftBodies[p.id] ?? p.body ?? ""}
                               onChange={(e) => setDraftBodies((m) => ({ ...m, [p.id]: e.target.value }))}
@@ -510,17 +489,12 @@ export function AllGravyTab(props: {
                               <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   size="sm"
-                                  onClick={() => void applyProposal(p.id, draftBodies[p.id] ?? p.body ?? "")}
+                                  onClick={() => setApplyTarget(p)}
                                   disabled={p.status !== "proposed" || Boolean(applyingProposal[p.id])}
                                 >
                                   {applyingProposal[p.id] ? "Applying…" : "Apply"}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => void discardProposal(p.id)}
-                                  disabled={p.status !== "proposed"}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => void discardProposal(p.id)} disabled={p.status !== "proposed"}>
                                   Discard
                                 </Button>
                               </div>
@@ -545,6 +519,57 @@ export function AllGravyTab(props: {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={approveTarget !== null} onOpenChange={(open) => !open && setApproveTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve this PR?</DialogTitle>
+            <DialogDescription>
+              Approve PR {approveTarget ? `${approveTarget.repo}#${approveTarget.pr_number}` : ""} on GitHub. This submits an approving review.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (approveTarget) void approve(approveTarget.id);
+                setApproveTarget(null);
+              }}
+            >
+              Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={applyTarget !== null} onOpenChange={(open) => !open && setApplyTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Post comment to GitHub?</DialogTitle>
+            <DialogDescription>
+              {applyTarget ? `Post inline comment at ${applyTarget.path}:${applyTarget.position}.` : "Post this comment to GitHub."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplyTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (applyTarget) {
+                  const body = draftBodies[applyTarget.id] ?? applyTarget.body ?? "";
+                  void applyProposal(applyTarget.id, body);
+                }
+                setApplyTarget(null);
+              }}
+            >
+              Post comment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
