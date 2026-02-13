@@ -261,14 +261,20 @@ export function unblockDomains(hostsContents: string, domains: string[]): string
 }
 
 export function flushDns(): void {
-  // These are safe even if they no-op; errors shouldn't crash toggling.
+  // On macOS 26 (Tahoe), HUP alone doesn't clear the resolver cache.
+  // Full kill of mDNSResponder + Helper forces launchd to restart them with a clean cache.
   try {
     execFileSync("dscacheutil", ["-flushcache"], { stdio: "ignore" });
   } catch {
     // ignore
   }
   try {
-    execFileSync("killall", ["-HUP", "mDNSResponder"], { stdio: "ignore" });
+    execFileSync("killall", ["mDNSResponder"], { stdio: "ignore" });
+  } catch {
+    // ignore
+  }
+  try {
+    execFileSync("killall", ["mDNSResponderHelper"], { stdio: "ignore" });
   } catch {
     // ignore
   }

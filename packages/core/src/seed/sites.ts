@@ -6,7 +6,7 @@ export const SITE_DEFINITIONS: SiteSeedDefinition[] = [
     slug: "twitter",
     type: "social",
     defaultMinutes: 10,
-    domains: ["twitter.com", "www.twitter.com", "mobile.twitter.com", "x.com", "www.x.com"],
+    domains: ["twitter.com", "www.twitter.com", "mobile.twitter.com", "x.com", "www.x.com", "mobile.x.com", "t.co"],
   },
   {
     slug: "reddit",
@@ -20,7 +20,7 @@ export const SITE_DEFINITIONS: SiteSeedDefinition[] = [
   { slug: "cnn", type: "news", defaultMinutes: 10, domains: ["cnn.com", "www.cnn.com", "edition.cnn.com"] },
 
   // Business / Financial (treated as news)
-  { slug: "bloomberg", type: "news", defaultMinutes: 10, domains: ["bloomberg.com", "www.bloomberg.com"] },
+  { slug: "bloomberg", type: "news", defaultMinutes: 10, domains: ["bloomberg.com", "www.bloomberg.com", "bwbx.io", "www.bwbx.io"] },
   { slug: "wsj", type: "news", defaultMinutes: 10, domains: ["wsj.com", "www.wsj.com"] },
   { slug: "cnbc", type: "news", defaultMinutes: 10, domains: ["cnbc.com", "www.cnbc.com"] },
   { slug: "ft", type: "news", defaultMinutes: 10, domains: ["ft.com", "www.ft.com"] },
