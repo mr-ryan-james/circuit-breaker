@@ -10,6 +10,7 @@ import {
   buildBreakMenu,
   countDueSrsCards,
   getBreakServedEvent,
+  getCardSrs,
   getSetting,
   setSetting,
   getSiteBySlug,
@@ -154,6 +155,37 @@ function siteTogglePath(): string {
   return path.join(repoRootFromHere(), "site-toggle");
 }
 
+function phonemizeDaemonBaseUrl(): string {
+  return (process.env["CIRCUIT_BREAKER_PHONEMIZE_DAEMON_URL"] ?? "http://127.0.0.1:18923").trim().replace(/\/+$/, "");
+}
+
+async function logPhonemizeDaemonHealthHint(): Promise<void> {
+  const disabled = (process.env["CIRCUIT_BREAKER_PHONEMIZE_DAEMON_DISABLED"] ?? "").trim() === "1";
+  if (disabled) {
+    console.log("[ui-server] phonemize daemon check disabled (CIRCUIT_BREAKER_PHONEMIZE_DAEMON_DISABLED=1)");
+    return;
+  }
+
+  const base = phonemizeDaemonBaseUrl();
+  if (!base) return;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1200);
+  try {
+    const resp = await fetch(`${base}/health`, { method: "GET", signal: controller.signal });
+    if (resp.ok) {
+      console.log(`[ui-server] phonemize daemon: connected (${base})`);
+      return;
+    }
+    console.log(`[ui-server] phonemize daemon unavailable (${base}, status=${resp.status}). Falling back to spawn mode.`);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`[ui-server] phonemize daemon unavailable (${base}): ${msg}. Falling back to spawn mode.`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function runSiteToggleWithSudo(args: string[]): { ok: true; result: any } | { ok: false; error: string; details?: any } {
   const st = siteTogglePath();
   const proc = Bun.spawnSync(["sudo", "-n", st, ...args], { cwd: repoRootFromHere(), stdout: "pipe", stderr: "pipe" });
@@ -287,8 +319,52 @@ const SPANISH_BRAIN_OUTPUT_EXAMPLE_JSON = JSON.stringify(
   2,
 );
 
+type SpanishSrsHistory = {
+  box: number;
+  streak: number;
+  fail_count: number;
+  last_reviewed_at_unix: number | null;
+};
+
+function maybeLoadSpanishSrsHistory(
+  db: ReturnType<typeof openCoreDb>["db"],
+  args: { cardId: number | null; lane: string | null | undefined },
+): SpanishSrsHistory | null {
+  const cardId = Number(args.cardId ?? NaN);
+  if (!Number.isFinite(cardId) || cardId <= 0) return null;
+
+  const lane = String(args.lane ?? "").trim();
+  if (![
+    "verb",
+    "noun",
+    "lesson",
+  ].includes(lane)) return null;
+
+  const row = getCardSrs(db, { cardId, moduleSlug: "spanish", lane });
+  if (!row) return null;
+
+  return {
+    box: Number(row.box ?? 1) || 1,
+    streak: Number(row.streak ?? 0) || 0,
+    fail_count: Number(row.fail_count ?? 0) || 0,
+    last_reviewed_at_unix:
+      typeof row.last_reviewed_at_unix === "number" && Number.isFinite(row.last_reviewed_at_unix)
+        ? row.last_reviewed_at_unix
+        : null,
+  };
+}
+
+function describeLastReviewed(lastReviewedAtUnix: number | null): string {
+  if (!lastReviewedAtUnix || !Number.isFinite(lastReviewedAtUnix)) return "never";
+  const diffSec = Math.max(0, Math.floor(Date.now() / 1000 - lastReviewedAtUnix));
+  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
+
 /** System prompt shared across both Codex and Claude brain runners. */
-function spanishSystemPrompt(lane: string | null | undefined): string {
+function spanishSystemPrompt(lane: string | null | undefined, srsHistory?: SpanishSrsHistory | null): string {
   const laneLabel = lane ? lane.trim() : "";
   const laneGuidance = (() => {
     if (laneLabel === "verb") {
@@ -331,6 +407,17 @@ function spanishSystemPrompt(lane: string | null | undefined): string {
     ].join("\n");
   })();
 
+  const srsGuidance = srsHistory
+    ? [
+        "USER HISTORY for this card:",
+        `- SRS box: ${srsHistory.box}/5`,
+        `- Streak: ${srsHistory.streak}`,
+        `- Failures: ${srsHistory.fail_count}`,
+        `- Last reviewed: ${describeLastReviewed(srsHistory.last_reviewed_at_unix)}`,
+        "- Adapt your pacing accordingly. If failures > 0, reinforce weak spots and slow down.",
+      ].join("\n")
+    : "";
+
   return [
     "You are a Spanish tutor running inside a local web UI. Be concise and interactive.",
     "",
@@ -347,6 +434,7 @@ function spanishSystemPrompt(lane: string | null | undefined): string {
     "",
     `Lane: ${laneLabel || "(unknown)"}`,
     laneGuidance,
+    ...(srsGuidance ? ["", srsGuidance] : []),
     "",
     "Start by asking the first question based on CARD_PROMPT.",
   ].join("\n");
@@ -773,7 +861,8 @@ export async function main(): Promise<void> {
 
     wsBroadcast({ type: "spanish.session", event: "started", session_id: sessionId, brain_name: brainName });
 
-    const system = spanishSystemPrompt(args.lane);
+    const srsHistory = maybeLoadSpanishSrsHistory(db, { cardId: args.card_id, lane: args.lane });
+    const system = spanishSystemPrompt(args.lane, srsHistory);
     const userPrompt = `CARD_PROMPT:\n${args.card_prompt}\n`;
     const promptForLog = `${system}\n\n${userPrompt}`;
     insertSpanishTurn(db, {
@@ -1566,9 +1655,9 @@ export async function main(): Promise<void> {
     if (!form) return c.json({ ok: false, error: "invalid_form_data" }, 400);
 
     const sessionId = String(form.get("session_id") ?? "").trim();
-    const file = form.get("attempt_wav");
+    const file = form.get("attempt_audio") ?? form.get("attempt_wav");
     if (!sessionId) return c.json({ ok: false, error: "missing_session_id" }, 400);
-    if (!(file instanceof File)) return c.json({ ok: false, error: "missing_attempt_wav" }, 400);
+    if (!(file instanceof File)) return c.json({ ok: false, error: "missing_attempt_audio" }, 400);
 
     if (spanishBusy.has(sessionId)) return c.json({ ok: false, error: "turn_in_progress" }, 409);
     spanishBusy.add(sessionId);
@@ -1593,7 +1682,13 @@ export async function main(): Promise<void> {
       const uploadDir = path.join(stateDir, "spanish", "uploads", sessionId);
       fs.mkdirSync(uploadDir, { recursive: true });
       const uploadId = makeId("upl");
-      const rawPath = path.join(uploadDir, `${uploadId}.wav`);
+      const mime = String(file.type ?? "").toLowerCase();
+      const ext = mime.includes("webm")
+        ? ".webm"
+        : mime.includes("mp4") || mime.includes("m4a")
+          ? ".m4a"
+          : ".wav";
+      const rawPath = path.join(uploadDir, `${uploadId}${ext}`);
       const buf = Buffer.from(await file.arrayBuffer());
       fs.writeFileSync(rawPath, buf);
 
@@ -1945,6 +2040,7 @@ export async function main(): Promise<void> {
   });
 
   console.log(`[ui-server] listening on http://127.0.0.1:${runtimePort}/  (dev=${dev})`);
+  void logPhonemizeDaemonHealthHint();
 }
 
 async function prefetchNextRunLineTts(session: RunLinesSession): Promise<void> {

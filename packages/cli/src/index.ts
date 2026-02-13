@@ -379,6 +379,8 @@ function printMainHelp(json: boolean): void {
     "listen",
     "play",
     "ui",
+    "phonemize-server",
+    "daemon",
     "doctor",
   ];
 
@@ -409,9 +411,26 @@ function uiStatePath(): string {
   return path.join(uiStateDir(), "state.json");
 }
 
+function phonemizeStateDir(): string {
+  return path.join(path.dirname(resolveDbPath()), "phonemize-server");
+}
+
+function phonemizeStatePath(): string {
+  return path.join(phonemizeStateDir(), "state.json");
+}
+
 function tryReadUiState(): any | null {
   try {
     const raw = fs.readFileSync(uiStatePath(), "utf8");
+    return JSON.parse(raw) as any;
+  } catch {
+    return null;
+  }
+}
+
+function tryReadPhonemizeState(): any | null {
+  try {
+    const raw = fs.readFileSync(phonemizeStatePath(), "utf8");
     return JSON.parse(raw) as any;
   } catch {
     return null;
@@ -494,6 +513,7 @@ async function cmdUi(args: string[], json: boolean): Promise<void> {
     let dev = false;
     for (let i = 0; i < subArgs.length; i += 1) {
       const a = subArgs[i];
+      if (!a) continue;
       const next = subArgs[i + 1];
       if (a === "--port" && next && /^\d+$/.test(next)) {
         port = Number(next);
@@ -617,6 +637,241 @@ async function cmdUi(args: string[], json: boolean): Promise<void> {
   }
 
   throw new Error(`Unknown ui subcommand: ${sub}`);
+}
+
+type PhonemizeServerStateV1 = {
+  version: 1;
+  pid: number;
+  host: string;
+  port: number;
+  url: string;
+  started_at: string;
+  log_path: string;
+  python_path: string;
+  script_path: string;
+};
+
+function phonemizeServerScriptPath(): string {
+  return path.join(repoRootFromHere(), "packages", "cli", "scripts", "phonemize_server.py");
+}
+
+async function probePhonemizeServer(url: string, timeoutMs = 1500): Promise<{ ok: boolean; status?: number; body?: any; error?: string }> {
+  const base = String(url || "").trim().replace(/\/+$/, "");
+  if (!base) return { ok: false, error: "missing_url" };
+
+  const controller = new AbortController();
+  const to = setTimeout(() => controller.abort(), Math.max(250, timeoutMs));
+  try {
+    const resp = await fetch(`${base}/health`, { method: "GET", signal: controller.signal });
+    const body = await resp.json().catch(() => null);
+    return { ok: resp.ok, status: resp.status, body };
+  } catch (e: unknown) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  } finally {
+    clearTimeout(to);
+  }
+}
+
+async function cmdPhonemizeServer(args: string[], json: boolean): Promise<void> {
+  const sub = args[0] ?? "status";
+  const subArgs = args.slice(1);
+
+  if (isHelpToken(sub)) {
+    const usage = [
+      "site-toggle phonemize-server start [--host 127.0.0.1] [--port 18923] [--model <id>] [--json]",
+      "site-toggle phonemize-server stop [--json]",
+      "site-toggle phonemize-server status [--json]",
+    ];
+    if (json) {
+      printJson({ ok: true, command: "phonemize-server", help: true, usage });
+      return;
+    }
+    console.log("Phonemize server usage:");
+    for (const u of usage) console.log(`  ${u}`);
+    return;
+  }
+
+  if (sub === "status") {
+    const state = tryReadPhonemizeState() as PhonemizeServerStateV1 | null;
+    const pid = Number(state?.pid ?? 0);
+    const running = isPidAlive(pid);
+    const url = String(state?.url ?? "http://127.0.0.1:18923");
+    const health = await probePhonemizeServer(url);
+
+    if (json) {
+      printJson({ ok: true, command: "phonemize-server", action: "status", running, healthy: health.ok, state, health });
+      return;
+    }
+
+    if (!state) {
+      console.log("phonemize-server: not running (no state.json)");
+      return;
+    }
+
+    console.log(`phonemize-server: ${running ? "running" : "not running"} (pid ${pid || "?"})`);
+    console.log(`health: ${health.ok ? "ok" : "unavailable"}`);
+    if (!health.ok && health.error) console.log(`health error: ${health.error}`);
+    console.log(JSON.stringify(state, null, 2));
+    return;
+  }
+
+  if (sub === "start") {
+    const scriptPath = phonemizeServerScriptPath();
+    if (!fileExistsNonEmpty(scriptPath)) {
+      throw new Error(`Phonemize server script not found: ${scriptPath}`);
+    }
+
+    const pythonPath = pythonExecPath();
+    const existing = tryReadPhonemizeState() as PhonemizeServerStateV1 | null;
+    const existingPid = Number(existing?.pid ?? 0);
+    if (existing && isPidAlive(existingPid)) {
+      const health = await probePhonemizeServer(String(existing.url || "http://127.0.0.1:18923"));
+      if (json) {
+        printJson({
+          ok: true,
+          command: "phonemize-server",
+          action: "start",
+          already_running: true,
+          healthy: health.ok,
+          state: existing,
+          health,
+        });
+      } else {
+        console.log(`phonemize-server already running (pid ${existingPid})`);
+      }
+      return;
+    }
+
+    let host = "127.0.0.1";
+    let port = 18923;
+    let model: string | null = null;
+
+    for (let i = 0; i < subArgs.length; i += 1) {
+      const a = subArgs[i];
+      if (!a) continue;
+      const next = subArgs[i + 1];
+      if (a === "--host" && next) {
+        host = next.trim();
+        i += 1;
+        continue;
+      }
+      if (a === "--port" && next && /^\d+$/.test(next)) {
+        port = Number(next);
+        i += 1;
+        continue;
+      }
+      if (a === "--model" && next) {
+        model = next.trim();
+        i += 1;
+        continue;
+      }
+      if (a.startsWith("--")) throw new Error(`Unknown flag: ${a}`);
+    }
+
+    const stateDir = phonemizeStateDir();
+    fs.mkdirSync(stateDir, { recursive: true });
+    const logPath = path.join(stateDir, "server.log");
+
+    const childArgs = [scriptPath, "--host", host, "--port", String(port)];
+    if (model) childArgs.push("--model", model);
+
+    const outFd = fs.openSync(logPath, "a");
+    const child = spawn(pythonPath, childArgs, {
+      detached: true,
+      stdio: ["ignore", outFd, outFd],
+      env: { ...process.env, PYTORCH_ENABLE_MPS_FALLBACK: "0" },
+    });
+    child.unref();
+    try {
+      fs.closeSync(outFd);
+    } catch {
+      // ignore
+    }
+
+    const pid = Number(child.pid ?? 0);
+    if (!pid) throw new Error("Failed to start phonemize-server (missing pid)");
+
+    const state: PhonemizeServerStateV1 = {
+      version: 1,
+      pid,
+      host,
+      port,
+      url: `http://${host}:${port}`,
+      started_at: new Date().toISOString(),
+      log_path: logPath,
+      python_path: pythonPath,
+      script_path: scriptPath,
+    };
+    fs.writeFileSync(phonemizeStatePath(), JSON.stringify(state, null, 2));
+
+    const deadline = Date.now() + 15_000;
+    let health = await probePhonemizeServer(state.url, 700);
+    while (Date.now() < deadline && !health.ok && isPidAlive(pid)) {
+      await new Promise((r) => setTimeout(r, 300));
+      health = await probePhonemizeServer(state.url, 700);
+    }
+
+    if (!isPidAlive(pid)) {
+      throw new Error(`phonemize-server exited early. Check logs: ${logPath}`);
+    }
+
+    if (json) {
+      printJson({
+        ok: true,
+        command: "phonemize-server",
+        action: "start",
+        started: true,
+        healthy: health.ok,
+        state,
+        health,
+      });
+      return;
+    }
+
+    console.log(`phonemize-server started (pid ${pid}) -> ${state.url}`);
+    if (!health.ok) {
+      console.log(`health check pending; server may still be warming up. log: ${logPath}`);
+    }
+    return;
+  }
+
+  if (sub === "stop") {
+    const state = tryReadPhonemizeState() as PhonemizeServerStateV1 | null;
+    const pid = Number(state?.pid ?? 0);
+    if (!state || !pid) {
+      if (json) printJson({ ok: true, command: "phonemize-server", action: "stop", already_stopped: true });
+      else console.log("phonemize-server already stopped.");
+      return;
+    }
+
+    if (isPidAlive(pid)) {
+      try {
+        process.kill(pid, "SIGTERM");
+      } catch {
+        // ignore
+      }
+      await new Promise((r) => setTimeout(r, 250));
+      if (isPidAlive(pid)) {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    try {
+      fs.rmSync(phonemizeStatePath(), { force: true });
+    } catch {
+      // ignore
+    }
+
+    if (json) printJson({ ok: true, command: "phonemize-server", action: "stop", stopped: true, pid });
+    else console.log(`phonemize-server stopped (pid ${pid})`);
+    return;
+  }
+
+  throw new Error(`Unknown phonemize-server subcommand: ${sub}`);
 }
 
 function printModuleHelp(json: boolean, moduleSlug?: string): void {
@@ -3333,9 +3588,18 @@ async function cmdSpeak(args: string[], json: boolean): Promise<void> {
 type ListenScore = {
   edits: number;
   ref_len: number;
+  max_edits: number;
   per: number;
   duration_ratio: number;
   pass: boolean;
+};
+
+type PhoneEdit = {
+  op: "match" | "substitution" | "insertion" | "deletion";
+  ref_phone?: string;
+  attempt_phone?: string;
+  ref_idx?: number;
+  attempt_idx?: number;
 };
 
 type PhoneTool = {
@@ -3352,7 +3616,7 @@ type PhonesResult = {
   timings_ms?: Record<string, number>;
 };
 
-function levenshteinTokens(a: string[], b: string[]): { edits: number; inserts: number; deletes: number; subs: number } {
+function levenshteinTokens(a: string[], b: string[]): { edits: number; ops: PhoneEdit[] } {
   const n = a.length;
   const m = b.length;
   const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
@@ -3379,31 +3643,81 @@ function levenshteinTokens(a: string[], b: string[]): { edits: number; inserts: 
     }
   }
 
-  // Backtrack for counts
+  const opsRev: PhoneEdit[] = [];
   let i = n;
   let j = m;
-  let inserts = 0;
-  let deletes = 0;
-  let subs = 0;
   while (i > 0 || j > 0) {
-    if (i > 0 && get(i, j) === get(i - 1, j) + 1) {
-      deletes += 1;
-      i -= 1;
-      continue;
-    }
-    if (j > 0 && get(i, j) === get(i, j - 1) + 1) {
-      inserts += 1;
-      j -= 1;
-      continue;
-    }
+    const current = get(i, j);
+
     if (i > 0 && j > 0) {
-      if (a[i - 1] !== b[j - 1]) subs += 1;
+      const refPhone = a[i - 1];
+      const attemptPhone = b[j - 1];
+      const cost = refPhone === attemptPhone ? 0 : 1;
+      if (current === get(i - 1, j - 1) + cost) {
+        opsRev.push(
+          cost === 0
+            ? {
+                op: "match",
+                ref_phone: refPhone,
+                attempt_phone: attemptPhone,
+                ref_idx: i - 1,
+                attempt_idx: j - 1,
+              }
+            : {
+                op: "substitution",
+                ref_phone: refPhone,
+                attempt_phone: attemptPhone,
+                ref_idx: i - 1,
+                attempt_idx: j - 1,
+              },
+        );
+        i -= 1;
+        j -= 1;
+        continue;
+      }
+    }
+
+    if (i > 0 && current === get(i - 1, j) + 1) {
+      opsRev.push({ op: "deletion", ref_phone: a[i - 1], ref_idx: i - 1 });
+      i -= 1;
+      continue;
+    }
+
+    if (j > 0 && current === get(i, j - 1) + 1) {
+      opsRev.push({ op: "insertion", attempt_phone: b[j - 1], attempt_idx: j - 1 });
+      j -= 1;
+      continue;
+    }
+
+    // Defensive fallback for DP tie-break edge cases.
+    if (i > 0 && j > 0) {
+      opsRev.push({
+        op: a[i - 1] === b[j - 1] ? "match" : "substitution",
+        ref_phone: a[i - 1],
+        attempt_phone: b[j - 1],
+        ref_idx: i - 1,
+        attempt_idx: j - 1,
+      });
       i -= 1;
       j -= 1;
+      continue;
+    }
+
+    if (i > 0) {
+      opsRev.push({ op: "deletion", ref_phone: a[i - 1], ref_idx: i - 1 });
+      i -= 1;
+      continue;
+    }
+
+    if (j > 0) {
+      opsRev.push({ op: "insertion", attempt_phone: b[j - 1], attempt_idx: j - 1 });
+      j -= 1;
+      continue;
     }
   }
 
-  return { edits: get(n, m), inserts, deletes, subs };
+  opsRev.reverse();
+  return { edits: get(n, m), ops: opsRev };
 }
 
 function extractPhonesWav2Vec2(wavPath: string, pythonPath: string): PhonesResult {
@@ -3892,16 +4206,19 @@ async function cmdListen(args: string[], json: boolean): Promise<void> {
   const refDur = getWavDurationSeconds(refWavPath);
   const refWindow = getSpeechWindow(refWavPath);
   const attemptWindow = getSpeechWindow(attemptPath);
-  const { edits } = levenshteinTokens(refPhones, attemptPhones);
-  const per = refPhones.length > 0 ? edits / refPhones.length : 1;
+  const { edits, ops } = levenshteinTokens(refPhones, attemptPhones);
   const refLen = refWindow?.duration_sec ?? refDur;
   const attemptLen = attemptWindow?.duration_sec ?? attemptDur;
   const durationRatio = refLen > 0 ? attemptLen / refLen : 0;
-  const pass = per <= 0.15 && durationRatio >= 0.75 && durationRatio <= 1.35;
+
+  const maxEdits = Math.max(1, Math.floor(refPhones.length * 0.2));
+  const per = refPhones.length > 0 ? edits / refPhones.length : 1;
+  const pass = edits <= maxEdits && durationRatio >= 0.75 && durationRatio <= 1.75;
 
   const score: ListenScore = {
     edits,
     ref_len: refPhones.length,
+    max_edits: maxEdits,
     per: Number(per.toFixed(3)),
     duration_ratio: Number(durationRatio.toFixed(3)),
     pass,
@@ -3950,6 +4267,7 @@ async function cmdListen(args: string[], json: boolean): Promise<void> {
             },
       },
       score,
+      edits_detail: ops,
     });
     return;
   }
@@ -3994,6 +4312,7 @@ async function cmdListen(args: string[], json: boolean): Promise<void> {
     console.log("Sox stat:\n" + attemptStats.raw);
   }
   console.log(`PER: ${score.per}`);
+  console.log(`Max edits allowed: ${score.max_edits}`);
   console.log(`Duration ratio: ${score.duration_ratio}`);
   console.log(pass ? "Result: PASS" : "Result: NEEDS WORK");
 }
@@ -4077,6 +4396,9 @@ async function main(): Promise<void> {
       case "ui":
         await cmdUi(args, json);
         return;
+      case "phonemize-server":
+        await cmdPhonemizeServer(args, json);
+        return;
       case "daemon":
         if (args[0] === "tick") return cmdDaemonTick(json);
         if (args[0] === "install") return cmdDaemonInstall(json);
@@ -4098,7 +4420,7 @@ async function main(): Promise<void> {
       }
       default:
         throw new Error(
-          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|deck|suggest|break|choose|rate|locations|contexts|context|modules|module|import|run-lines|speak|listen|play|ui|doctor]`,
+          `Unknown command: ${command}\nUsage: site-toggle [status|on|off|stats|clear-stats|seed|deck|suggest|break|choose|rate|locations|contexts|context|modules|module|import|run-lines|speak|listen|play|ui|phonemize-server|daemon|doctor]`,
         );
     }
   } catch (err) {

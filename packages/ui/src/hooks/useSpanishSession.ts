@@ -12,66 +12,25 @@ import type {
   SpanishTurnRow,
 } from "@/app/types";
 
-function flattenFloat32(chunks: Float32Array[]): Float32Array {
-  const len = chunks.reduce((a, c) => a + c.length, 0);
-  const out = new Float32Array(len);
-  let off = 0;
-  for (const c of chunks) {
-    out.set(c, off);
-    off += c.length;
-  }
-  return out;
-}
-
-function downsampleFloat32(input: Float32Array, inRate: number, outRate: number): Float32Array {
-  if (outRate === inRate) return input;
-  const ratio = inRate / outRate;
-  const outLen = Math.floor(input.length / ratio);
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i += 1) {
-    const start = Math.floor(i * ratio);
-    const end = Math.floor((i + 1) * ratio);
-    let sum = 0;
-    let count = 0;
-    for (let j = start; j < end && j < input.length; j += 1) {
-      sum += input[j] ?? 0;
-      count += 1;
+function pickSpanishRecorderMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm", "audio/wav"];
+  for (const mime of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(mime)) return mime;
+    } catch {
+      // ignore
     }
-    out[i] = count ? sum / count : 0;
   }
-  return out;
+  return undefined;
 }
 
-function encodeWavPcm16(samples: Float32Array, sampleRate: number): Blob {
-  const buffer = new ArrayBuffer(44 + samples.length * 2);
-  const view = new DataView(buffer);
-
-  const writeStr = (off: number, s: string) => {
-    for (let i = 0; i < s.length; i += 1) view.setUint8(off + i, s.charCodeAt(i));
-  };
-
-  writeStr(0, "RIFF");
-  view.setUint32(4, 36 + samples.length * 2, true);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // mono
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, "data");
-  view.setUint32(40, samples.length * 2, true);
-
-  let o = 44;
-  for (let i = 0; i < samples.length; i += 1) {
-    const s = Math.max(-1, Math.min(1, samples[i] ?? 0));
-    view.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-    o += 2;
-  }
-
-  return new Blob([buffer], { type: "audio/wav" });
+function extensionForSpanishMime(mimeType: string): string {
+  const m = String(mimeType || "").toLowerCase();
+  if (m.includes("webm")) return "webm";
+  if (m.includes("mp4") || m.includes("m4a")) return "m4a";
+  if (m.includes("wav")) return "wav";
+  return "bin";
 }
 
 export function useSpanishSession() {
@@ -109,11 +68,8 @@ export function useSpanishSession() {
 
   const spanishRecorderRef = React.useRef<{
     stream: MediaStream;
-    audioCtx: AudioContext;
-    source: MediaStreamAudioSourceNode;
-    proc: ScriptProcessorNode;
-    chunks: Float32Array[];
-    sampleRate: number;
+    mediaRecorder: MediaRecorder;
+    chunks: Blob[];
   } | null>(null);
 
   React.useEffect(() => {
@@ -423,52 +379,65 @@ export function useSpanishSession() {
 
   async function startSpanishRecording() {
     setSpanishError(null);
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaStreamSource(stream);
-
-    // ScriptProcessor is deprecated but reliable for an MVP; swap to AudioWorklet later if needed.
-    const proc = audioCtx.createScriptProcessor(4096, 1, 1);
-    const chunks: Float32Array[] = [];
-    proc.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0);
-      chunks.push(new Float32Array(input));
-    };
-
-    source.connect(proc);
-    proc.connect(audioCtx.destination);
-    spanishRecorderRef.current = { stream, audioCtx, source, proc, chunks, sampleRate: audioCtx.sampleRate };
-    setSpanishRecording(true);
-    setSpanishRecordingStartedAtMs(Date.now());
-    setSpanishRecordingElapsedMs(0);
-  }
-
-  async function stopSpanishRecordingToWav16k(): Promise<Blob | null> {
-    const r = spanishRecorderRef.current;
-    if (!r) return null;
+    if (spanishRecording) return;
 
     try {
-      r.proc.disconnect();
-      r.source.disconnect();
-      r.stream.getTracks().forEach((t) => t.stop());
-      await r.audioCtx.close();
-    } finally {
+      if (typeof MediaRecorder === "undefined") {
+        throw new Error("MediaRecorder is not available in this browser");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } as any,
+      });
+      const mimeType = pickSpanishRecorderMimeType();
+      const mr = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      mr.ondataavailable = (evt) => {
+        if (evt.data && evt.data.size > 0) chunks.push(evt.data);
+      };
+      mr.start();
+
+      spanishRecorderRef.current = { stream, mediaRecorder: mr, chunks };
+      setSpanishRecording(true);
+      setSpanishRecordingStartedAtMs(Date.now());
+      setSpanishRecordingElapsedMs(0);
+    } catch (e: unknown) {
+      setSpanishError(e instanceof Error ? e.message : String(e));
       spanishRecorderRef.current = null;
       setSpanishRecording(false);
       setSpanishRecordingStartedAtMs(null);
       setSpanishRecordingElapsedMs(0);
     }
+  }
 
-    const flat = flattenFloat32(r.chunks);
-    const down = downsampleFloat32(flat, r.sampleRate, 16000);
-    return encodeWavPcm16(down, 16000);
+  async function stopSpanishRecordingToBlob(): Promise<{ blob: Blob; mimeType: string } | null> {
+    const r = spanishRecorderRef.current;
+    if (!r) return null;
+
+    const blob = await new Promise<Blob>((resolve) => {
+      r.mediaRecorder.onstop = () =>
+        resolve(new Blob(r.chunks, { type: r.mediaRecorder.mimeType || "audio/webm" }));
+      try {
+        r.mediaRecorder.stop();
+      } catch {
+        resolve(new Blob(r.chunks, { type: r.mediaRecorder.mimeType || "audio/webm" }));
+      }
+    });
+
+    r.stream.getTracks().forEach((t) => t.stop());
+    spanishRecorderRef.current = null;
+    setSpanishRecording(false);
+    setSpanishRecordingStartedAtMs(null);
+    setSpanishRecordingElapsedMs(0);
+
+    return { blob, mimeType: blob.type || "audio/webm" };
   }
 
   async function uploadSpanishListenAttempt() {
     setSpanishError(null);
     if (!spanishSessionId) return;
-    const wav = await stopSpanishRecordingToWav16k();
-    if (!wav) return;
+    const recorded = await stopSpanishRecordingToBlob();
+    if (!recorded) return;
 
     let t = getToken();
     if (!t) {
@@ -491,7 +460,8 @@ export function useSpanishSession() {
     try {
       const fd = new FormData();
       fd.append("session_id", spanishSessionId);
-      fd.append("attempt_wav", wav, "attempt.wav");
+      const ext = extensionForSpanishMime(recorded.mimeType);
+      fd.append("attempt_audio", recorded.blob, "attempt." + ext);
       const resp = await fetch("/api/spanish/listen/upload", { method: "POST", headers: { "x-cb-token": t }, body: fd });
       const data = await resp.json().catch(() => null);
 
