@@ -5,7 +5,7 @@ import path from "node:path";
 import { expect, mock, test } from "bun:test";
 import { z } from "zod";
 
-import { classifyPr, summarizeMyThreads } from "../src/allGravyGithub.js";
+import { buildPrFilterSearchQuery, classifyPr, summarizeMyThreads, type AllGravyPrFilter } from "../src/allGravyGithub.js";
 
 function thread(args: {
   id?: string;
@@ -83,6 +83,27 @@ test("allgravy summarize: reply after my latest comment counts as addressed", ()
   expect(s.threads[0]?.reply?.author).toBe("someone");
 });
 
+test("buildPrFilterSearchQuery: review_requested includes review-requested qualifier", () => {
+  const q = buildPrFilterSearchQuery("alice", "review_requested");
+  expect(q).toBe("is:pr is:open draft:false review-requested:alice");
+});
+
+test("buildPrFilterSearchQuery: all_by_others uses -author qualifier", () => {
+  const q = buildPrFilterSearchQuery("alice", "all_by_others");
+  expect(q).toBe("is:pr is:open draft:false -author:alice");
+});
+
+test("buildPrFilterSearchQuery: all_open has no author/reviewer qualifier", () => {
+  const q = buildPrFilterSearchQuery("alice", "all_open");
+  expect(q).toBe("is:pr is:open draft:false");
+  expect(q).not.toContain("alice");
+});
+
+test("buildPrFilterSearchQuery: unknown filter falls back to review_requested", () => {
+  const q = buildPrFilterSearchQuery("alice", "bogus" as AllGravyPrFilter);
+  expect(q).toBe("is:pr is:open draft:false review-requested:alice");
+});
+
 test("allgravy queue refresh: fatal error emits queue failed event", async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cb-allgravy-actions-test-"));
   const coreDbPath = path.join(tmpDir, "core.db");
@@ -97,7 +118,8 @@ test("allgravy queue refresh: fatal error emits queue failed event", async () =>
       ghLogin: () => {
         throw new Error("gh_login_boom");
       },
-      listReviewRequestedPrs: () => [],
+      listPrsByFilter: () => [],
+      buildPrFilterSearchQuery: () => "",
       fetchPrThreads: () => {
         throw new Error("unused");
       },

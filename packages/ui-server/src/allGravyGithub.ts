@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export type AllGravyPrFilter = "review_requested" | "all_by_others" | "all_open";
+export const AllGravyPrFilterSchema = z.enum(["review_requested", "all_by_others", "all_open"]);
+
 export type GhRun = {
   ok: boolean;
   exit_code: number;
@@ -55,8 +58,22 @@ export type ReviewRequestedPr = {
   author_login: string | null;
 };
 
-export function listReviewRequestedPrs(repo: string, login: string): ReviewRequestedPr[] {
-  const search = `is:pr is:open draft:false review-requested:${login}`;
+/** Builds the GitHub search query for the selected PR filter mode. */
+export function buildPrFilterSearchQuery(login: string, filter: AllGravyPrFilter): string {
+  switch (filter) {
+    case "all_by_others":
+      return `is:pr is:open draft:false -author:${login}`;
+    case "all_open":
+      return `is:pr is:open draft:false`;
+    case "review_requested":
+    default:
+      return `is:pr is:open draft:false review-requested:${login}`;
+  }
+}
+
+/** Returns PR list filtered by the selected mode. */
+export function listPrsByFilter(repo: string, login: string, filter: AllGravyPrFilter = "review_requested"): ReviewRequestedPr[] {
+  const search = buildPrFilterSearchQuery(login, filter);
   const raw = ghJson([
     "pr",
     "list",

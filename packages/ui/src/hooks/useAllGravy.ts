@@ -1,7 +1,7 @@
 import React from "react";
 
 import { callAction } from "@/api/client";
-import type { AllGravyPrRow, AllGravyProposalRow, BrainDefault } from "@/app/types";
+import type { AllGravyPrFilter, AllGravyPrRow, AllGravyProposalRow, BrainDefault } from "@/app/types";
 import type { WsMessage } from "@/ws/client";
 
 type PatchesPayload = {
@@ -13,6 +13,7 @@ export function useAllGravy() {
   const [reposText, setReposText] = React.useState<string>("");
   const [repos, setRepos] = React.useState<string[]>([]);
   const [brain, setBrain] = React.useState<BrainDefault>("codex");
+  const [filter, setFilter] = React.useState<AllGravyPrFilter>("review_requested");
 
   const [loadingSettings, setLoadingSettings] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -64,9 +65,10 @@ export function useAllGravy() {
     setError(null);
     setLoadingSettings(true);
     try {
-      const [r, b] = await Promise.all([
+      const [r, b, f] = await Promise.all([
         callAction<any>("allgravy.repos.get", {}),
         callAction<any>("allgravy.brain.get", {}),
+        callAction<any>("allgravy.filter.get", {}),
       ]);
       if (r?.ok && Array.isArray(r.repos)) {
         const list = r.repos.map(String).map((s: string) => s.trim()).filter(Boolean);
@@ -75,6 +77,9 @@ export function useAllGravy() {
       }
       if (b?.ok && (b.brain === "codex" || b.brain === "claude")) {
         setBrain(b.brain);
+      }
+      if (f?.ok && (f.filter === "review_requested" || f.filter === "all_by_others" || f.filter === "all_open")) {
+        setFilter(f.filter);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -107,6 +112,17 @@ export function useAllGravy() {
     const res = await callAction<any>("allgravy.brain.set", { brain: next });
     if (!res?.ok) {
       setError(String(res?.error ?? "Failed to set brain"));
+      return false;
+    }
+    return true;
+  }
+
+  async function saveFilter(next: AllGravyPrFilter): Promise<boolean> {
+    setError(null);
+    setFilter(next);
+    const res = await callAction<any>("allgravy.filter.set", { filter: next });
+    if (!res?.ok) {
+      setError(String(res?.error ?? "Failed to set filter"));
       return false;
     }
     return true;
@@ -397,6 +413,7 @@ export function useAllGravy() {
     setReposText,
     repos,
     brain,
+    filter,
     loadingSettings,
     refreshing,
     generatingForPr,
@@ -414,6 +431,7 @@ export function useAllGravy() {
     loadSettings,
     saveReposFromText,
     saveBrain,
+    saveFilter,
     loadLatestQueue,
     refreshQueue,
     selectPr,

@@ -78,6 +78,7 @@ export type SpanishMessage = {
 };
 
 export type BrainDefault = "codex" | "claude";
+export type AllGravyPrFilter = "review_requested" | "all_by_others" | "all_open";
 
 export type SovtCmdStep = {
   idx: number;

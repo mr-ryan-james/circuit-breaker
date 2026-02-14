@@ -31,6 +31,7 @@ import {
   type AllGravyPrStatus,
 } from "./allGravyDb.js";
 import {
+  AllGravyPrFilterSchema,
   OwnerRepoSchema,
   approvePr,
   classifyPr,
@@ -39,8 +40,9 @@ import {
   fetchPrFiles,
   fetchPrThreads,
   ghLogin,
-  listReviewRequestedPrs,
+  listPrsByFilter,
   postInlineComment,
+  type AllGravyPrFilter,
   type PrFile,
 } from "./allGravyGithub.js";
 import type { BrainName } from "./spanishDb.js";
@@ -128,6 +130,16 @@ function getBrainSetting(db: ReturnType<typeof openCoreDb>["db"]): BrainName {
 
 function setBrainSetting(db: ReturnType<typeof openCoreDb>["db"], brain: BrainName): void {
   setSetting(db, "allgravy_brain", brain);
+}
+
+function getFilterSetting(db: ReturnType<typeof openCoreDb>["db"]): AllGravyPrFilter {
+  const raw = getSetting(db, "allgravy_filter");
+  const parsed = AllGravyPrFilterSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "review_requested";
+}
+
+function setFilterSetting(db: ReturnType<typeof openCoreDb>["db"], filter: AllGravyPrFilter): void {
+  setSetting(db, "allgravy_filter", filter);
 }
 
 let cachedSystemPrompt: string | null = null;
@@ -360,6 +372,32 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
         }
       },
     },
+    "allgravy.filter.get": {
+      description: "Get the PR filter mode for All Gravy queue refresh.",
+      schema: z.object({}),
+      async handler() {
+        const { db } = openCoreDb();
+        try {
+          const filter = getFilterSetting(db);
+          return { ok: true, filter };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "allgravy.filter.set": {
+      description: "Set the PR filter mode for All Gravy queue refresh.",
+      schema: z.object({ filter: AllGravyPrFilterSchema }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          setFilterSetting(db, payload.filter);
+          return { ok: true, filter: getFilterSetting(db) };
+        } finally {
+          db.close();
+        }
+      },
+    },
     "allgravy.prs.latest": {
       description: "List latest All Gravy PR queue snapshot (most recent run).",
       schema: z.object({}),
@@ -386,6 +424,7 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
           ensureAllGravySchema(db);
           repos = getRepos(db);
           const login = ghLogin();
+          const filter = getFilterSetting(db);
 
           wsBroadcast({ type: "allgravy.queue", event: "started", run_id: runId, repos, refreshed_at: refreshedAt });
 
@@ -393,9 +432,9 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
           const errors: Array<{ repo: string; error: string }> = [];
 
           for (const repo of repos) {
-            let prs: ReturnType<typeof listReviewRequestedPrs> = [];
+            let prs: ReturnType<typeof listPrsByFilter> = [];
             try {
-              prs = listReviewRequestedPrs(repo, login);
+              prs = listPrsByFilter(repo, login, filter);
             } catch (e: unknown) {
               errors.push({ repo, error: e instanceof Error ? e.message : String(e) });
               continue;

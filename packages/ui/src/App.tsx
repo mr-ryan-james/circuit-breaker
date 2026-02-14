@@ -20,6 +20,14 @@ import { StatusTab } from "@/tabs/StatusTab";
 
 import type { BreakMenu, Signal } from "@/app/types";
 
+function normalizeBreakMinutes(input: number): number {
+  if (!Number.isFinite(input)) return 10;
+  const n = Math.trunc(input);
+  if (n < 1) return 1;
+  if (n > 180) return 180;
+  return n;
+}
+
 export function App() {
   const [status, setStatus] = useState<ApiStatus | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -165,9 +173,11 @@ export function App() {
     setBreakChoice(null);
     setActingPickerScripts(null);
     setActingPickerOpen(false);
+    const safeMinutes = normalizeBreakMinutes(breakMinutes);
+    if (safeMinutes !== breakMinutes) setBreakMinutes(safeMinutes);
     const res = await callAction<{ ok: boolean; menu: BreakMenu }>("break.menu", {
       site_slug: breakSite,
-      minutes: breakMinutes,
+      minutes: safeMinutes,
       context: breakContext || undefined,
     });
     if (res.ok) setBreakMenu(res.menu);
@@ -178,15 +188,39 @@ export function App() {
   }
 
   async function unblockAllFromUi(minutes: number) {
-    const ok = window.confirm(`Unblock ALL sites for ${minutes} minutes?\n\nThis edits /etc/hosts and requires passwordless sudo.`);
+    const safeMinutes = normalizeBreakMinutes(minutes);
+    if (safeMinutes !== breakMinutes) setBreakMinutes(safeMinutes);
+    const ok = window.confirm(`Unblock ALL sites for ${safeMinutes} minutes?\n\nThis edits /etc/hosts and requires passwordless sudo.`);
     if (!ok) return;
-    const res = await callAction<any>("hosts.unblock_all", { minutes });
-    setBreakChoice(res);
+    try {
+      const res = await callAction<any>("hosts.unblock_all", { minutes: safeMinutes });
+      setBreakChoice(res);
+    } catch (err) {
+      setBreakChoice({
+        ok: false,
+        error: "request_failed",
+        hint: "Could not reach the UI server.",
+        details: String(err),
+      });
+    }
   }
 
   async function chooseBreakLane(lane: string): Promise<any | null> {
     if (!breakMenu) return null;
-    const res = await callAction<any>("break.choose", { event_key: breakMenu.event_key, lane });
+    let res: any;
+    try {
+      res = await callAction<any>("break.choose", { event_key: breakMenu.event_key, lane });
+    } catch (err) {
+      const failure = {
+        ok: false,
+        error: "request_failed",
+        hint: "Could not reach the UI server.",
+        details: String(err),
+        lane,
+      };
+      setBreakChoice(failure);
+      return failure;
+    }
     setBreakChoice(res);
 
     // One-click flow: choosing the acting lane can auto-load + auto-start the most recent scene.
@@ -403,6 +437,7 @@ export function App() {
               setReposText={allGravy.setReposText}
               repos={allGravy.repos}
               brain={allGravy.brain}
+              filter={allGravy.filter}
               loadingSettings={allGravy.loadingSettings}
               refreshing={allGravy.refreshing}
               generatingForPr={allGravy.generatingForPr}
@@ -419,6 +454,7 @@ export function App() {
               setError={allGravy.setError}
               saveReposFromText={() => allGravy.saveReposFromText()}
               saveBrain={(b) => allGravy.saveBrain(b)}
+              saveFilter={(f) => allGravy.saveFilter(f)}
               loadLatestQueue={() => allGravy.loadLatestQueue()}
               refreshQueue={() => allGravy.refreshQueue()}
               selectPr={(id) => allGravy.selectPr(id)}

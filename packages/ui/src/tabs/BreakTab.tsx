@@ -72,6 +72,13 @@ export function BreakTab(props: {
     sendChoiceToAgent,
   } = props;
 
+  const breakChoiceError =
+    breakChoice && breakChoice.ok === false
+      ? [String(breakChoice.error ?? "action_failed"), typeof breakChoice.hint === "string" ? breakChoice.hint : null]
+          .filter(Boolean)
+          .join(" - ")
+      : null;
+
   return (
     <Card>
       <CardHeader>
@@ -101,6 +108,13 @@ export function BreakTab(props: {
             <span className="text-sm">Auto-start acting (only if 1 scene)</span>
           </div>
         </div>
+
+        {breakChoiceError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Action failed</AlertTitle>
+            <AlertDescription>{breakChoiceError}</AlertDescription>
+          </Alert>
+        ) : null}
 
         {breakMenu ? (
           <div className="space-y-3">

@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { AllGravyPrRow, AllGravyProposalRow, BrainDefault } from "@/app/types";
+import type { AllGravyPrFilter, AllGravyPrRow, AllGravyProposalRow, BrainDefault } from "@/app/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +72,7 @@ export function AllGravyTab(props: {
   setReposText: (v: string) => void;
   repos: string[];
   brain: BrainDefault;
+  filter: AllGravyPrFilter;
   loadingSettings: boolean;
   refreshing: boolean;
   generatingForPr: Record<string, boolean>;
@@ -92,6 +93,7 @@ export function AllGravyTab(props: {
 
   saveReposFromText: () => Promise<boolean>;
   saveBrain: (b: BrainDefault) => Promise<boolean>;
+  saveFilter: (f: AllGravyPrFilter) => Promise<boolean>;
   loadLatestQueue: () => Promise<void>;
   refreshQueue: () => Promise<void>;
   selectPr: (id: string) => Promise<void>;
@@ -106,6 +108,7 @@ export function AllGravyTab(props: {
     reposText,
     setReposText,
     brain,
+    filter,
     loadingSettings,
     refreshing,
     generatingForPr,
@@ -122,6 +125,7 @@ export function AllGravyTab(props: {
     setError,
     saveReposFromText,
     saveBrain,
+    saveFilter,
     loadLatestQueue,
     refreshQueue,
     selectPr,
@@ -187,6 +191,11 @@ export function AllGravyTab(props: {
 
   async function onBrainChange(next: BrainDefault) {
     const ok = await saveBrain(next);
+    if (ok) setSaveFeedback("Saved!");
+  }
+
+  async function onFilterChange(next: AllGravyPrFilter) {
+    const ok = await saveFilter(next);
     if (ok) setSaveFeedback("Saved!");
   }
 
@@ -332,14 +341,25 @@ export function AllGravyTab(props: {
               ) : null}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ag-brain">Brain</Label>
-              <NativeSelect id="ag-brain" value={brain} onChange={(e) => void onBrainChange(e.target.value as BrainDefault)}>
-                <option value="codex">Codex (recommended)</option>
-                <option value="claude">Claude (may fail on large diffs)</option>
-              </NativeSelect>
-              <div className="text-xs text-muted-foreground">
-                Comments are only posted to GitHub when you click <b>Apply</b> and confirm.
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ag-filter">PR filter</Label>
+                <NativeSelect id="ag-filter" value={filter} onChange={(e) => void onFilterChange(e.target.value as AllGravyPrFilter)}>
+                  <option value="review_requested">Review requested</option>
+                  <option value="all_by_others">All PRs by others</option>
+                  <option value="all_open">All open PRs</option>
+                </NativeSelect>
+                <div className="text-xs text-muted-foreground">Applies on next Fetch from GitHub.</div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ag-brain">Brain</Label>
+                <NativeSelect id="ag-brain" value={brain} onChange={(e) => void onBrainChange(e.target.value as BrainDefault)}>
+                  <option value="codex">Codex (recommended)</option>
+                  <option value="claude">Claude (may fail on large diffs)</option>
+                </NativeSelect>
+                <div className="text-xs text-muted-foreground">
+                  Comments are only posted to GitHub when you click <b>Apply</b> and confirm.
+                </div>
               </div>
             </div>
           </div>
