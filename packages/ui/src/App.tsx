@@ -438,6 +438,8 @@ export function App() {
               repos={allGravy.repos}
               brain={allGravy.brain}
               filter={allGravy.filter}
+              sinceDays={allGravy.sinceDays}
+              excludeBots={allGravy.excludeBots}
               loadingSettings={allGravy.loadingSettings}
               refreshing={allGravy.refreshing}
               generatingForPr={allGravy.generatingForPr}
@@ -455,6 +457,8 @@ export function App() {
               saveReposFromText={() => allGravy.saveReposFromText()}
               saveBrain={(b) => allGravy.saveBrain(b)}
               saveFilter={(f) => allGravy.saveFilter(f)}
+              saveSinceDays={(n) => allGravy.saveSinceDays(n)}
+              saveExcludeBots={(v) => allGravy.saveExcludeBots(v)}
               loadLatestQueue={() => allGravy.loadLatestQueue()}
               refreshQueue={() => allGravy.refreshQueue()}
               selectPr={(id) => allGravy.selectPr(id)}

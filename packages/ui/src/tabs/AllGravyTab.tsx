@@ -13,9 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/NativeSelect";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRelativeTime, tryParseJson } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -73,6 +75,8 @@ export function AllGravyTab(props: {
   repos: string[];
   brain: BrainDefault;
   filter: AllGravyPrFilter;
+  sinceDays: number;
+  excludeBots: boolean;
   loadingSettings: boolean;
   refreshing: boolean;
   generatingForPr: Record<string, boolean>;
@@ -94,6 +98,8 @@ export function AllGravyTab(props: {
   saveReposFromText: () => Promise<boolean>;
   saveBrain: (b: BrainDefault) => Promise<boolean>;
   saveFilter: (f: AllGravyPrFilter) => Promise<boolean>;
+  saveSinceDays: (n: number) => Promise<boolean>;
+  saveExcludeBots: (v: boolean) => Promise<boolean>;
   loadLatestQueue: () => Promise<void>;
   refreshQueue: () => Promise<void>;
   selectPr: (id: string) => Promise<void>;
@@ -109,6 +115,8 @@ export function AllGravyTab(props: {
     setReposText,
     brain,
     filter,
+    sinceDays,
+    excludeBots,
     loadingSettings,
     refreshing,
     generatingForPr,
@@ -126,6 +134,8 @@ export function AllGravyTab(props: {
     saveReposFromText,
     saveBrain,
     saveFilter,
+    saveSinceDays,
+    saveExcludeBots,
     loadLatestQueue,
     refreshQueue,
     selectPr,
@@ -135,6 +145,9 @@ export function AllGravyTab(props: {
     approve,
     counts,
   } = props;
+
+  const [sinceDaysInput, setSinceDaysInput] = React.useState<string>(String(sinceDays));
+  React.useEffect(() => setSinceDaysInput(String(sinceDays)), [sinceDays]);
 
   const [draftBodies, setDraftBodies] = React.useState<Record<string, string>>({});
   const [saveFeedback, setSaveFeedback] = React.useState<string | null>(null);
@@ -196,6 +209,23 @@ export function AllGravyTab(props: {
 
   async function onFilterChange(next: AllGravyPrFilter) {
     const ok = await saveFilter(next);
+    if (ok) setSaveFeedback("Saved!");
+  }
+
+  function commitSinceDays() {
+    const n = Number(sinceDaysInput);
+    if (!Number.isFinite(n) || n < 1 || n > 365) {
+      setSinceDaysInput(String(sinceDays));
+      return;
+    }
+    const rounded = Math.round(n);
+    if (rounded !== sinceDays) {
+      void saveSinceDays(rounded).then((ok) => { if (ok) setSaveFeedback("Saved!"); });
+    }
+  }
+
+  async function onExcludeBotsChange(next: boolean) {
+    const ok = await saveExcludeBots(next);
     if (ok) setSaveFeedback("Saved!");
   }
 
@@ -349,8 +379,26 @@ export function AllGravyTab(props: {
                   <option value="all_by_others">All PRs by others</option>
                   <option value="all_open">All open PRs</option>
                 </NativeSelect>
-                <div className="text-xs text-muted-foreground">Applies on next Fetch from GitHub.</div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="ag-since">Since (days)</Label>
+                <Input
+                  id="ag-since"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={sinceDaysInput}
+                  onChange={(e) => setSinceDaysInput(e.target.value)}
+                  onBlur={commitSinceDays}
+                  onKeyDown={(e) => { if (e.key === "Enter") commitSinceDays(); }}
+                  className="w-[100px]"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch id="ag-exclude-bots" checked={excludeBots} onCheckedChange={(v) => void onExcludeBotsChange(Boolean(v))} />
+                <Label htmlFor="ag-exclude-bots">Exclude bots</Label>
+              </div>
+              <div className="text-xs text-muted-foreground">Applies on next Fetch from GitHub.</div>
               <div className="space-y-2">
                 <Label htmlFor="ag-brain">Brain</Label>
                 <NativeSelect id="ag-brain" value={brain} onChange={(e) => void onBrainChange(e.target.value as BrainDefault)}>

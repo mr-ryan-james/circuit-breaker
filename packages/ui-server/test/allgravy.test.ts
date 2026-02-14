@@ -84,24 +84,56 @@ test("allgravy summarize: reply after my latest comment counts as addressed", ()
 });
 
 test("buildPrFilterSearchQuery: review_requested includes review-requested qualifier", () => {
-  const q = buildPrFilterSearchQuery("alice", "review_requested");
+  const q = buildPrFilterSearchQuery("alice", "review_requested", { excludeBots: false });
   expect(q).toBe("is:pr is:open draft:false review-requested:alice");
 });
 
 test("buildPrFilterSearchQuery: all_by_others uses -author qualifier", () => {
-  const q = buildPrFilterSearchQuery("alice", "all_by_others");
+  const q = buildPrFilterSearchQuery("alice", "all_by_others", { excludeBots: false });
   expect(q).toBe("is:pr is:open draft:false -author:alice");
 });
 
 test("buildPrFilterSearchQuery: all_open has no author/reviewer qualifier", () => {
-  const q = buildPrFilterSearchQuery("alice", "all_open");
+  const q = buildPrFilterSearchQuery("alice", "all_open", { excludeBots: false });
   expect(q).toBe("is:pr is:open draft:false");
   expect(q).not.toContain("alice");
 });
 
 test("buildPrFilterSearchQuery: unknown filter falls back to review_requested", () => {
-  const q = buildPrFilterSearchQuery("alice", "bogus" as AllGravyPrFilter);
+  const q = buildPrFilterSearchQuery("alice", "bogus" as AllGravyPrFilter, { excludeBots: false });
   expect(q).toBe("is:pr is:open draft:false review-requested:alice");
+});
+
+test("buildPrFilterSearchQuery: sinceDays appends updated qualifier", () => {
+  const origNow = Date.now;
+  Date.now = () => Date.UTC(2026, 1, 14); // 2026-02-14 UTC
+  try {
+    const q = buildPrFilterSearchQuery("alice", "all_by_others", { sinceDays: 7, excludeBots: false });
+    expect(q).toContain("updated:>=2026-02-07");
+    expect(q).not.toContain("-author:app/dependabot");
+  } finally {
+    Date.now = origNow;
+  }
+});
+
+test("buildPrFilterSearchQuery: excludeBots true appends bot exclusions", () => {
+  const q = buildPrFilterSearchQuery("alice", "all_open", { excludeBots: true });
+  expect(q).toContain("-author:app/dependabot");
+  expect(q).toContain("-author:app/dependabot-preview");
+  expect(q).toContain("-author:app/renovate");
+});
+
+test("buildPrFilterSearchQuery: excludeBots false omits bot exclusions", () => {
+  const q = buildPrFilterSearchQuery("alice", "all_open", { excludeBots: false });
+  expect(q).not.toContain("-author:app/dependabot");
+  expect(q).not.toContain("-author:app/renovate");
+});
+
+test("buildPrFilterSearchQuery: no opts defaults to bot exclusion, no date filter", () => {
+  const q = buildPrFilterSearchQuery("alice", "all_open");
+  expect(q).toContain("-author:app/dependabot");
+  expect(q).toContain("-author:app/renovate");
+  expect(q).not.toContain("updated:");
 });
 
 test("allgravy queue refresh: fatal error emits queue failed event", async () => {

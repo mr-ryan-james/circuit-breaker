@@ -142,6 +142,28 @@ function setFilterSetting(db: ReturnType<typeof openCoreDb>["db"], filter: AllGr
   setSetting(db, "allgravy_filter", filter);
 }
 
+function getSinceDaysSetting(db: ReturnType<typeof openCoreDb>["db"]): number {
+  const raw = getSetting(db, "allgravy_since_days");
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return 7;
+  return Math.min(365, Math.round(n));
+}
+
+function setSinceDaysSetting(db: ReturnType<typeof openCoreDb>["db"], days: number): void {
+  const clamped = Math.max(1, Math.min(365, Math.round(days)));
+  setSetting(db, "allgravy_since_days", String(clamped));
+}
+
+function getExcludeBotsSetting(db: ReturnType<typeof openCoreDb>["db"]): boolean {
+  const raw = getSetting(db, "allgravy_exclude_bots");
+  if (raw === "false" || raw === "0") return false;
+  return true;
+}
+
+function setExcludeBotsSetting(db: ReturnType<typeof openCoreDb>["db"], val: boolean): void {
+  setSetting(db, "allgravy_exclude_bots", val ? "true" : "false");
+}
+
 let cachedSystemPrompt: string | null = null;
 function loadAllGravySystemPrompt(): string {
   if (cachedSystemPrompt) return cachedSystemPrompt;
@@ -398,6 +420,56 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
         }
       },
     },
+    "allgravy.since.get": {
+      description: "Get the sinceDays setting for All Gravy queue refresh.",
+      schema: z.object({}),
+      async handler() {
+        const { db } = openCoreDb();
+        try {
+          return { ok: true, since_days: getSinceDaysSetting(db) };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "allgravy.since.set": {
+      description: "Set the sinceDays setting for All Gravy queue refresh.",
+      schema: z.object({ since_days: z.number().int().min(1).max(365) }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          setSinceDaysSetting(db, payload.since_days);
+          return { ok: true, since_days: getSinceDaysSetting(db) };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "allgravy.exclude_bots.get": {
+      description: "Get the excludeBots setting for All Gravy queue refresh.",
+      schema: z.object({}),
+      async handler() {
+        const { db } = openCoreDb();
+        try {
+          return { ok: true, exclude_bots: getExcludeBotsSetting(db) };
+        } finally {
+          db.close();
+        }
+      },
+    },
+    "allgravy.exclude_bots.set": {
+      description: "Set the excludeBots setting for All Gravy queue refresh.",
+      schema: z.object({ exclude_bots: z.boolean() }),
+      async handler(payload) {
+        const { db } = openCoreDb();
+        try {
+          setExcludeBotsSetting(db, payload.exclude_bots);
+          return { ok: true, exclude_bots: getExcludeBotsSetting(db) };
+        } finally {
+          db.close();
+        }
+      },
+    },
     "allgravy.prs.latest": {
       description: "List latest All Gravy PR queue snapshot (most recent run).",
       schema: z.object({}),
@@ -425,6 +497,8 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
           repos = getRepos(db);
           const login = ghLogin();
           const filter = getFilterSetting(db);
+          const sinceDays = getSinceDaysSetting(db);
+          const excludeBots = getExcludeBotsSetting(db);
 
           wsBroadcast({ type: "allgravy.queue", event: "started", run_id: runId, repos, refreshed_at: refreshedAt });
 
@@ -434,7 +508,7 @@ export function createAllGravyActionHandlers(opts: { stateDir: string; wsBroadca
           for (const repo of repos) {
             let prs: ReturnType<typeof listPrsByFilter> = [];
             try {
-              prs = listPrsByFilter(repo, login, filter);
+              prs = listPrsByFilter(repo, login, filter, { sinceDays, excludeBots });
             } catch (e: unknown) {
               errors.push({ repo, error: e instanceof Error ? e.message : String(e) });
               continue;

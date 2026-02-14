@@ -14,6 +14,8 @@ export function useAllGravy() {
   const [repos, setRepos] = React.useState<string[]>([]);
   const [brain, setBrain] = React.useState<BrainDefault>("codex");
   const [filter, setFilter] = React.useState<AllGravyPrFilter>("review_requested");
+  const [sinceDays, setSinceDays] = React.useState<number>(7);
+  const [excludeBots, setExcludeBots] = React.useState<boolean>(true);
 
   const [loadingSettings, setLoadingSettings] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -65,10 +67,12 @@ export function useAllGravy() {
     setError(null);
     setLoadingSettings(true);
     try {
-      const [r, b, f] = await Promise.all([
+      const [r, b, f, s, eb] = await Promise.all([
         callAction<any>("allgravy.repos.get", {}),
         callAction<any>("allgravy.brain.get", {}),
         callAction<any>("allgravy.filter.get", {}),
+        callAction<any>("allgravy.since.get", {}),
+        callAction<any>("allgravy.exclude_bots.get", {}),
       ]);
       if (r?.ok && Array.isArray(r.repos)) {
         const list = r.repos.map(String).map((s: string) => s.trim()).filter(Boolean);
@@ -80,6 +84,12 @@ export function useAllGravy() {
       }
       if (f?.ok && (f.filter === "review_requested" || f.filter === "all_by_others" || f.filter === "all_open")) {
         setFilter(f.filter);
+      }
+      if (s?.ok && typeof s.since_days === "number" && Number.isFinite(s.since_days)) {
+        setSinceDays(s.since_days);
+      }
+      if (eb?.ok && typeof eb.exclude_bots === "boolean") {
+        setExcludeBots(eb.exclude_bots);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -123,6 +133,29 @@ export function useAllGravy() {
     const res = await callAction<any>("allgravy.filter.set", { filter: next });
     if (!res?.ok) {
       setError(String(res?.error ?? "Failed to set filter"));
+      return false;
+    }
+    return true;
+  }
+
+  async function saveSinceDays(next: number): Promise<boolean> {
+    if (!Number.isFinite(next) || next < 1 || next > 365) return false;
+    setError(null);
+    setSinceDays(next);
+    const res = await callAction<any>("allgravy.since.set", { since_days: Math.round(next) });
+    if (!res?.ok) {
+      setError(String(res?.error ?? "Failed to set since days"));
+      return false;
+    }
+    return true;
+  }
+
+  async function saveExcludeBots(next: boolean): Promise<boolean> {
+    setError(null);
+    setExcludeBots(next);
+    const res = await callAction<any>("allgravy.exclude_bots.set", { exclude_bots: next });
+    if (!res?.ok) {
+      setError(String(res?.error ?? "Failed to set exclude bots"));
       return false;
     }
     return true;
@@ -414,6 +447,8 @@ export function useAllGravy() {
     repos,
     brain,
     filter,
+    sinceDays,
+    excludeBots,
     loadingSettings,
     refreshing,
     generatingForPr,
@@ -432,6 +467,8 @@ export function useAllGravy() {
     saveReposFromText,
     saveBrain,
     saveFilter,
+    saveSinceDays,
+    saveExcludeBots,
     loadLatestQueue,
     refreshQueue,
     selectPr,

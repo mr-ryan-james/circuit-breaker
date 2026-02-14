@@ -3,6 +3,11 @@ import { z } from "zod";
 export type AllGravyPrFilter = "review_requested" | "all_by_others" | "all_open";
 export const AllGravyPrFilterSchema = z.enum(["review_requested", "all_by_others", "all_open"]);
 
+export type PrQueryOptions = {
+  sinceDays?: number;
+  excludeBots?: boolean;
+};
+
 export type GhRun = {
   ok: boolean;
   exit_code: number;
@@ -59,21 +64,36 @@ export type ReviewRequestedPr = {
 };
 
 /** Builds the GitHub search query for the selected PR filter mode. */
-export function buildPrFilterSearchQuery(login: string, filter: AllGravyPrFilter): string {
+export function buildPrFilterSearchQuery(login: string, filter: AllGravyPrFilter, opts?: PrQueryOptions): string {
+  let query: string;
   switch (filter) {
     case "all_by_others":
-      return `is:pr is:open draft:false -author:${login}`;
+      query = `is:pr is:open draft:false -author:${login}`;
+      break;
     case "all_open":
-      return `is:pr is:open draft:false`;
+      query = `is:pr is:open draft:false`;
+      break;
     case "review_requested":
     default:
-      return `is:pr is:open draft:false review-requested:${login}`;
+      query = `is:pr is:open draft:false review-requested:${login}`;
+      break;
   }
+
+  if (opts?.sinceDays && opts.sinceDays > 0) {
+    const cutoff = new Date(Date.now() - opts.sinceDays * 86_400_000);
+    query += ` updated:>=${cutoff.toISOString().slice(0, 10)}`;
+  }
+
+  if (opts?.excludeBots !== false) {
+    query += ` -author:app/dependabot -author:app/dependabot-preview -author:app/renovate`;
+  }
+
+  return query;
 }
 
 /** Returns PR list filtered by the selected mode. */
-export function listPrsByFilter(repo: string, login: string, filter: AllGravyPrFilter = "review_requested"): ReviewRequestedPr[] {
-  const search = buildPrFilterSearchQuery(login, filter);
+export function listPrsByFilter(repo: string, login: string, filter: AllGravyPrFilter = "review_requested", opts?: PrQueryOptions): ReviewRequestedPr[] {
+  const search = buildPrFilterSearchQuery(login, filter, opts);
   const raw = ghJson([
     "pr",
     "list",
