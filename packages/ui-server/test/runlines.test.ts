@@ -195,19 +195,21 @@ test("run-lines: start -> play -> events -> end", async () => {
 
   ws.send(JSON.stringify({ type: "run_lines.play", session_id: sessionId }));
 
-  const kinds: Array<{ kind: string; idx: number }> = [];
+  const kinds: Array<{ kind: string; idx: number; playback_rate?: number }> = [];
   while (true) {
     const msg = await c.waitFor((m) => m?.type === "run_lines.event" || (m?.type === "run_lines.session" && m?.event === "ended"), 3000);
     if (msg.type === "run_lines.session" && msg.event === "ended") break;
 
-    kinds.push({ kind: String(msg.kind ?? ""), idx: Number(msg.idx ?? -1) });
+    const entry: { kind: string; idx: number; playback_rate?: number } = { kind: String(msg.kind ?? ""), idx: Number(msg.idx ?? -1) };
+    if (typeof msg.playback_rate === "number") entry.playback_rate = msg.playback_rate;
+    kinds.push(entry);
     ws.send(JSON.stringify({ type: "run_lines.ack", session_id: sessionId, event_id: msg.event_id, status: "done" }));
   }
 
   expect(kinds).toEqual([
     { kind: "direction", idx: 1 },
     { kind: "pause", idx: 2 },
-    { kind: "line", idx: 3 },
+    { kind: "line", idx: 3, playback_rate: 1.3 },
     { kind: "pause", idx: 4 },
     { kind: "direction", idx: 5 },
   ]);
