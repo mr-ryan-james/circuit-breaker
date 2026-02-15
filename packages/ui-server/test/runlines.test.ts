@@ -207,7 +207,7 @@ test("run-lines: start -> play -> events -> end", async () => {
   expect(kinds).toEqual([
     { kind: "direction", idx: 1 },
     { kind: "pause", idx: 2 },
-    { kind: "gap", idx: 3 },
+    { kind: "line", idx: 3 },
     { kind: "pause", idx: 4 },
     { kind: "direction", idx: 5 },
   ]);

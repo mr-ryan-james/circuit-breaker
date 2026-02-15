@@ -2066,7 +2066,7 @@ async function prefetchNextRunLineTts(session: RunLinesSession): Promise<void> {
           ? true
           : isMe
             ? session.reveal_after
-            : session.mode !== "speed_through";
+            : true;
       if (!needsAudio) continue;
 
       const ch = session.characters.find((c) => c.normalized_name === speaker) ?? null;
@@ -2136,25 +2136,6 @@ async function emitNextRunLineEvent(ws: any, session: RunLinesSession): Promise<
 
     const speed = clamp(0.5, 3.0, session.speed_mult);
     const isMe = !session.read_all && speaker && speaker === session.me_norm;
-
-    // Silent mode: don't render TTS for other characters; just wait.
-    if (session.mode === "speed_through" && !isMe) {
-      const gapSec = clamp(session.pause_min_sec, session.pause_max_sec, estimatedSpeakSeconds(spoken) / speed);
-      session.last_emitted_idx = l.idx;
-      ws.send(
-        JSON.stringify({
-          type: "run_lines.event",
-          session_id: session.id,
-          event_id: makeEventId(session),
-          kind: "gap",
-          idx: l.idx,
-          speaker: speaker || null,
-          text: l.text,
-          duration_sec: gapSec,
-        }),
-      );
-      return { ended: false };
-    }
 
     const ch = session.characters.find((c) => c.normalized_name === speaker) ?? null;
     const voice = ch?.voice ?? "en-US-GuyNeural";

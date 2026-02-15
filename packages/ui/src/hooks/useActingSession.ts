@@ -416,7 +416,14 @@ export function useActingSession(args: {
 
   React.useEffect(() => {
     // Keep the timeline view pinned to the most recent events.
-    actingTimelineEndRef.current?.scrollIntoView({ block: "end" });
+    // Scroll only the ScrollArea viewport, not the page.
+    // Targets Radix ScrollArea's viewport element (data-radix-scroll-area-viewport).
+    const el = actingTimelineEndRef.current;
+    if (!el) return;
+    const viewport = el.closest("[data-radix-scroll-area-viewport]") as HTMLElement | null;
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
   }, [lastVisibleTimelineKey]);
 
   async function loadAndMaybeStart(scriptId: number, start: boolean): Promise<void> {
